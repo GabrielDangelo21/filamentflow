@@ -236,7 +236,7 @@ const Filaments = () => {
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               Marca
-              <button type="button" onClick={() => setModalOpen('brands')} style={plusBtnStyle}>+</button>
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setModalOpen('brands'); }} style={plusBtnStyle}>+</button>
             </label>
             <select
               className="form-select"
@@ -270,7 +270,7 @@ const Filaments = () => {
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               Categoria
-              <button type="button" onClick={() => setModalOpen('categories')} style={plusBtnStyle}>+</button>
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setModalOpen('categories'); }} style={plusBtnStyle}>+</button>
             </label>
             <select
               className="form-select"
