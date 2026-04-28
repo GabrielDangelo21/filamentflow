@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getFilaments, saveOrder, getOrders } from '../services/storage';
 
 const Orders = () => {
@@ -7,6 +7,7 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedFilament, setSelectedFilament] = useState(null);
+  const searchInputRef = useRef(null);
 
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
@@ -73,6 +74,13 @@ const Orders = () => {
     setSelectedFilament(null);
     setOrders(getOrders().reverse());
     alert('Pedido registrado com sucesso!');
+
+    // Focus search input after submit
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 0);
   };
 
   return (
@@ -96,6 +104,7 @@ const Orders = () => {
               <label className="form-label">Filamento Comprado</label>
               <div style={{ position: 'relative' }}>
                 <input
+                  ref={searchInputRef}
                   type="text"
                   className="form-input"
                   placeholder="Digite SKU, marca, cor ou categoria..."
@@ -226,7 +235,10 @@ const Orders = () => {
           <thead>
             <tr>
               <th>Data</th>
-              <th>Filamento</th>
+              <th>SKU</th>
+              <th>Marca</th>
+              <th>Categoria</th>
+              <th>Cor</th>
               <th>Qtd Adquirida</th>
               <th>Preço</th>
             </tr>
@@ -234,26 +246,32 @@ const Orders = () => {
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   Nenhum pedido registrado.
                 </td>
               </tr>
             ) : (
-              orders.map(order => (
-                <tr key={order.id}>
-                  <td>{(() => {
-                    try {
-                      const d = order.date.includes('T') ? new Date(order.date) : new Date(order.date + 'T12:00:00');
-                      return d.toLocaleDateString();
-                    } catch (e) {
-                      return 'Data Inválida';
-                    }
-                  })()}</td>
-                  <td><span className="badge badge-outline">{order.items[0].sku}</span></td>
-                  <td style={{ fontWeight: 600 }}>{order.items[0].weightGrams}g</td>
-                  <td>{order.items[0].price ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.items[0].price) : '-'}</td>
-                </tr>
-              ))
+              orders.map(order => {
+                const filament = filaments.find(f => f.sku === order.items[0].sku);
+                return (
+                  <tr key={order.id}>
+                    <td>{(() => {
+                      try {
+                        const d = order.date.includes('T') ? new Date(order.date) : new Date(order.date + 'T12:00:00');
+                        return d.toLocaleDateString();
+                      } catch (e) {
+                        return 'Data Inválida';
+                      }
+                    })()}</td>
+                    <td><span className="badge badge-primary">{order.items[0].sku}</span></td>
+                    <td style={{ fontWeight: 600 }}>{filament?.marca || '-'}</td>
+                    <td>{filament?.categoria || '-'}</td>
+                    <td>{filament?.cor || '-'}</td>
+                    <td style={{ fontWeight: 600 }}>{order.items[0].weightGrams}g</td>
+                    <td>{order.items[0].price ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.items[0].price) : '-'}</td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
