@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getFilaments, saveFilament, deleteFilament, getAllFilamentsWithStock, getCategories, saveCategory, deleteCategory, saveAllCategories, getBrands, saveBrand, deleteBrand, saveAllBrands } from '../services/storage';
 
 /* ── Reusable List Manager Modal ── */
@@ -18,8 +18,9 @@ const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose })
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)'
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+      overflowY: 'auto', paddingTop: '2rem', paddingBottom: '2rem'
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: '#111827', border: '1px solid rgba(255,255,255,0.1)',
@@ -110,6 +111,7 @@ const Filaments = () => {
   const [brands, setBrands] = useState([]);
   const [formData, setFormData] = useState({ marca: '', sku: '', cor: '', categoria: '' });
   const [modalOpen, setModalOpen] = useState(null); // 'brands' | 'categories' | null
+  const skuInputRef = useRef(null);
 
   useEffect(() => {
     loadFilaments();
@@ -145,6 +147,12 @@ const Filaments = () => {
     });
     setFormData(prev => ({ ...prev, sku: '', cor: '' }));
     loadFilaments();
+    // Focus SKU input after submit
+    setTimeout(() => {
+      if (skuInputRef.current) {
+        skuInputRef.current.focus();
+      }
+    }, 0);
   };
 
   // ── Brand modal handlers ──
@@ -251,6 +259,7 @@ const Filaments = () => {
           <div className="form-group">
             <label className="form-label">SKU (Código Único)</label>
             <input
+              ref={skuInputRef}
               className="form-input"
               placeholder="Ex: SL-PLA-BLK-SPOOL"
               value={formData.sku}
