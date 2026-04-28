@@ -62,7 +62,13 @@ const Orders = () => {
       }]
     });
 
-    setFormData(initialFormState);
+    // Keep the date, reset only filament-related fields
+    setFormData({
+      ...formData,
+      sku: '',
+      weightGrams: 1000,
+      price: ''
+    });
     setSearchTerm('');
     setSelectedFilament(null);
     setOrders(getOrders().reverse());
@@ -174,12 +180,34 @@ const Orders = () => {
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
                 <input
-                  type="number"
+                  type="text"
                   className="form-input"
                   style={{ paddingLeft: '2rem' }}
                   placeholder="0,00"
                   value={formData.price}
-                  onChange={e => setFormData({ ...formData, price: e.target.value })}
+                  onChange={e => {
+                    const value = e.target.value.replace(',', '.');
+                    if (value === '' || !isNaN(value)) {
+                      setFormData({ ...formData, price: value });
+                    }
+                  }}
+                  onKeyDown={e => {
+                    // Allow: backspace, delete, tab, escape, enter, decimal point and comma
+                    if ([46, 8, 9, 27, 13, 110, 188, 190].indexOf(e.keyCode) !== -1 ||
+                      // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                      (e.keyCode === 65 && e.ctrlKey === true) ||
+                      (e.keyCode === 67 && e.ctrlKey === true) ||
+                      (e.keyCode === 86 && e.ctrlKey === true) ||
+                      (e.keyCode === 88 && e.ctrlKey === true) ||
+                      // Allow: home, end, left, right
+                      (e.keyCode >= 35 && e.keyCode <= 39)) {
+                      return;
+                    }
+                    // Ensure that it is a number and stop the keypress if not
+                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
