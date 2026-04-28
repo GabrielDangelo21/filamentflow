@@ -282,10 +282,10 @@ const Filaments = () => {
               ))}
             </select>
           </div>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+            <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem', fontSize: '1rem' }}>Cadastrar Filamento</button>
+          </div>
         </form>
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
-          <button type="button" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem', fontSize: '1rem' }} onClick={handleSubmit}>Cadastrar Filamento</button>
-        </div>
       </div>
 
       {/* Filaments Table */}
