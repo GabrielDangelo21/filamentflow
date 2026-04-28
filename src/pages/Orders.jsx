@@ -4,7 +4,10 @@ import { getFilaments, saveOrder, getOrders } from '../services/storage';
 const Orders = () => {
   const [filaments, setFilaments] = useState([]);
   const [orders, setOrders] = useState([]);
-  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedFilament, setSelectedFilament] = useState(null);
+
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
     sku: '',
@@ -19,10 +22,37 @@ const Orders = () => {
     setOrders(getOrders().reverse());
   }, []);
 
+  const filteredFilaments = filaments.filter(f => {
+    const search = searchTerm.toLowerCase();
+    return (
+      f.sku.toLowerCase().includes(search) ||
+      f.marca.toLowerCase().includes(search) ||
+      f.cor.toLowerCase().includes(search) ||
+      f.categoria.toLowerCase().includes(search)
+    );
+  });
+
+  const handleSelectFilament = (filament) => {
+    setSelectedFilament(filament);
+    setSearchTerm(`${filament.marca} - ${filament.cor} (${filament.sku})`);
+    setFormData({ ...formData, sku: filament.sku });
+    setShowSuggestions(false);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setShowSuggestions(true);
+    if (!value) {
+      setSelectedFilament(null);
+      setFormData({ ...formData, sku: '' });
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.sku) return alert('Selecione um filamento');
-    
+
     saveOrder({
       date: formData.date,
       items: [{
@@ -31,8 +61,10 @@ const Orders = () => {
         price: Number(formData.price)
       }]
     });
-    
+
     setFormData(initialFormState);
+    setSearchTerm('');
+    setSelectedFilament(null);
     setOrders(getOrders().reverse());
     alert('Pedido registrado com sucesso!');
   };
@@ -46,35 +78,94 @@ const Orders = () => {
           <div className="grid-2">
             <div className="form-group">
               <label className="form-label">Data da Compra</label>
-              <input 
+              <input
                 type="date"
-                className="form-input" 
+                className="form-input"
                 value={formData.date}
-                onChange={e => setFormData({...formData, date: e.target.value})}
+                onChange={e => setFormData({ ...formData, date: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
               <label className="form-label">Filamento Comprado</label>
-              <select 
-                className="form-select"
-                value={formData.sku}
-                onChange={e => setFormData({...formData, sku: e.target.value})}
-                required
-              >
-                <option value="">Selecione um filamento...</option>
-                {filaments.map(f => (
-                  <option key={f.id} value={f.sku}>{f.marca} - {f.cor} ({f.sku})</option>
-                ))}
-              </select>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Digite SKU, marca, cor ou categoria..."
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  required
+                />
+                {showSuggestions && searchTerm && filteredFilaments.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
+                    background: '#1f2937',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '0.5rem',
+                    marginTop: '0.25rem',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                  }}>
+                    {filteredFilaments.map(f => (
+                      <div
+                        key={f.id}
+                        onClick={() => handleSelectFilament(f)}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid rgba(255,255,255,0.05)',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'}
+                        onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>{f.sku}</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{f.marca} - {f.cor}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{f.categoria}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {showSuggestions && searchTerm && filteredFilaments.length === 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
+                    background: '#1f2937',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '0.5rem',
+                    marginTop: '0.25rem',
+                    padding: '1rem',
+                    textAlign: 'center',
+                    color: 'var(--text-muted)',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                  }}>
+                    Nenhum filamento encontrado
+                  </div>
+                )}
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Quantidade (Gramas)</label>
-              <input 
+              <input
                 type="number"
-                className="form-input" 
+                className="form-input"
                 value={formData.weightGrams}
-                onChange={e => setFormData({...formData, weightGrams: e.target.value})}
+                onChange={e => setFormData({ ...formData, weightGrams: e.target.value })}
                 required
               />
             </div>
@@ -82,13 +173,13 @@ const Orders = () => {
               <label className="form-label">Preço Pago (Opcional)</label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
-                <input 
+                <input
                   type="number"
-                  className="form-input" 
+                  className="form-input"
                   style={{ paddingLeft: '2rem' }}
                   placeholder="0,00"
                   value={formData.price}
-                  onChange={e => setFormData({...formData, price: e.target.value})}
+                  onChange={e => setFormData({ ...formData, price: e.target.value })}
                 />
               </div>
             </div>
