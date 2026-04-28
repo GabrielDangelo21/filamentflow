@@ -108,7 +108,7 @@ const Filaments = () => {
   const [filaments, setFilaments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [formData, setFormData] = useState({ marca: '', sku: '', cor: '', categoria: '', tipo: 'Carretel' });
+  const [formData, setFormData] = useState({ marca: '', sku: '', cor: '', categoria: '' });
   const [modalOpen, setModalOpen] = useState(null); // 'brands' | 'categories' | null
 
   useEffect(() => {
@@ -136,7 +136,7 @@ const Filaments = () => {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!formData.sku) return alert('O SKU é obrigatório');
     saveFilament({
       ...formData,
@@ -282,21 +282,10 @@ const Filaments = () => {
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label className="form-label">Tipo</label>
-            <select
-              className="form-select"
-              value={formData.tipo}
-              onChange={e => setFormData({ ...formData, tipo: e.target.value })}
-            >
-              <option value="Carretel">Carretel (Spool)</option>
-              <option value="Refil">Refil (Sem carretel)</option>
-            </select>
-          </div>
-          <div className="form-group" style={{ justifyContent: 'flex-end', marginBottom: 0 }}>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Cadastrar Filamento</button>
-          </div>
         </form>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
+          <button type="button" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem', fontSize: '1rem' }} onClick={handleSubmit}>Cadastrar Filamento</button>
+        </div>
       </div>
 
       {/* Filaments Table */}
