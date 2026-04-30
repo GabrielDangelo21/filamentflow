@@ -220,8 +220,8 @@ const Dashboard = () => {
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{f.marca}</span>
-                          <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>[{f.sku}]</span>
+                          <span style={{ fontWeight: 600, fontSize: '0.65rem' }}>{f.marca}</span>
+                          <span style={{ color: 'var(--primary)', fontSize: '0.65rem', fontWeight: 600 }}>[{f.sku}]</span>
                         </div>
                         <div className="progress-container" style={{ height: '6px', marginTop: 0 }}>
                           <div className="progress-bar" style={{ width: `${perc}%`, background: color }}></div>
