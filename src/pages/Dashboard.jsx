@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { getAllFilamentsWithStock, getOrders, getPrints } from '../services/storage';
+import React, { useEffect, useRef, useState } from 'react';
+import { getAllFilamentsWithStock, getOrders, getPrints, exportBackup, importBackup } from '../services/storage';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -41,6 +41,41 @@ const Dashboard = () => {
   const [stockDistribution, setStockDistribution] = useState(null);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [selectedPrintIdx, setSelectedPrintIdx] = useState(null);
+  const [backupMsg, setBackupMsg] = useState('');
+  const importInputRef = useRef(null);
+
+  const handleExport = () => {
+    const data = exportBackup();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `filamentflow_backup_${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setBackupMsg('✓ Backup exportado!');
+    setTimeout(() => setBackupMsg(''), 3000);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const backup = JSON.parse(ev.target.result);
+        importBackup(backup);
+        setBackupMsg('✓ Backup importado! Recarregando...');
+        setTimeout(() => window.location.reload(), 1000);
+      } catch (err) {
+        setBackupMsg('✗ Erro ao importar: ' + err.message);
+        setTimeout(() => setBackupMsg(''), 4000);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   useEffect(() => {
     const allFilaments = getAllFilamentsWithStock();
@@ -117,13 +152,51 @@ const Dashboard = () => {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
+      {backupMsg && (
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: 10000,
+          background: backupMsg.startsWith('✓') ? 'var(--primary)' : '#EF4444',
+          color: backupMsg.startsWith('✓') ? '#000' : '#fff',
+          padding: '1rem 1.5rem', borderRadius: '0.5rem',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          fontWeight: 600, fontSize: '0.95rem'
+        }}>
+          {backupMsg}
+        </div>
+      )}
+      <input ref={importInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1>Analytics de Impressão</h1>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Investimento Total</p>
-          <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--success)' }}>
-            € {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={handleExport}
+              style={{
+                background: 'rgba(16, 185, 129, 0.15)', color: '#10B981',
+                border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '0.5rem',
+                padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600
+              }}
+            >
+              ↓ Exportar Backup
+            </button>
+            <button
+              onClick={() => importInputRef.current.click()}
+              style={{
+                background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B',
+                border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '0.5rem',
+                padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600
+              }}
+            >
+              ↑ Importar Backup
+            </button>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Investimento Total</p>
+            <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--success)' }}>
+              € {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
         </div>
       </div>
 

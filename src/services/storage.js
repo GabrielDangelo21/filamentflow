@@ -44,13 +44,21 @@ export const deleteFilament = (id) => {
 };
 
 // --- ORDERS ---
-export const getOrders = () => getFromStorage(STORAGE_KEYS.ORDERS);
+export const getOrders = () => {
+  const orders = getFromStorage(STORAGE_KEYS.ORDERS);
+  let migrated = false;
+  orders.forEach(o => {
+    if (!o.id) { o.id = generateId(); migrated = true; }
+  });
+  if (migrated) saveToStorage(STORAGE_KEYS.ORDERS, orders);
+  return orders;
+};
 
 export const saveOrder = (order) => {
   const orders = getOrders();
   const newOrder = {
-    id: generateId(),
     ...order,
+    id: generateId(),
     date: order.date || new Date().toISOString()
   };
   orders.push(newOrder);
@@ -66,7 +74,15 @@ export const deleteOrder = (id) => {
 };
 
 // --- PRINTS ---
-export const getPrints = () => getFromStorage(STORAGE_KEYS.PRINTS);
+export const getPrints = () => {
+  const prints = getFromStorage(STORAGE_KEYS.PRINTS);
+  let migrated = false;
+  prints.forEach(p => {
+    if (!p.id) { p.id = generateId(); migrated = true; }
+  });
+  if (migrated) saveToStorage(STORAGE_KEYS.PRINTS, prints);
+  return prints;
+};
 
 export const savePrint = (print) => {
   const prints = getPrints();
@@ -185,4 +201,24 @@ export const deleteBrand = (brand) => {
 
 export const saveAllBrands = (brands) => {
   saveToStorage(STORAGE_KEYS.BRANDS, brands);
+};
+
+// --- BACKUP ---
+export const exportBackup = () => ({
+  version: 1,
+  exportedAt: new Date().toISOString(),
+  filaments: getFilaments(),
+  orders: getOrders(),
+  prints: getPrints(),
+  categories: getCategories(),
+  brands: getBrands()
+});
+
+export const importBackup = (backup) => {
+  if (!backup || backup.version !== 1) throw new Error('Arquivo de backup inválido.');
+  if (backup.filaments) saveToStorage(STORAGE_KEYS.FILAMENTS, backup.filaments);
+  if (backup.orders) saveToStorage(STORAGE_KEYS.ORDERS, backup.orders);
+  if (backup.prints) saveToStorage(STORAGE_KEYS.PRINTS, backup.prints);
+  if (backup.categories) saveToStorage(STORAGE_KEYS.CATEGORIES, backup.categories);
+  if (backup.brands) saveToStorage(STORAGE_KEYS.BRANDS, backup.brands);
 };
