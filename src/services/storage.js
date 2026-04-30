@@ -24,7 +24,7 @@ export const getFilaments = () => getFromStorage(STORAGE_KEYS.FILAMENTS);
 export const saveFilament = (filament) => {
   const filaments = getFilaments();
   const existingIndex = filaments.findIndex(f => f.sku === filament.sku);
-  
+
   if (existingIndex >= 0) {
     filaments[existingIndex] = { ...filaments[existingIndex], ...filament };
   } else {
@@ -34,7 +34,7 @@ export const saveFilament = (filament) => {
       createdAt: new Date().toISOString()
     });
   }
-  
+
   saveToStorage(STORAGE_KEYS.FILAMENTS, filaments);
 };
 
@@ -70,7 +70,7 @@ export const getPrints = () => getFromStorage(STORAGE_KEYS.PRINTS);
 
 export const savePrint = (print) => {
   const prints = getPrints();
-  
+
   if (print.id) {
     const index = prints.findIndex(p => p.id === print.id);
     if (index >= 0) {
@@ -81,8 +81,8 @@ export const savePrint = (print) => {
   }
 
   const newPrint = {
-    id: generateId(),
     ...print,
+    id: generateId(),
     date: print.date || new Date().toISOString()
   };
   prints.push(newPrint);
@@ -99,7 +99,7 @@ export const deletePrint = (id) => {
 export const getFilamentStock = (sku) => {
   const orders = getOrders();
   const prints = getPrints();
-  
+
   // Sum of all inputs (Orders)
   let totalIn = 0;
   orders.forEach(order => {

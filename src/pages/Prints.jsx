@@ -6,7 +6,7 @@ const Prints = () => {
   const [allFilaments, setAllFilaments] = useState([]);
   const [prints, setPrints] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [viewingPrint, setViewingPrint] = useState(null);
+  const [viewingPrintIdx, setViewingPrintIdx] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   const initialFormState = {
@@ -344,7 +344,7 @@ const Prints = () => {
       </div>
 
       <h2>Histórico de Impressões</h2>
-      <div className="glass-panel" style={{ marginTop: '1rem' }} onClick={() => setViewingPrint(null)}>
+      <div className="glass-panel" style={{ marginTop: '1rem' }}>
         <table className="data-table">
           <thead>
             <tr>
@@ -364,12 +364,9 @@ const Prints = () => {
                 </td>
               </tr>
             ) : (
-              prints.map(print => (
-                <React.Fragment key={print.id}>
-                  <tr
-                    onClick={e => e.stopPropagation()}
-                    style={{ background: viewingPrint?.id === print.id ? 'rgba(59, 130, 246, 0.08)' : undefined }}
-                  >
+              prints.map((print, index) => (
+                <React.Fragment key={index}>
+                  <tr style={{ background: viewingPrintIdx === index ? 'rgba(59, 130, 246, 0.08)' : undefined }}>
                     <td>{(() => {
                       try {
                         const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
@@ -388,10 +385,10 @@ const Prints = () => {
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button
                           className="btn btn-secondary"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: viewingPrint?.id === print.id ? 'rgba(0, 240, 255, 0.2)' : 'rgba(0, 240, 255, 0.1)', color: 'var(--primary)' }}
-                          onClick={() => setViewingPrint(viewingPrint?.id === print.id ? null : print)}
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: viewingPrintIdx === index ? 'rgba(0, 240, 255, 0.2)' : 'rgba(0, 240, 255, 0.1)', color: 'var(--primary)' }}
+                          onClick={() => setViewingPrintIdx(viewingPrintIdx === index ? null : index)}
                         >
-                          {viewingPrint?.id === print.id ? 'Fechar' : 'Ver Detalhes'}
+                          {viewingPrintIdx === index ? 'Fechar' : 'Ver Detalhes'}
                         </button>
                         <button
                           className="btn btn-secondary"
@@ -410,8 +407,8 @@ const Prints = () => {
                       </div>
                     </td>
                   </tr>
-                  {viewingPrint?.id === print.id && (
-                    <tr onClick={e => e.stopPropagation()}>
+                  {viewingPrintIdx === index && (
+                    <tr>
                       <td colSpan="6" style={{ padding: 0, background: 'rgba(59, 130, 246, 0.05)' }}>
                         <div style={{
                           padding: '1.5rem',
@@ -421,19 +418,19 @@ const Prints = () => {
                           <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
                             <div>
                               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Data</p>
-                              <p style={{ fontWeight: 600 }}>{new Date((viewingPrint.date.includes('T') ? viewingPrint.date : viewingPrint.date + 'T12:00:00')).toLocaleDateString()}</p>
+                              <p style={{ fontWeight: 600 }}>{new Date((print.date.includes('T') ? print.date : print.date + 'T12:00:00')).toLocaleDateString()}</p>
                             </div>
                             <div>
                               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Tempo Total</p>
-                              <p style={{ fontWeight: 600 }}>{viewingPrint.timeMinutes} minutos</p>
+                              <p style={{ fontWeight: 600 }}>{print.timeMinutes} minutos</p>
                             </div>
                             <div>
                               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cores Usadas</p>
-                              <p style={{ fontWeight: 600 }}>{viewingPrint.colors}</p>
+                              <p style={{ fontWeight: 600 }}>{print.colors}</p>
                             </div>
                             <div>
                               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>
-                              <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(viewingPrint.totalWeight).toFixed(2)}g</p>
+                              <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(print.totalWeight).toFixed(2)}g</p>
                             </div>
                           </div>
 
@@ -442,7 +439,7 @@ const Prints = () => {
                           </h3>
 
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {viewingPrint.filamentsUsed.map((f, idx) => {
+                            {print.filamentsUsed.map((f, idx) => {
                               const info = getFilamentInfo(f.sku);
                               return (
                                 <div key={idx} style={{

@@ -40,7 +40,7 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState(null);
   const [stockDistribution, setStockDistribution] = useState(null);
   const [expandedCategory, setExpandedCategory] = useState(null);
-  const [selectedPrint, setSelectedPrint] = useState(null);
+  const [selectedPrintIdx, setSelectedPrintIdx] = useState(null);
 
   useEffect(() => {
     const allFilaments = getAllFilamentsWithStock();
@@ -276,94 +276,82 @@ const Dashboard = () => {
         {/* Logs de Atividade */}
         <section>
           <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Log de Atividade</h2>
-          <div className="glass-panel" style={{ padding: '1rem' }} onClick={() => setSelectedPrint(null)}>
-            {recentPrints.map(print => (
-              <React.Fragment key={print.id}>
-                <div
-                  onClick={e => e.stopPropagation()}
+          <div className="glass-panel" style={{ padding: '1rem' }}>
+            {recentPrints.map((print, index) => (
+              <div key={index} style={{ marginBottom: '1rem' }}>
+                <button
+                  onClick={() => setSelectedPrintIdx(selectedPrintIdx === index ? null : index)}
                   style={{
-                    background: selectedPrint?.id === print.id ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.05)',
-                    padding: '1rem',
-                    borderRadius: selectedPrint?.id === print.id ? '0.5rem 0.5rem 0 0' : '0.5rem',
-                    marginBottom: selectedPrint?.id === print.id ? 0 : '0.75rem',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    width: '100%',
+                    padding: '1rem',
+                    background: selectedPrintIdx === index ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+                    border: '2px solid var(--primary)',
+                    borderRadius: selectedPrintIdx === index ? '0.5rem 0.5rem 0 0' : '0.5rem',
+                    cursor: 'pointer',
                     transition: 'all 0.2s',
-                    border: '1px solid rgba(59, 130, 246, 0.2)',
-                    borderBottom: selectedPrint?.id === print.id ? 'none' : '1px solid rgba(59, 130, 246, 0.2)'
+                    color: 'inherit',
+                    fontSize: 'inherit',
+                    fontFamily: 'inherit'
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = selectedPrintIdx === index ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)'; }}
                 >
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--primary)' }}>
                       {print.description || `Impressão de ${parseFloat(print.totalWeight).toFixed(2)}g`}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                       {(() => {
                         const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
                         return d.toLocaleDateString();
                       })()} • {print.timeMinutes} min
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedPrint(selectedPrint?.id === print.id ? null : print)}
-                    style={{
-                      background: 'none',
-                      border: '1px solid var(--primary)',
-                      color: 'var(--primary)',
-                      padding: '0.4rem 0.8rem',
-                      borderRadius: '0.3rem',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {selectedPrint?.id === print.id ? 'Fechar' : 'Ver Detalhes'}
-                  </button>
-                </div>
-                {selectedPrint?.id === print.id && (
-                  <div
-                    onClick={e => e.stopPropagation()}
-                    style={{
-                      background: 'rgba(59, 130, 246, 0.08)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      borderTop: 'none',
-                      borderRadius: '0 0 0.5rem 0.5rem',
-                      padding: '1.5rem',
-                      marginBottom: '0.75rem'
-                    }}
-                  >
+                  <div style={{ fontSize: '1.2rem', color: 'var(--primary)', transition: 'transform 0.2s', transform: selectedPrintIdx === index ? 'rotate(180deg)' : 'rotate(0)' }}>▼</div>
+                </button>
+
+                {selectedPrintIdx === index && (
+                  <div style={{
+                    background: 'rgba(59, 130, 246, 0.05)',
+                    border: '2px solid var(--primary)',
+                    borderTop: 'none',
+                    borderRadius: '0 0 0.5rem 0.5rem',
+                    padding: '1.5rem',
+                    paddingTop: '1rem'
+                  }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem', fontSize: '0.9rem' }}>
                       <div>
-                        <div style={{ color: 'var(--text-muted)' }}>Data</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Data</div>
                         <div style={{ fontWeight: 600 }}>
                           {(() => {
-                            const d = selectedPrint.date.includes('T') ? new Date(selectedPrint.date) : new Date(selectedPrint.date + 'T12:00:00');
+                            const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
                             return d.toLocaleDateString();
                           })()}
                         </div>
                       </div>
                       <div>
-                        <div style={{ color: 'var(--text-muted)' }}>Descrição</div>
-                        <div style={{ fontWeight: 600 }}>{selectedPrint.description || '-'}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Descrição</div>
+                        <div style={{ fontWeight: 600 }}>{print.description || '-'}</div>
                       </div>
                       <div>
-                        <div style={{ color: 'var(--text-muted)' }}>Tempo Total</div>
-                        <div style={{ fontWeight: 600 }}>{selectedPrint.timeMinutes} minutos</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Tempo Total</div>
+                        <div style={{ fontWeight: 600 }}>{print.timeMinutes} minutos</div>
                       </div>
                       <div>
-                        <div style={{ color: 'var(--text-muted)' }}>Cores Usadas</div>
-                        <div style={{ fontWeight: 600 }}>{selectedPrint.colors}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Cores Usadas</div>
+                        <div style={{ fontWeight: 600 }}>{print.colors}</div>
                       </div>
                       <div>
-                        <div style={{ color: 'var(--text-muted)' }}>Peso Total</div>
-                        <div style={{ fontWeight: 600 }}>{parseFloat(selectedPrint.totalWeight).toFixed(2)}g</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Peso Total</div>
+                        <div style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2)}g</div>
                       </div>
                     </div>
                     <div>
-                      <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Filamentos Usados</div>
-                      {selectedPrint.filamentsUsed.map((item, idx) => {
+                      <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.75rem', textTransform: 'uppercase' }}>Filamentos Usados</div>
+                      {print.filamentsUsed.map((item, idx) => {
                         const filament = filaments.find(f => f.sku === item.sku);
                         return (
                           <div key={idx} style={{
@@ -381,7 +369,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                 )}
-              </React.Fragment>
+              </div>
             ))}
           </div>
         </section>
