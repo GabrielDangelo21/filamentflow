@@ -58,6 +58,13 @@ export const saveOrder = (order) => {
   return newOrder;
 };
 
+export const deleteOrder = (id) => {
+  const orders = getOrders();
+  const filtered = orders.filter(order => order.id !== id);
+  saveToStorage(STORAGE_KEYS.ORDERS, filtered);
+  return filtered;
+};
+
 // --- PRINTS ---
 export const getPrints = () => getFromStorage(STORAGE_KEYS.PRINTS);
 

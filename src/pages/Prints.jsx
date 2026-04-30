@@ -277,7 +277,7 @@ const Prints = () => {
                     {print.description || '-'}
                   </td>
                   <td><span className="badge badge-outline">{print.colors}</span></td>
-                  <td style={{ fontWeight: 600 }}>{print.totalWeight}g</td>
+                  <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2)}g</td>
                   <td>{print.timeMinutes} min</td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -311,66 +311,70 @@ const Prints = () => {
         </table>
       </div>
 
-      {/* Modal de Detalhes da Impressão */}
+      {/* Detalhes da Impressão - Expansível */}
       {viewingPrint && (
-        <div className="modal-overlay" onClick={() => setViewingPrint(null)}>
-          <div className="modal-content glass-panel" style={{ padding: '2.5rem' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h2 style={{ margin: 0 }}>Detalhes da Impressão</h2>
-              <button className="btn btn-secondary" onClick={() => setViewingPrint(null)} style={{ padding: '0.5rem' }}>✕</button>
+        <div style={{
+          background: 'rgba(59, 130, 246, 0.1)',
+          border: '2px solid var(--primary)',
+          borderRadius: '0.5rem',
+          padding: '1.5rem',
+          marginTop: '1rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h2 style={{ margin: 0 }}>Detalhes da Impressão</h2>
+            <button className="btn btn-secondary" onClick={() => setViewingPrint(null)} style={{ padding: '0.5rem' }}>✕</button>
+          </div>
+
+          <div className="grid-2" style={{ marginBottom: '2rem' }}>
+            <div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Data</p>
+              <p style={{ fontWeight: 600 }}>{new Date(viewingPrint.date + 'T12:00:00').toLocaleDateString()}</p>
             </div>
-
-            <div className="grid-2" style={{ marginBottom: '2rem' }}>
-              <div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Data</p>
-                <p style={{ fontWeight: 600 }}>{new Date(viewingPrint.date + 'T12:00:00').toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Tempo Total</p>
-                <p style={{ fontWeight: 600 }}>{viewingPrint.timeMinutes} minutos</p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cores Usadas</p>
-                <p style={{ fontWeight: 600 }}>{viewingPrint.colors}</p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>
-                <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{viewingPrint.totalWeight}g</p>
-              </div>
+            <div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Tempo Total</p>
+              <p style={{ fontWeight: 600 }}>{viewingPrint.timeMinutes} minutos</p>
             </div>
+            <div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cores Usadas</p>
+              <p style={{ fontWeight: 600 }}>{viewingPrint.colors}</p>
+            </div>
+            <div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>
+              <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(viewingPrint.totalWeight).toFixed(2)}g</p>
+            </div>
+          </div>
 
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
-              Filamentos Consumidos
-            </h3>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
+            Filamentos Consumidos
+          </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {viewingPrint.filamentsUsed.map((f, idx) => {
-                const info = getFilamentInfo(f.sku);
-                return (
-                  <div key={idx} style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    padding: '1rem',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    border: '1px solid var(--card-border)'
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{info.marca} - {info.cor}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
-                    </div>
-                    <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                      {f.weightGrams}g
-                    </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {viewingPrint.filamentsUsed.map((f, idx) => {
+              const info = getFilamentInfo(f.sku);
+              return (
+                <div key={idx} style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  border: '1px solid var(--card-border)'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{info.marca} - {info.cor}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
                   </div>
-                );
-              })}
-            </div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                    {parseFloat(f.weightGrams).toFixed(2)}g
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-            <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-              <button className="btn btn-primary" onClick={() => setViewingPrint(null)}>Fechar</button>
-            </div>
+          <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="btn btn-primary" onClick={() => setViewingPrint(null)}>Fechar</button>
           </div>
         </div>
       )}

@@ -40,6 +40,7 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState(null);
   const [stockDistribution, setStockDistribution] = useState(null);
   const [expandedCategory, setExpandedCategory] = useState(null);
+  const [selectedPrint, setSelectedPrint] = useState(null);
 
   useEffect(() => {
     const allFilaments = getAllFilamentsWithStock();
@@ -234,7 +235,7 @@ const Dashboard = () => {
                         {categoria}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        {categories[categoria].count} filamento{categories[categoria].count !== 1 ? 's' : ''} • {categories[categoria].totalStock}g
+                        {categories[categoria].count} filamento{categories[categoria].count !== 1 ? 's' : ''} • {parseFloat(categories[categoria].totalStock).toFixed(2)}g
                       </div>
                     </div>
                     <div style={{ fontSize: '1.2rem', color: 'var(--primary)', transition: 'transform 0.2s', transform: expandedCategory === categoria ? 'rotate(180deg)' : 'rotate(0)' }}>▼</div>
@@ -258,7 +259,7 @@ const Dashboard = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                               <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '0.3px' }}>{f.cor}</span>
                               <span style={{ fontWeight: 700, fontSize: '0.95rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
-                                {f.currentStock}g
+                                {parseFloat(f.currentStock).toFixed(2)}g
                               </span>
                             </div>
                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -282,27 +283,117 @@ const Dashboard = () => {
         {/* Logs de Atividade */}
         <section>
           <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Log de Atividade</h2>
-          <div className="glass-panel" style={{ padding: '0' }}>
-            {recentPrints.map((p, i) => (
-              <div key={p.id} style={{
-                padding: '1.2rem',
-                borderBottom: i === recentPrints.length - 1 ? 'none' : '1px solid var(--card-border)',
-                display: 'flex', gap: '1rem', alignItems: 'center'
-              }}>
-                <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--secondary)', padding: '0.75rem', borderRadius: '10px', fontSize: '1.2rem' }}>🖨️</div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>Impressão de {p.totalWeight}g</p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <div className="glass-panel" style={{ padding: '1rem' }}>
+            {recentPrints.map(print => (
+              <div key={print.id} style={{
+                background: 'rgba(59, 130, 246, 0.05)',
+                padding: '1rem',
+                borderRadius: '0.5rem',
+                marginBottom: '0.75rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                transition: 'all 0.2s',
+                border: '1px solid rgba(59, 130, 246, 0.2)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)'}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                    {print.description || `Impressão de ${parseFloat(print.totalWeight).toFixed(2)}g`}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     {(() => {
-                      const d = p.date.includes('T') ? new Date(p.date) : new Date(p.date + 'T12:00:00');
+                      const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
                       return d.toLocaleDateString();
-                    })()} • {p.timeMinutes} min
-                  </p>
+                    })()} • {print.timeMinutes} min
+                  </div>
                 </div>
-                <div className="badge badge-outline" style={{ fontSize: '0.7rem' }}>{p.colors}C</div>
+                <button
+                  onClick={() => setSelectedPrint(selectedPrint?.id === print.id ? null : print)}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--primary)',
+                    color: 'var(--primary)',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '0.3rem',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {selectedPrint?.id === print.id ? 'Fechar' : 'Ver Detalhes'}
+                </button>
               </div>
             ))}
           </div>
+
+          {selectedPrint && (
+            <div style={{
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '2px solid var(--primary)',
+              borderRadius: '0.5rem',
+              padding: '1.5rem',
+              marginTop: '1rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, color: 'var(--primary)' }}>Detalhes da Impressão</h3>
+                <button
+                  onClick={() => setSelectedPrint(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer' }}
+                >✕</button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)' }}>Data</div>
+                  <div style={{ fontWeight: 600 }}>
+                    {(() => {
+                      const d = selectedPrint.date.includes('T') ? new Date(selectedPrint.date) : new Date(selectedPrint.date + 'T12:00:00');
+                      return d.toLocaleDateString();
+                    })()}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)' }}>Descrição</div>
+                  <div style={{ fontWeight: 600 }}>{selectedPrint.description || '-'}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)' }}>Tempo Total</div>
+                  <div style={{ fontWeight: 600 }}>{selectedPrint.timeMinutes} minutos</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)' }}>Cores Usadas</div>
+                  <div style={{ fontWeight: 600 }}>{selectedPrint.colors}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)' }}>Peso Total</div>
+                  <div style={{ fontWeight: 600 }}>{parseFloat(selectedPrint.totalWeight).toFixed(2)}g</div>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Filamentos Usados</div>
+                {selectedPrint.filamentsUsed.map((item, idx) => {
+                  const filament = filaments.find(f => f.sku === item.sku);
+                  return (
+                    <div key={idx} style={{
+                      fontSize: '0.85rem',
+                      padding: '0.5rem 0',
+                      borderBottom: '1px solid rgba(59, 130, 246, 0.1)'
+                    }}>
+                      <strong>{filament?.marca || 'N/A'}</strong> - {filament?.cor || 'N/A'} ({item.sku})
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        {filament?.categoria || 'N/A'} • {parseFloat(item.weightGrams).toFixed(2)}g
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </div>

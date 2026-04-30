@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getFilaments, saveOrder, getOrders } from '../services/storage';
+import { getFilaments, saveOrder, getOrders, deleteOrder } from '../services/storage';
 
 const Orders = () => {
   const [filaments, setFilaments] = useState([]);
@@ -47,6 +47,13 @@ const Orders = () => {
     if (!value) {
       setSelectedFilament(null);
       setFormData({ ...formData, sku: '' });
+    }
+  };
+
+  const handleDeleteOrder = (id) => {
+    if (confirm('Excluir este pedido? O estoque será recalculado.')) {
+      deleteOrder(id);
+      setOrders(getOrders().reverse());
     }
   };
 
@@ -241,12 +248,13 @@ const Orders = () => {
               <th>Cor</th>
               <th>Qtd Adquirida</th>
               <th>Preço</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   Nenhum pedido registrado.
                 </td>
               </tr>
@@ -267,8 +275,15 @@ const Orders = () => {
                     <td style={{ fontWeight: 600 }}>{filament?.marca || '-'}</td>
                     <td>{filament?.categoria || '-'}</td>
                     <td>{filament?.cor || '-'}</td>
-                    <td style={{ fontWeight: 600 }}>{order.items[0].weightGrams}g</td>
+                    <td style={{ fontWeight: 600 }}>{parseFloat(order.items[0].weightGrams).toFixed(2)}g</td>
                     <td>{order.items[0].price ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.items[0].price) : '-'}</td>
+                    <td>
+                      <button
+                        className="btn btn-danger"
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                        onClick={() => handleDeleteOrder(order.id)}
+                      >Excluir</button>
+                    </td>
                   </tr>
                 );
               })
