@@ -40,6 +40,7 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState(null);
   const [stockDistribution, setStockDistribution] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     const allFilaments = getAllFilamentsWithStock();
@@ -198,7 +199,14 @@ const Dashboard = () => {
               return Object.keys(categories).sort().map(categoria => (
                 <button
                   key={categoria}
-                  onClick={() => setSelectedCategory(categoria)}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setModalPosition({
+                      top: rect.top + window.scrollY,
+                      left: rect.right + 20
+                    });
+                    setSelectedCategory(categoria);
+                  }}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -270,11 +278,14 @@ const Dashboard = () => {
       {selectedCategory && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
           overflowY: 'auto', padding: '2rem'
         }} onClick={() => setSelectedCategory(null)}>
           <div onClick={e => e.stopPropagation()} style={{
+            position: 'absolute',
+            top: `${modalPosition.top}px`,
+            left: `${modalPosition.left}px`,
             background: '#111827', border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: '500px',
             maxHeight: '80vh', overflowY: 'auto',
