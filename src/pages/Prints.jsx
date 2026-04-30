@@ -6,9 +6,10 @@ const Prints = () => {
   const [prints, setPrints] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [viewingPrint, setViewingPrint] = useState(null); // Para o Modal de Detalhes
-  
+
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
+    description: '',
     timeMinutes: '',
     colors: 1,
     weightGrams: '',
@@ -53,10 +54,11 @@ const Prints = () => {
     }
 
     const totalWeight = usedFilaments.reduce((acc, f) => acc + Number(f.weightGrams), 0);
-    
+
     savePrint({
       id: formData.id,
       date: formData.date,
+      description: formData.description,
       timeMinutes: Number(formData.timeMinutes),
       totalWeight: totalWeight,
       colors: Number(formData.colors),
@@ -65,7 +67,7 @@ const Prints = () => {
         weightGrams: Number(f.weightGrams)
       }))
     });
-    
+
     resetForm();
     loadData();
     alert(isEditing ? 'Impressão atualizada!' : 'Impressão registrada!');
@@ -86,6 +88,7 @@ const Prints = () => {
     setFormData({
       id: print.id,
       date: print.date,
+      description: print.description || '',
       timeMinutes: print.timeMinutes,
       colors: print.colors,
       weightGrams: print.totalWeight
@@ -112,35 +115,46 @@ const Prints = () => {
 
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', border: isEditing ? '1px solid var(--primary)' : '1px solid var(--card-border)' }}>
         <form onSubmit={handleSubmit}>
+          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+            <label className="form-label">Nome/Descrição da Impressão</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Ex: Miniatura para RPG, Case de AirPods..."
+              value={formData.description}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+
           <div className="grid-3" style={{ marginBottom: '2rem' }}>
             <div className="form-group">
               <label className="form-label">Data da Impressão</label>
-              <input 
+              <input
                 type="date"
-                className="form-input" 
+                className="form-input"
                 value={formData.date}
-                onChange={e => setFormData({...formData, date: e.target.value})}
+                onChange={e => setFormData({ ...formData, date: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
               <label className="form-label">Tempo Gasto (Minutos)</label>
-              <input 
+              <input
                 type="number"
-                className="form-input" 
+                className="form-input"
                 placeholder="Ex: 120"
                 value={formData.timeMinutes}
-                onChange={e => setFormData({...formData, timeMinutes: e.target.value})}
+                onChange={e => setFormData({ ...formData, timeMinutes: e.target.value })}
                 required
               />
             </div>
             <div className="form-group">
               <label className="form-label">Quantidade de Cores</label>
-              <input 
+              <input
                 type="number"
-                className="form-input" 
+                className="form-input"
                 value={formData.colors}
-                onChange={e => setFormData({...formData, colors: e.target.value})}
+                onChange={e => setFormData({ ...formData, colors: e.target.value })}
                 min="1"
                 max="16"
                 required
@@ -152,18 +166,18 @@ const Prints = () => {
             <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--primary)' }}>
               Detalhamento de Filamentos ({formData.colors} {formData.colors == 1 ? 'cor' : 'cores'})
             </h3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {usedFilaments.map((item, index) => (
-                <div key={index} className="grid-2" style={{ 
-                  background: 'rgba(255,255,255,0.02)', 
-                  padding: '1rem', 
+                <div key={index} className="grid-2" style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  padding: '1rem',
                   borderRadius: '8px',
                   border: '1px solid var(--card-border)'
                 }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Filamento da Cor {index + 1}</label>
-                    <select 
+                    <select
                       className="form-select"
                       value={item.sku}
                       onChange={e => handleFilamentChange(index, 'sku', e.target.value)}
@@ -177,9 +191,9 @@ const Prints = () => {
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Peso Gasto (Gramas)</label>
-                    <input 
+                    <input
                       type="number"
-                      className="form-input" 
+                      className="form-input"
                       placeholder="Peso nesta cor"
                       value={item.weightGrams}
                       onChange={e => handleFilamentChange(index, 'weightGrams', e.target.value)}
@@ -210,6 +224,7 @@ const Prints = () => {
           <thead>
             <tr>
               <th>Data</th>
+              <th>Descrição</th>
               <th>Cores</th>
               <th>Peso Total</th>
               <th>Tempo</th>
@@ -219,7 +234,7 @@ const Prints = () => {
           <tbody>
             {prints.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   Nenhuma impressão registrada.
                 </td>
               </tr>
@@ -234,27 +249,30 @@ const Prints = () => {
                       return 'Data Inválida';
                     }
                   })()}</td>
+                  <td style={{ fontWeight: 500, color: print.description ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                    {print.description || '-'}
+                  </td>
                   <td><span className="badge badge-outline">{print.colors}</span></td>
                   <td style={{ fontWeight: 600 }}>{print.totalWeight}g</td>
                   <td>{print.timeMinutes} min</td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button 
-                        className="btn btn-secondary" 
+                      <button
+                        className="btn btn-secondary"
                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'rgba(0, 240, 255, 0.1)', color: 'var(--primary)' }}
                         onClick={() => setViewingPrint(print)}
                       >
                         Ver Detalhes
                       </button>
-                      <button 
-                        className="btn btn-secondary" 
+                      <button
+                        className="btn btn-secondary"
                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                         onClick={() => handleEdit(print)}
                       >
                         Editar
                       </button>
-                      <button 
-                        className="btn btn-danger" 
+                      <button
+                        className="btn btn-danger"
                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                         onClick={() => handleDelete(print.id)}
                       >
@@ -300,16 +318,16 @@ const Prints = () => {
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
               Filamentos Consumidos
             </h3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {viewingPrint.filamentsUsed.map((f, idx) => {
                 const info = getFilamentInfo(f.sku);
                 return (
-                  <div key={idx} style={{ 
-                    background: 'rgba(255,255,255,0.03)', 
-                    padding: '1rem', 
-                    borderRadius: '8px', 
-                    display: 'flex', 
+                  <div key={idx} style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    padding: '1rem',
+                    borderRadius: '8px',
+                    display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     border: '1px solid var(--card-border)'
