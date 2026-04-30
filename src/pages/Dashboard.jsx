@@ -199,7 +199,14 @@ const Dashboard = () => {
               return Object.keys(categories).sort().map(categoria => (
                 <button
                   key={categoria}
-                  onClick={() => setSelectedCategory(categoria)}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setModalPosition({
+                      top: rect.top + window.scrollY,
+                      left: rect.right + 20
+                    });
+                    setSelectedCategory(categoria);
+                  }}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -271,11 +278,12 @@ const Dashboard = () => {
       {selectedCategory && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-          overflowY: 'auto', padding: '2rem', paddingTop: '4rem'
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)'
         }} onClick={() => setSelectedCategory(null)}>
           <div onClick={e => e.stopPropagation()} style={{
+            position: 'fixed',
+            top: `${modalPosition.top}px`,
+            left: `${modalPosition.left}px`,
             background: '#111827',
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '1rem',
@@ -284,7 +292,8 @@ const Dashboard = () => {
             minWidth: '500px',
             maxHeight: '80vh',
             overflowY: 'auto',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.7)'
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+            zIndex: 10000
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontSize: '1.3rem', margin: 0 }}>{selectedCategory}</h2>
