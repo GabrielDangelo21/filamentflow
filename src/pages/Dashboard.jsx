@@ -283,19 +283,20 @@ const Dashboard = () => {
           overflowY: 'auto', padding: '2rem'
         }} onClick={() => setSelectedCategory(null)}>
           <div onClick={e => e.stopPropagation()} style={{
-            position: 'absolute',
+            position: 'fixed',
             top: `${modalPosition.top}px`,
             left: `${modalPosition.left}px`,
             background: '#111827', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: '500px',
+            borderRadius: '1rem', padding: '2rem', maxWidth: '500px',
             maxHeight: '80vh', overflowY: 'auto',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.7)'
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+            zIndex: 10000
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontSize: '1.3rem', margin: 0 }}>{selectedCategory}</h2>
               <button onClick={() => setSelectedCategory(null)} style={{
                 background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                fontSize: '1.5rem', padding: 0
+                fontSize: '1.5rem', padding: 0, marginLeft: '1rem', flexShrink: 0
               }}>✕</button>
             </div>
 
