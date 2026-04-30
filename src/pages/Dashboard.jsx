@@ -199,14 +199,7 @@ const Dashboard = () => {
               return Object.keys(categories).sort().map(categoria => (
                 <button
                   key={categoria}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setModalPosition({
-                      top: rect.top + window.scrollY,
-                      left: rect.right + 20
-                    });
-                    setSelectedCategory(categoria);
-                  }}
+                  onClick={() => setSelectedCategory(categoria)}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -224,12 +217,12 @@ const Dashboard = () => {
                     fontFamily: 'inherit'
                   }}
                   onMouseEnter={e => {
-                    e.target.style.background = 'rgba(59, 130, 246, 0.2)';
-                    e.target.style.transform = 'translateX(4px)';
+                    e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
+                    e.currentTarget.style.transform = 'translateX(4px)';
                   }}
                   onMouseLeave={e => {
-                    e.target.style.background = 'rgba(59, 130, 246, 0.1)';
-                    e.target.style.transform = 'translateX(0)';
+                    e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                    e.currentTarget.style.transform = 'translateX(0)';
                   }}
                 >
                   <div style={{ textAlign: 'left' }}>
@@ -278,25 +271,31 @@ const Dashboard = () => {
       {selectedCategory && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
           overflowY: 'auto', padding: '2rem'
         }} onClick={() => setSelectedCategory(null)}>
           <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed',
-            top: `${modalPosition.top}px`,
-            left: `${modalPosition.left}px`,
-            background: '#111827', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '1rem', padding: '2rem', maxWidth: '500px',
-            maxHeight: '80vh', overflowY: 'auto',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
-            zIndex: 10000
+            background: '#111827',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '1rem',
+            padding: '2rem',
+            maxWidth: '500px',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontSize: '1.3rem', margin: 0 }}>{selectedCategory}</h2>
               <button onClick={() => setSelectedCategory(null)} style={{
-                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                fontSize: '1.5rem', padding: 0, marginLeft: '1rem', flexShrink: 0
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                padding: 0,
+                marginLeft: '1rem',
+                flexShrink: 0
               }}>✕</button>
             </div>
 
