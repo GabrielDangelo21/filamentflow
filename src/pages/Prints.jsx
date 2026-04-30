@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments } from '../services/storage';
 
 const Prints = () => {
@@ -7,6 +7,7 @@ const Prints = () => {
   const [prints, setPrints] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [viewingPrintIdx, setViewingPrintIdx] = useState(null);
+  const descriptionInputRef = useRef(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   const initialFormState = {
@@ -120,6 +121,7 @@ const Prints = () => {
 
     resetForm();
     loadData();
+    setTimeout(() => { if (descriptionInputRef.current) descriptionInputRef.current.focus(); }, 0);
   };
 
   const resetForm = () => {
@@ -192,6 +194,7 @@ const Prints = () => {
           <div className="form-group" style={{ marginBottom: '1.5rem' }}>
             <label className="form-label">Nome/Descrição da Impressão</label>
             <input
+              ref={descriptionInputRef}
               type="text"
               className="form-input"
               placeholder="Ex: Miniatura para RPG, Case de AirPods..."
@@ -318,6 +321,7 @@ const Prints = () => {
                     <label className="form-label">Peso Gasto (Gramas)</label>
                     <input
                       type="number"
+                      step="any"
                       className="form-input"
                       placeholder="Peso nesta cor"
                       value={item.weightGrams}
