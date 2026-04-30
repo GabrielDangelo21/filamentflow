@@ -270,13 +270,14 @@ const Dashboard = () => {
       {selectedCategory && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-          overflowY: 'auto', paddingTop: '2rem', paddingBottom: '2rem'
+          overflowY: 'auto', padding: '2rem'
         }} onClick={() => setSelectedCategory(null)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: '#111827', border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: '500px',
+            maxHeight: '80vh', overflowY: 'auto',
             boxShadow: '0 20px 60px rgba(0,0,0,0.7)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
