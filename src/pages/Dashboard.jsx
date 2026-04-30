@@ -39,6 +39,7 @@ const Dashboard = () => {
   const [recentPrints, setRecentPrints] = useState([]);
   const [chartData, setChartData] = useState(null);
   const [stockDistribution, setStockDistribution] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     const allFilaments = getAllFilamentsWithStock();
@@ -167,7 +168,7 @@ const Dashboard = () => {
         {/* Inventário Visual */}
         <section>
           <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Estado do Inventário</h2>
-          <div className="glass-panel" style={{ padding: '1.5rem', maxHeight: '600px', overflowY: 'auto' }}>
+          <div className="glass-panel" style={{ padding: '1.5rem' }}>
             {(() => {
               // Get all SKUs from orders (purchased filaments)
               const allOrders = getOrders();
@@ -184,52 +185,55 @@ const Dashboard = () => {
                 );
               }
 
-              // Group by category
-              const groupedByCategory = purchasedFilaments.reduce((acc, f) => {
-                if (!acc[f.categoria]) acc[f.categoria] = [];
-                acc[f.categoria].push(f);
-                return acc;
-              }, {});
-
-              // Sort within each category alphabetically by color
-              Object.keys(groupedByCategory).forEach(cat => {
-                groupedByCategory[cat].sort((a, b) => a.cor.localeCompare(b.cor));
+              // Get unique categories and their totals
+              const categories = {};
+              purchasedFilaments.forEach(f => {
+                if (!categories[f.categoria]) {
+                  categories[f.categoria] = { count: 0, totalStock: 0 };
+                }
+                categories[f.categoria].count++;
+                categories[f.categoria].totalStock += f.currentStock;
               });
 
-              return Object.keys(groupedByCategory).sort().map((categoria, catIndex) => (
-                <div key={categoria} style={{ marginBottom: catIndex < Object.keys(groupedByCategory).length - 1 ? '2rem' : 0 }}>
-                  <h3 style={{
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    color: 'var(--primary)',
-                    marginBottom: '1rem',
-                    paddingBottom: '0.5rem',
-                    borderBottom: '2px solid var(--primary)'
-                  }}>
-                    {categoria}
-                  </h3>
-                  {groupedByCategory[categoria].map(f => {
-                    const perc = Math.min((f.currentStock / 1000) * 100, 100);
-                    const color = perc < 20 ? 'var(--danger)' : perc < 50 ? '#F59E0B' : 'var(--primary)';
-                    return (
-                      <div key={f.id} style={{ marginBottom: '1.2rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '0.3px' }}>{f.cor}</span>
-                          <span style={{ fontWeight: 700, fontSize: '0.95rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
-                            {f.currentStock}g
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: 600, fontSize: '0.65rem' }}>{f.marca}</span>
-                          <span style={{ color: 'var(--primary)', fontSize: '0.65rem', fontWeight: 600 }}>[{f.sku}]</span>
-                        </div>
-                        <div className="progress-container" style={{ height: '6px', marginTop: 0 }}>
-                          <div className="progress-bar" style={{ width: `${perc}%`, background: color }}></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              return Object.keys(categories).sort().map(categoria => (
+                <button
+                  key={categoria}
+                  onClick={() => setSelectedCategory(categoria)}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    width: '100%',
+                    padding: '1rem',
+                    marginBottom: '0.75rem',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '2px solid var(--primary)',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    color: 'inherit',
+                    fontSize: 'inherit',
+                    fontFamily: 'inherit'
+                  }}
+                  onMouseEnter={e => {
+                    e.target.style.background = 'rgba(59, 130, 246, 0.2)';
+                    e.target.style.transform = 'translateX(4px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.target.style.background = 'rgba(59, 130, 246, 0.1)';
+                    e.target.style.transform = 'translateX(0)';
+                  }}
+                >
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--primary)' }}>
+                      {categoria}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                      {categories[categoria].count} filamento{categories[categoria].count !== 1 ? 's' : ''} • {categories[categoria].totalStock}g
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '1.2rem', color: 'var(--primary)' }}>→</div>
+                </button>
               ));
             })()}
           </div>
@@ -261,6 +265,61 @@ const Dashboard = () => {
           </div>
         </section>
       </div>
+
+      {/* Modal de Categoria */}
+      {selectedCategory && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+          overflowY: 'auto', paddingTop: '2rem', paddingBottom: '2rem'
+        }} onClick={() => setSelectedCategory(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#111827', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: '500px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.3rem', margin: 0 }}>{selectedCategory}</h2>
+              <button onClick={() => setSelectedCategory(null)} style={{
+                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                fontSize: '1.5rem', padding: 0
+              }}>✕</button>
+            </div>
+
+            {(() => {
+              const allOrders = getOrders();
+              const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.map(item => item.sku)));
+              const purchasedFilaments = filaments.filter(f => purchasedSKUs.has(f.sku) && f.categoria === selectedCategory);
+
+              // Sort alphabetically by color
+              purchasedFilaments.sort((a, b) => a.cor.localeCompare(b.cor));
+
+              return purchasedFilaments.map(f => {
+                const perc = Math.min((f.currentStock / 1000) * 100, 100);
+                const barColor = perc < 20 ? 'var(--danger)' : perc < 50 ? '#F59E0B' : 'var(--primary)';
+                return (
+                  <div key={f.id} style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-main)', letterSpacing: '0.3px' }}>{f.cor}</span>
+                      <span style={{ fontWeight: 700, fontSize: '1rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
+                        {f.currentStock}g
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{f.marca}</span>
+                      <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>[{f.sku}]</span>
+                    </div>
+                    <div className="progress-container" style={{ height: '6px' }}>
+                      <div className="progress-bar" style={{ width: `${perc}%`, background: barColor }}></div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
