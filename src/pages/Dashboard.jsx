@@ -89,17 +89,19 @@ const Dashboard = () => {
       }]
     });
 
-    // Dados para o gráfico de Rosca (Distribuição de Categorias)
+    // Dados para o gráfico de Rosca (somente categorias com estoque > 0)
     const catData = {};
     allFilaments.forEach(f => {
-      catData[f.categoria] = (catData[f.categoria] || 0) + (f.currentStock || 0);
+      if ((f.currentStock || 0) > 0) {
+        catData[f.categoria] = (catData[f.categoria] || 0) + f.currentStock;
+      }
     });
 
     setStockDistribution({
       labels: Object.keys(catData),
       datasets: [{
         data: Object.values(catData),
-        backgroundColor: ['#00F0FF', '#8B5CF6', '#10B981', '#EF4444', '#F59E0B'],
+        backgroundColor: ['#00F0FF', '#8B5CF6', '#10B981', '#EF4444', '#F59E0B', '#3B82F6', '#EC4899', '#14B8A6', '#F97316', '#A855F7', '#84CC16', '#06B6D4'],
         borderWidth: 0,
       }]
     });
@@ -296,8 +298,8 @@ const Dashboard = () => {
                 transition: 'all 0.2s',
                 border: '1px solid rgba(59, 130, 246, 0.2)'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)'}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)'}
               >
                 <div>
                   <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
