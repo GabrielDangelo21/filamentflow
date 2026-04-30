@@ -131,7 +131,7 @@ const Dashboard = () => {
       <div className="grid-4" style={{ marginBottom: '2rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>ESTOQUE DISPONÍVEL</p>
-          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{(stats.totalStockGrams / 1000).toFixed(2)}kg</p>
+          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{(stats.totalStockGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--secondary)' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>IMPRESSÕES TOTAIS</p>
@@ -229,7 +229,7 @@ const Dashboard = () => {
                         {categoria}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        {categories[categoria].count} filamento{categories[categoria].count !== 1 ? 's' : ''} • {parseFloat(categories[categoria].totalStock).toFixed(2)}g
+                        {categories[categoria].count} filamento{categories[categoria].count !== 1 ? 's' : ''} • {(parseFloat(categories[categoria].totalStock) / 1000).toFixed(2).replace('.', ',')}kg
                       </div>
                     </div>
                     <div style={{ fontSize: '1.2rem', color: 'var(--primary)', transition: 'transform 0.2s', transform: expandedCategory === categoria ? 'rotate(180deg)' : 'rotate(0)' }}>▼</div>
@@ -252,7 +252,7 @@ const Dashboard = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                               <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '0.3px' }}>{f.cor}</span>
                               <span style={{ fontWeight: 700, fontSize: '0.95rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
-                                {parseFloat(f.currentStock).toFixed(2)}g
+                                {(parseFloat(f.currentStock) / 1000).toFixed(2).replace('.', ',')}kg
                               </span>
                             </div>
                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -301,7 +301,7 @@ const Dashboard = () => {
                 >
                   <div style={{ textAlign: 'left' }}>
                     <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--primary)' }}>
-                      {print.description || `Impressão de ${parseFloat(print.totalWeight).toFixed(2)}g`}
+                      {print.description || `Impressão de ${parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g`}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                       {(() => {
@@ -346,7 +346,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Peso Total</div>
-                        <div style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2)}g</div>
+                        <div style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</div>
                       </div>
                     </div>
                     <div>
@@ -361,7 +361,7 @@ const Dashboard = () => {
                           }}>
                             <strong>{filament?.marca || 'N/A'}</strong> - {filament?.cor || 'N/A'} ({item.sku})
                             <div style={{ color: 'var(--text-muted)' }}>
-                              {filament?.categoria || 'N/A'} • {parseFloat(item.weightGrams).toFixed(2)}g
+                              {filament?.categoria || 'N/A'} • {parseFloat(item.weightGrams).toFixed(2).replace('.', ',')}g
                             </div>
                           </div>
                         );

@@ -379,7 +379,7 @@ const Prints = () => {
                       {print.description || '-'}
                     </td>
                     <td><span className="badge badge-outline">{print.colors}</span></td>
-                    <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2)}g</td>
+                    <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</td>
                     <td>{print.timeMinutes} min</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -430,7 +430,7 @@ const Prints = () => {
                             </div>
                             <div>
                               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>
-                              <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(print.totalWeight).toFixed(2)}g</p>
+                              <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</p>
                             </div>
                           </div>
 
@@ -456,7 +456,7 @@ const Prints = () => {
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
                                   </div>
                                   <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                                    {parseFloat(f.weightGrams).toFixed(2)}g
+                                    {parseFloat(f.weightGrams).toFixed(2).replace('.', ',')}g
                                   </div>
                                 </div>
                               );

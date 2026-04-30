@@ -322,7 +322,7 @@ const Filaments = () => {
                   <td style={{ fontWeight: 600 }}>{f.marca}</td>
                   <td>{f.categoria}</td>
                   <td>{f.cor}</td>
-                  <td style={{ fontWeight: 600, color: f.currentStock > 0 ? 'var(--success)' : 'var(--danger)' }}>{parseFloat(f.currentStock).toFixed(2)}g</td>
+                  <td style={{ fontWeight: 600, color: f.currentStock > 0 ? 'var(--success)' : 'var(--danger)' }}>{parseFloat(f.currentStock).toFixed(2).replace('.', ',')}g</td>
                   <td>
                     <button
                       className="btn btn-danger"

@@ -275,7 +275,7 @@ const Orders = () => {
                     <td style={{ fontWeight: 600 }}>{filament?.marca || '-'}</td>
                     <td>{filament?.categoria || '-'}</td>
                     <td>{filament?.cor || '-'}</td>
-                    <td style={{ fontWeight: 600 }}>{parseFloat(order.items[0].weightGrams).toFixed(2)}g</td>
+                    <td style={{ fontWeight: 600 }}>{(parseFloat(order.items[0].weightGrams) / 1000).toFixed(2).replace('.', ',')}kg</td>
                     <td>{order.items[0].price ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.items[0].price) : '-'}</td>
                     <td>
                       <button
