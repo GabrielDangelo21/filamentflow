@@ -280,7 +280,8 @@ const Dashboard = () => {
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '1rem',
             padding: '2rem',
-            maxWidth: '500px',
+            maxWidth: '600px',
+            minWidth: '500px',
             maxHeight: '80vh',
             overflowY: 'auto',
             boxShadow: '0 20px 60px rgba(0,0,0,0.7)'
