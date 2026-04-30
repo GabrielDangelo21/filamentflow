@@ -271,9 +271,9 @@ const Dashboard = () => {
       {selectedCategory && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-          overflowY: 'auto', padding: '2rem'
+          overflowY: 'auto', padding: '2rem', paddingTop: '4rem'
         }} onClick={() => setSelectedCategory(null)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: '#111827',
@@ -338,3 +338,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+W
