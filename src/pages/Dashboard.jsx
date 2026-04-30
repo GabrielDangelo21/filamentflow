@@ -124,12 +124,12 @@ const Dashboard = () => {
           </p>
         </div>
       </div>
-      
+
       {/* Cards Superiores */}
       <div className="grid-4" style={{ marginBottom: '2rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>ESTOQUE DISPONÍVEL</p>
-          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{(stats.totalStockGrams/1000).toFixed(2)}kg</p>
+          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{(stats.totalStockGrams / 1000).toFixed(2)}kg</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--secondary)' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>IMPRESSÕES TOTAIS</p>
@@ -155,10 +155,10 @@ const Dashboard = () => {
         </div>
 
         {/* Distribuição por Categoria */}
-        <div className="glass-panel" style={{ padding: '1.5rem' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
           <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Mix de Materiais (g)</h2>
-          <div style={{ height: '240px', display: 'flex', justifyContent: 'center' }}>
-            {stockDistribution && <Doughnut data={stockDistribution} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', padding: 20 } } } }} />}
+          <div style={{ height: '420px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '420px' }}>
+            {stockDistribution && <Doughnut data={stockDistribution} options={{ maintainAspectRatio: false, responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', padding: 12, font: { size: 12 }, boxWidth: 12 }, maxHeight: 120 } } }} />}
           </div>
         </div>
       </div>
@@ -167,32 +167,73 @@ const Dashboard = () => {
         {/* Inventário Visual */}
         <section>
           <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Estado do Inventário</h2>
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            {filaments.map(f => {
-              const perc = Math.min((f.currentStock / 1000) * 100, 100);
-              const color = perc < 20 ? 'var(--danger)' : perc < 50 ? '#F59E0B' : 'var(--primary)';
-              return (
-                <div key={f.id} style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <div style={{ fontSize: '0.9rem' }}>
-                      <span style={{ fontWeight: 600 }}>{f.marca}</span>
-                      <span style={{ color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 600, marginLeft: '8px' }}>[{f.sku}]</span>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        <span style={{ fontWeight: 500, color: 'var(--text-main)', marginRight: '8px' }}>{f.cor}</span>
-                        <span className="badge badge-outline" style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', marginRight: '5px' }}>{f.tipo}</span>
-                        {f.categoria}
+          <div className="glass-panel" style={{ padding: '1.5rem', maxHeight: '600px', overflowY: 'auto' }}>
+            {(() => {
+              // Get all SKUs from orders (purchased filaments)
+              const allOrders = getOrders();
+              const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.map(item => item.sku)));
+
+              // Filter filaments to show only those that were purchased
+              const purchasedFilaments = filaments.filter(f => purchasedSKUs.has(f.sku));
+
+              if (purchasedFilaments.length === 0) {
+                return (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: '0.9rem' }}>Nenhum filamento foi comprado ainda</p>
+                  </div>
+                );
+              }
+
+              // Group by category
+              const groupedByCategory = purchasedFilaments.reduce((acc, f) => {
+                if (!acc[f.categoria]) acc[f.categoria] = [];
+                acc[f.categoria].push(f);
+                return acc;
+              }, {});
+
+              // Sort within each category alphabetically by color
+              Object.keys(groupedByCategory).forEach(cat => {
+                groupedByCategory[cat].sort((a, b) => a.cor.localeCompare(b.cor));
+              });
+
+              return Object.keys(groupedByCategory).sort().map((categoria, catIndex) => (
+                <div key={categoria} style={{ marginBottom: catIndex < Object.keys(groupedByCategory).length - 1 ? '2rem' : 0 }}>
+                  <h3 style={{
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    color: 'var(--primary)',
+                    marginBottom: '1rem',
+                    paddingBottom: '0.5rem',
+                    borderBottom: '2px solid var(--primary)'
+                  }}>
+                    {categoria}
+                  </h3>
+                  {groupedByCategory[categoria].map(f => {
+                    const perc = Math.min((f.currentStock / 1000) * 100, 100);
+                    const color = perc < 20 ? 'var(--danger)' : perc < 50 ? '#F59E0B' : 'var(--primary)';
+                    return (
+                      <div key={f.id} style={{ marginBottom: '1.2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                          <div style={{ fontSize: '0.85rem' }}>
+                            <span style={{ fontWeight: 600 }}>{f.marca}</span>
+                            <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600, marginLeft: '8px' }}>[{f.sku}]</span>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{f.cor}</span>
+                            </div>
+                          </div>
+                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
+                            {f.currentStock}g
+                          </span>
+                        </div>
+                        <div className="progress-container" style={{ height: '6px', marginTop: 0 }}>
+                          <div className="progress-bar" style={{ width: `${perc}%`, background: color }}></div>
+                        </div>
                       </div>
-                    </div>
-                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
-                      {f.currentStock}g
-                    </span>
-                  </div>
-                  <div className="progress-container" style={{ height: '6px', marginTop: 0 }}>
-                    <div className="progress-bar" style={{ width: `${perc}%`, background: color }}></div>
-                  </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
         </section>
 
@@ -201,8 +242,8 @@ const Dashboard = () => {
           <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Log de Atividade</h2>
           <div className="glass-panel" style={{ padding: '0' }}>
             {recentPrints.map((p, i) => (
-              <div key={p.id} style={{ 
-                padding: '1.2rem', 
+              <div key={p.id} style={{
+                padding: '1.2rem',
                 borderBottom: i === recentPrints.length - 1 ? 'none' : '1px solid var(--card-border)',
                 display: 'flex', gap: '1rem', alignItems: 'center'
               }}>
