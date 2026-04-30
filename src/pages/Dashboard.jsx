@@ -213,22 +213,15 @@ const Dashboard = () => {
                     const color = perc < 20 ? 'var(--danger)' : perc < 50 ? '#F59E0B' : 'var(--primary)';
                     return (
                       <div key={f.id} style={{ marginBottom: '1.2rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                          <div style={{ fontSize: '0.9rem' }}>
-                            <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{f.cor}</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                              {f.currentStock}g
-                            </span>
-                          </div>
-                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '0.3px' }}>{f.cor}</span>
+                          <span style={{ fontWeight: 700, fontSize: '0.95rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
                             {f.currentStock}g
                           </span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <div style={{ fontSize: '0.8rem' }}>
-                            <span style={{ fontWeight: 600 }}>{f.marca}</span>
-                            <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600, marginLeft: '8px' }}>[{f.sku}]</span>
-                          </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{f.marca}</span>
+                          <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>[{f.sku}]</span>
                         </div>
                         <div className="progress-container" style={{ height: '6px', marginTop: 0 }}>
                           <div className="progress-bar" style={{ width: `${perc}%`, background: color }}></div>
