@@ -201,9 +201,14 @@ const Dashboard = () => {
                   key={categoria}
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
+                    // Position modal to the right of the button, aligned with its top
+                    // Ensure it doesn't go off-screen
+                    const leftPos = rect.right + 20;
+                    const topPos = rect.top + window.scrollY - 20; // Slight negative to align with button
+
                     setModalPosition({
-                      top: rect.top + window.scrollY,
-                      left: rect.right + 20
+                      top: Math.max(topPos, 20), // Min 20px from top
+                      left: Math.max(leftPos, 20) // Min 20px from left
                     });
                     setSelectedCategory(categoria);
                   }}
@@ -278,10 +283,11 @@ const Dashboard = () => {
       {selectedCategory && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)'
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+          overflowY: 'auto', overflowX: 'auto'
         }} onClick={() => setSelectedCategory(null)}>
           <div onClick={e => e.stopPropagation()} style={{
-            position: 'fixed',
+            position: 'absolute',
             top: `${modalPosition.top}px`,
             left: `${modalPosition.left}px`,
             background: '#111827',
@@ -290,7 +296,7 @@ const Dashboard = () => {
             padding: '2rem',
             maxWidth: '600px',
             minWidth: '500px',
-            maxHeight: '80vh',
+            maxHeight: '85vh',
             overflowY: 'auto',
             boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
             zIndex: 10000
