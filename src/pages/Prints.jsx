@@ -6,8 +6,8 @@ const Prints = () => {
   const [allFilaments, setAllFilaments] = useState([]);
   const [prints, setPrints] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [viewingPrint, setViewingPrint] = useState(null); // Para o Modal de Detalhes
-  const [successMessage, setSuccessMessage] = useState(''); // Para mensagem de sucesso
+  const [viewingPrint, setViewingPrint] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
@@ -115,7 +115,6 @@ const Prints = () => {
       }))
     });
 
-    // Mostrar mensagem de sucesso por 1 segundo
     setSuccessMessage(isEditing ? '✓ Impressão atualizada!' : '✓ Impressão registrada!');
     setTimeout(() => setSuccessMessage(''), 1000);
 
@@ -162,7 +161,6 @@ const Prints = () => {
     }
   };
 
-  // Função para buscar dados completos de um filamento via SKU
   const getFilamentInfo = (sku) => {
     return allFilaments.find(f => f.sku === sku) || filaments.find(f => f.sku === sku) || { marca: 'N/A', cor: 'N/A', categoria: 'N/A' };
   };
@@ -264,7 +262,6 @@ const Prints = () => {
                         onBlur={() => setTimeout(() => setShowForSlot(index, false), 200)}
                         required={!item.sku}
                       />
-                      {/* Campo oculto para garantir validação do sku */}
                       <input type="hidden" value={item.sku} required />
                       {showSuggestions[index] && searchTerms[index] && (() => {
                         const search = (searchTerms[index] || '').toLowerCase();
@@ -347,7 +344,7 @@ const Prints = () => {
       </div>
 
       <h2>Histórico de Impressões</h2>
-      <div className="glass-panel" style={{ marginTop: '1rem' }}>
+      <div className="glass-panel" style={{ marginTop: '1rem' }} onClick={() => setViewingPrint(null)}>
         <table className="data-table">
           <thead>
             <tr>
@@ -368,120 +365,116 @@ const Prints = () => {
               </tr>
             ) : (
               prints.map(print => (
-                <tr key={print.id}>
-                  <td>{(() => {
-                    try {
-                      const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
-                      return d.toLocaleDateString();
-                    } catch (e) {
-                      return 'Data Inválida';
-                    }
-                  })()}</td>
-                  <td style={{ fontWeight: 500, color: print.description ? 'var(--text-main)' : 'var(--text-muted)' }}>
-                    {print.description || '-'}
-                  </td>
-                  <td><span className="badge badge-outline">{print.colors}</span></td>
-                  <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2)}g</td>
-                  <td>{print.timeMinutes} min</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        className="btn btn-secondary"
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'rgba(0, 240, 255, 0.1)', color: 'var(--primary)' }}
-                        onClick={() => setViewingPrint(print)}
-                      >
-                        Ver Detalhes
-                      </button>
-                      <button
-                        className="btn btn-secondary"
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                        onClick={() => handleEdit(print)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                        onClick={() => handleDelete(print.id)}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <React.Fragment key={print.id}>
+                  <tr
+                    onClick={e => e.stopPropagation()}
+                    style={{ background: viewingPrint?.id === print.id ? 'rgba(59, 130, 246, 0.08)' : undefined }}
+                  >
+                    <td>{(() => {
+                      try {
+                        const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
+                        return d.toLocaleDateString();
+                      } catch (e) {
+                        return 'Data Inválida';
+                      }
+                    })()}</td>
+                    <td style={{ fontWeight: 500, color: print.description ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                      {print.description || '-'}
+                    </td>
+                    <td><span className="badge badge-outline">{print.colors}</span></td>
+                    <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2)}g</td>
+                    <td>{print.timeMinutes} min</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: viewingPrint?.id === print.id ? 'rgba(0, 240, 255, 0.2)' : 'rgba(0, 240, 255, 0.1)', color: 'var(--primary)' }}
+                          onClick={() => setViewingPrint(viewingPrint?.id === print.id ? null : print)}
+                        >
+                          {viewingPrint?.id === print.id ? 'Fechar' : 'Ver Detalhes'}
+                        </button>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                          onClick={() => handleEdit(print)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                          onClick={() => handleDelete(print.id)}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {viewingPrint?.id === print.id && (
+                    <tr onClick={e => e.stopPropagation()}>
+                      <td colSpan="6" style={{ padding: 0, background: 'rgba(59, 130, 246, 0.05)' }}>
+                        <div style={{
+                          padding: '1.5rem',
+                          borderTop: '1px solid rgba(59, 130, 246, 0.3)',
+                          borderBottom: '1px solid rgba(59, 130, 246, 0.3)'
+                        }}>
+                          <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
+                            <div>
+                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Data</p>
+                              <p style={{ fontWeight: 600 }}>{new Date((viewingPrint.date.includes('T') ? viewingPrint.date : viewingPrint.date + 'T12:00:00')).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Tempo Total</p>
+                              <p style={{ fontWeight: 600 }}>{viewingPrint.timeMinutes} minutos</p>
+                            </div>
+                            <div>
+                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cores Usadas</p>
+                              <p style={{ fontWeight: 600 }}>{viewingPrint.colors}</p>
+                            </div>
+                            <div>
+                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>
+                              <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(viewingPrint.totalWeight).toFixed(2)}g</p>
+                            </div>
+                          </div>
+
+                          <h3 style={{ fontSize: '1rem', marginBottom: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
+                            Filamentos Consumidos
+                          </h3>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {viewingPrint.filamentsUsed.map((f, idx) => {
+                              const info = getFilamentInfo(f.sku);
+                              return (
+                                <div key={idx} style={{
+                                  background: 'rgba(255,255,255,0.03)',
+                                  padding: '1rem',
+                                  borderRadius: '8px',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  border: '1px solid var(--card-border)'
+                                }}>
+                                  <div>
+                                    <div style={{ fontWeight: 600 }}>{info.marca} - {info.cor}</div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
+                                  </div>
+                                  <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                                    {parseFloat(f.weightGrams).toFixed(2)}g
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             )}
           </tbody>
         </table>
       </div>
-
-      {/* Detalhes da Impressão - Expansível */}
-      {viewingPrint && (
-        <div style={{
-          background: 'rgba(59, 130, 246, 0.1)',
-          border: '2px solid var(--primary)',
-          borderRadius: '0.5rem',
-          padding: '1.5rem',
-          marginTop: '1rem'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-            <h2 style={{ margin: 0 }}>Detalhes da Impressão</h2>
-            <button className="btn btn-secondary" onClick={() => setViewingPrint(null)} style={{ padding: '0.5rem' }}>✕</button>
-          </div>
-
-          <div className="grid-2" style={{ marginBottom: '2rem' }}>
-            <div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Data</p>
-              <p style={{ fontWeight: 600 }}>{new Date(viewingPrint.date + 'T12:00:00').toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Tempo Total</p>
-              <p style={{ fontWeight: 600 }}>{viewingPrint.timeMinutes} minutos</p>
-            </div>
-            <div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cores Usadas</p>
-              <p style={{ fontWeight: 600 }}>{viewingPrint.colors}</p>
-            </div>
-            <div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>
-              <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(viewingPrint.totalWeight).toFixed(2)}g</p>
-            </div>
-          </div>
-
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
-            Filamentos Consumidos
-          </h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {viewingPrint.filamentsUsed.map((f, idx) => {
-              const info = getFilamentInfo(f.sku);
-              return (
-                <div key={idx} style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  padding: '1rem',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  border: '1px solid var(--card-border)'
-                }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{info.marca} - {info.cor}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
-                  </div>
-                  <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                    {parseFloat(f.weightGrams).toFixed(2)}g
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn btn-primary" onClick={() => setViewingPrint(null)}>Fechar</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
