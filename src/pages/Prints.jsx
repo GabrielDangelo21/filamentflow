@@ -6,6 +6,7 @@ const Prints = () => {
   const [prints, setPrints] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [viewingPrint, setViewingPrint] = useState(null); // Para o Modal de Detalhes
+  const [successMessage, setSuccessMessage] = useState(''); // Para mensagem de sucesso
 
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
@@ -50,7 +51,9 @@ const Prints = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (usedFilaments.some(f => !f.sku || !f.weightGrams)) {
-      return alert('Preencha o filamento e o peso para todas as cores');
+      setSuccessMessage('Preencha o filamento e o peso para todas as cores');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      return;
     }
 
     const totalWeight = usedFilaments.reduce((acc, f) => acc + Number(f.weightGrams), 0);
@@ -68,9 +71,12 @@ const Prints = () => {
       }))
     });
 
+    // Mostrar mensagem de sucesso por 1 segundo
+    setSuccessMessage(isEditing ? '✓ Impressão atualizada!' : '✓ Impressão registrada!');
+    setTimeout(() => setSuccessMessage(''), 1000);
+
     resetForm();
     loadData();
-    alert(isEditing ? 'Impressão atualizada!' : 'Impressão registrada!');
   };
 
   const resetForm = () => {
@@ -111,6 +117,24 @@ const Prints = () => {
 
   return (
     <div className="animate-fade-in">
+      {successMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: successMessage.includes('✓') ? 'var(--primary)' : '#EF4444',
+          color: 'white',
+          padding: '1rem 1.5rem',
+          borderRadius: '0.5rem',
+          zIndex: 10000,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          animation: 'slideIn 0.3s ease-out',
+          fontSize: '0.95rem',
+          fontWeight: 600
+        }}>
+          {successMessage}
+        </div>
+      )}
       <h1>{isEditing ? 'Editar Impressão' : 'Registro de Impressões'}</h1>
 
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', border: isEditing ? '1px solid var(--primary)' : '1px solid var(--card-border)' }}>
