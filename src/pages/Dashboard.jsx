@@ -1,6 +1,34 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getAllFilamentsWithStock, getOrders, getPrints, exportBackup, importBackup } from '../services/storage';
 
+const getColorFromName = (corName) => {
+  if (!corName) return '#00F0FF';
+  const n = corName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (n.includes('preto') || n.includes('negro') || n.includes('black')) return '#6B7280';
+  if (n.includes('branco') || n.includes('white') || n.includes('ivory') || n.includes('marfim')) return '#E2E8F0';
+  if (n.includes('cinza escuro') || n.includes('gray dark')) return '#64748B';
+  if (n.includes('cinza') || n.includes('prata') || n.includes('prateado') || n.includes('silver')) return '#94A3B8';
+  if (n.includes('escarlate') || n.includes('carmim') || n.includes('bordeux') || n.includes('bordo') || n.includes('vinho') || n.includes('sangue')) return '#B91C1C';
+  if (n.includes('vermelho') || n.includes('red')) return '#EF4444';
+  if (n.includes('laranja') || n.includes('orange')) return '#F97316';
+  if (n.includes('amarelo') || n.includes('yellow') || n.includes('limao') || n.includes('lima')) return '#EAB308';
+  if (n.includes('dourado') || n.includes('ouro') || n.includes('gold')) return '#D97706';
+  if (n.includes('bege') || n.includes('creme') || n.includes('areia') || n.includes('caramelo')) return '#D4A96A';
+  if (n.includes('marrom') || n.includes('cafe') || n.includes('brown') || n.includes('bronze') || n.includes('chocolate')) return '#92400E';
+  if (n.includes('indigo') || n.includes('anil')) return '#4F46E5';
+  if (n.includes('roxo') || n.includes('violeta') || n.includes('lilas') || n.includes('purple') || n.includes('amethyst') || n.includes('ametista')) return '#8B5CF6';
+  if (n.includes('magenta') || n.includes('fucsia') || n.includes('rosa choque')) return '#D946EF';
+  if (n.includes('rosa') || n.includes('pink')) return '#EC4899';
+  if (n.includes('coral') || n.includes('salmon') || n.includes('salmo')) return '#F87171';
+  if (n.includes('azul marinho') || n.includes('navy')) return '#1E40AF';
+  if (n.includes('azul') || n.includes('blue') || n.includes('reflexo') || n.includes('celeste') || n.includes('safira')) return '#3B82F6';
+  if (n.includes('ciano') || n.includes('turquesa') || n.includes('aqua') || n.includes('teal')) return '#06B6D4';
+  if (n.includes('jade') || n.includes('muerdago') || n.includes('oliva') || n.includes('floresta') || n.includes('musgo') || n.includes('esmeralda')) return '#059669';
+  if (n.includes('verde') || n.includes('green') || n.includes('lima')) return '#10B981';
+  if (n.includes('transparente') || n.includes('natural') || n.includes('cristal')) return '#CBD5E1';
+  return '#00F0FF';
+};
+
 const Dashboard = () => {
   const [stats, setStats] = useState({
     totalFilaments: 0,
@@ -176,21 +204,22 @@ const Dashboard = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {topFilaments.map((f, idx) => {
-                const barColors = ['var(--primary)', 'var(--secondary)', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899', '#A855F7'];
+                const barColor = getColorFromName(f.cor);
                 const perc = (f.grams / topFilaments[0].grams) * 100;
                 return (
                   <div key={f.sku}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', minWidth: '1.2rem', fontWeight: 700 }}>#{idx + 1}</span>
+                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: barColor, flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
                         <span style={{ fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.marca} - {f.cor}</span>
                       </div>
-                      <span style={{ fontWeight: 700, color: barColors[idx] || 'var(--primary)', fontSize: '0.85rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, color: barColor, fontSize: '0.85rem', flexShrink: 0, marginLeft: '0.5rem' }}>
                         {f.grams >= 1000 ? (f.grams / 1000).toFixed(2).replace('.', ',') + 'kg' : f.grams.toFixed(0) + 'g'}
                       </span>
                     </div>
                     <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
-                      <div style={{ width: `${perc}%`, height: '100%', background: barColors[idx] || 'var(--primary)', borderRadius: '4px' }} />
+                      <div style={{ width: `${perc}%`, height: '100%', background: barColor, borderRadius: '4px' }} />
                     </div>
                   </div>
                 );
