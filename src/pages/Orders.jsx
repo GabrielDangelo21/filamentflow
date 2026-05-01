@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFilaments, saveOrder, getOrders, deleteOrder } from '../services/storage';
+import { ColorDot } from '../utils/colorUtils';
 
 const Orders = () => {
   const [filaments, setFilaments] = useState([]);
@@ -183,7 +184,10 @@ const Orders = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>{f.sku}</span>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{f.marca} - {f.cor}</div>
+                            <div style={{ fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <ColorDot cor={f.cor} size={9} />
+                              {f.marca} - {f.cor}
+                            </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{f.categoria}</div>
                           </div>
                         </div>
@@ -305,7 +309,12 @@ const Orders = () => {
                     <td><span className="badge badge-primary">{order.items[0].sku}</span></td>
                     <td style={{ fontWeight: 600 }}>{filament?.marca || '-'}</td>
                     <td>{filament?.categoria || '-'}</td>
-                    <td>{filament?.cor || '-'}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {filament?.cor && <ColorDot cor={filament.cor} size={9} />}
+                        {filament?.cor || '-'}
+                      </div>
+                    </td>
                     <td style={{ fontWeight: 600 }}>{(parseFloat(order.items[0].weightGrams) / 1000).toFixed(2).replace('.', ',')}kg</td>
                     <td>{order.items[0].price ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.items[0].price) : '-'}</td>
                     <td>

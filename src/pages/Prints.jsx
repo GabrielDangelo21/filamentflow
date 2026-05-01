@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram } from '../services/storage';
+import { ColorDot } from '../utils/colorUtils';
 
 const Prints = () => {
   const [filaments, setFilaments] = useState([]);
@@ -504,7 +505,10 @@ const Prints = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                   <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>{f.sku}</span>
                                   <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{f.marca} - {f.cor}</div>
+                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                      <ColorDot cor={f.cor} size={9} />
+                                      {f.marca} - {f.cor}
+                                    </div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{f.categoria}</div>
                                   </div>
                                 </div>
@@ -672,7 +676,10 @@ const Prints = () => {
                                   border: '1px solid var(--card-border)'
                                 }}>
                                   <div>
-                                    <div style={{ fontWeight: 600 }}>{info.marca} - {info.cor}</div>
+                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      <ColorDot cor={info.cor} size={10} />
+                                      {info.marca} - {info.cor}
+                                    </div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
                                   </div>
                                   <div style={{ textAlign: 'right' }}>

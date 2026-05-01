@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFilaments, saveFilament, deleteFilament, getAllFilamentsWithStock, getCategories, saveCategory, deleteCategory, saveAllCategories, getBrands, saveBrand, deleteBrand, saveAllBrands } from '../services/storage';
+import { ColorDot } from '../utils/colorUtils';
 
 /* ── Reusable List Manager Modal ── */
 const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose }) => {
@@ -321,7 +322,12 @@ const Filaments = () => {
                   <td><span className="badge badge-primary">{f.sku}</span></td>
                   <td style={{ fontWeight: 600 }}>{f.marca}</td>
                   <td>{f.categoria}</td>
-                  <td>{f.cor}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <ColorDot cor={f.cor} size={10} />
+                      {f.cor}
+                    </div>
+                  </td>
                   <td style={{ fontWeight: 600, color: f.currentStock > 0 ? 'var(--success)' : 'var(--danger)' }}>
                     {(parseFloat(f.currentStock) / 1000).toFixed(3).replace('.', ',')}kg
                   </td>
