@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments } from '../services/storage';
+import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram } from '../services/storage';
 
 const Prints = () => {
   const [filaments, setFilaments] = useState([]);
@@ -357,13 +357,14 @@ const Prints = () => {
               <th>Cores</th>
               <th>Peso Total</th>
               <th>Tempo</th>
+              <th>Custo</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {prints.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   Nenhuma impressão registrada.
                 </td>
               </tr>
@@ -385,6 +386,14 @@ const Prints = () => {
                     <td><span className="badge badge-outline">{print.colors}</span></td>
                     <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</td>
                     <td>{print.timeMinutes} min</td>
+                    <td style={{ fontWeight: 600, color: 'var(--success)' }}>
+                      {(() => {
+                        const cost = getPrintCost(print);
+                        return cost > 0
+                          ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cost)
+                          : <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>—</span>;
+                      })()}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button
@@ -413,7 +422,7 @@ const Prints = () => {
                   </tr>
                   {viewingPrintIdx === index && (
                     <tr>
-                      <td colSpan="6" style={{ padding: 0, background: 'rgba(59, 130, 246, 0.05)' }}>
+                      <td colSpan="7" style={{ padding: 0, background: 'rgba(59, 130, 246, 0.05)' }}>
                         <div style={{
                           padding: '1.5rem',
                           borderTop: '1px solid rgba(59, 130, 246, 0.3)',
@@ -435,6 +444,15 @@ const Prints = () => {
                             <div>
                               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>
                               <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</p>
+                            </div>
+                            <div>
+                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Custo Total</p>
+                              {(() => {
+                                const cost = getPrintCost(print);
+                                return cost > 0
+                                  ? <p style={{ fontWeight: 700, color: 'var(--success)', fontSize: '1.2rem' }}>{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cost)}</p>
+                                  : <p style={{ color: 'var(--text-muted)' }}>Sem preço cadastrado</p>;
+                              })()}
                             </div>
                           </div>
 
@@ -459,8 +477,17 @@ const Prints = () => {
                                     <div style={{ fontWeight: 600 }}>{info.marca} - {info.cor}</div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
                                   </div>
-                                  <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                                    {parseFloat(f.weightGrams).toFixed(2).replace('.', ',')}g
+                                  <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                                      {parseFloat(f.weightGrams).toFixed(2).replace('.', ',')}g
+                                    </div>
+                                    {(() => {
+                                      const pricePerGram = getFilamentPricePerGram(f.sku);
+                                      const cost = pricePerGram * Number(f.weightGrams);
+                                      return pricePerGram > 0
+                                        ? <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '0.2rem' }}>{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cost)}</div>
+                                        : null;
+                                    })()}
                                   </div>
                                 </div>
                               );

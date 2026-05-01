@@ -203,6 +203,28 @@ export const saveAllBrands = (brands) => {
   saveToStorage(STORAGE_KEYS.BRANDS, brands);
 };
 
+// --- COST CALCULATION ---
+export const getFilamentPricePerGram = (sku) => {
+  const orders = getOrders();
+  let totalCost = 0;
+  let totalGrams = 0;
+  orders.forEach(order => {
+    const item = order.items.find(i => i.sku === sku);
+    if (item && Number(item.price) > 0) {
+      totalCost += Number(item.price);
+      totalGrams += Number(item.weightGrams);
+    }
+  });
+  return totalGrams > 0 ? totalCost / totalGrams : 0;
+};
+
+export const getPrintCost = (print) => {
+  return print.filamentsUsed.reduce((acc, f) => {
+    const pricePerGram = getFilamentPricePerGram(f.sku);
+    return acc + pricePerGram * Number(f.weightGrams);
+  }, 0);
+};
+
 // --- BACKUP ---
 export const exportBackup = () => ({
   version: 1,
