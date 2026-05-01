@@ -1,30 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getAllFilamentsWithStock, getOrders, getPrints, exportBackup, importBackup } from '../services/storage';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
-import { Line, Doughnut } from 'react-chartjs-2';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -37,8 +12,8 @@ const Dashboard = () => {
 
   const [filaments, setFilaments] = useState([]);
   const [recentPrints, setRecentPrints] = useState([]);
-  const [chartData, setChartData] = useState(null);
-  const [stockDistribution, setStockDistribution] = useState(null);
+  const [topFilaments, setTopFilaments] = useState([]);
+  const [lowStockFilaments, setLowStockFilaments] = useState([]);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [selectedPrintIdx, setSelectedPrintIdx] = useState(null);
   const [backupMsg, setBackupMsg] = useState('');
@@ -100,55 +75,27 @@ const Dashboard = () => {
     }));
     setRecentPrints(allPrints.slice(-4).reverse());
 
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
-
-    const consumptionData = last7Days.map(date => {
-      const dayPrints = allPrints.filter(p => p.date === date);
-      return dayPrints.reduce((acc, p) => acc + p.totalWeight, 0);
+    const filamentConsumption = {};
+    allPrints.forEach(print => {
+      (print.filamentsUsed || []).forEach(f => {
+        filamentConsumption[f.sku] = (filamentConsumption[f.sku] || 0) + Number(f.weightGrams || 0);
+      });
     });
+    const topList = Object.entries(filamentConsumption)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([sku, grams]) => {
+        const fil = allFilaments.find(f => f.sku === sku) || {};
+        return { sku, grams, marca: fil.marca || 'N/A', cor: fil.cor || 'N/A', categoria: fil.categoria || 'N/A' };
+      });
+    setTopFilaments(topList);
 
-    setChartData({
-      labels: last7Days.map(d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' })),
-      datasets: [{
-        label: 'Consumo (g)',
-        data: consumptionData,
-        borderColor: '#00F0FF',
-        backgroundColor: 'rgba(0, 240, 255, 0.1)',
-        fill: true,
-        tension: 0.4,
-      }]
-    });
-
-    const catData = {};
-    allFilaments.forEach(f => {
-      if ((f.currentStock || 0) > 0) {
-        catData[f.categoria] = (catData[f.categoria] || 0) + f.currentStock;
-      }
-    });
-
-    setStockDistribution({
-      labels: Object.keys(catData),
-      datasets: [{
-        data: Object.values(catData),
-        backgroundColor: ['#00F0FF', '#8B5CF6', '#10B981', '#EF4444', '#F59E0B', '#3B82F6', '#EC4899', '#14B8A6', '#F97316', '#A855F7', '#84CC16', '#06B6D4'],
-        borderWidth: 0,
-      }]
-    });
+    const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.map(i => i.sku)));
+    const lowStock = allFilaments
+      .filter(f => purchasedSKUs.has(f.sku) && (f.currentStock || 0) < 250)
+      .sort((a, b) => (a.currentStock || 0) - (b.currentStock || 0));
+    setLowStockFilaments(lowStock);
   }, []);
-
-  const lineOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-    scales: {
-      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } },
-      x: { grid: { display: false }, ticks: { color: '#94A3B8' } }
-    }
-  };
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
@@ -220,21 +167,80 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-        {/* Gráfico de Consumo */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+        {/* Ranking */}
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Consumo de Material (Últimos 7 dias)</h2>
-          <div style={{ height: '300px' }}>
-            {chartData && <Line data={chartData} options={lineOptions} />}
-          </div>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Top Filamentos Mais Usados</h2>
+          {topFilaments.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Nenhuma impressão registrada ainda</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {topFilaments.map((f, idx) => {
+                const barColors = ['var(--primary)', 'var(--secondary)', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899', '#A855F7'];
+                const perc = (f.grams / topFilaments[0].grams) * 100;
+                return (
+                  <div key={f.sku}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', minWidth: '1.2rem', fontWeight: 700 }}>#{idx + 1}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.marca} - {f.cor}</span>
+                      </div>
+                      <span style={{ fontWeight: 700, color: barColors[idx] || 'var(--primary)', fontSize: '0.85rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                        {f.grams >= 1000 ? (f.grams / 1000).toFixed(2).replace('.', ',') + 'kg' : f.grams.toFixed(0) + 'g'}
+                      </span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+                      <div style={{ width: `${perc}%`, height: '100%', background: barColors[idx] || 'var(--primary)', borderRadius: '4px' }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Distribuição por Categoria */}
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Mix de Materiais (g)</h2>
-          <div style={{ height: '420px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '420px' }}>
-            {stockDistribution && <Doughnut data={stockDistribution} options={{ maintainAspectRatio: false, responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', padding: 12, font: { size: 12 }, boxWidth: 12 }, maxHeight: 120 } } }} />}
-          </div>
+        {/* Alertas de estoque baixo */}
+        <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            Alerta de Estoque Baixo
+            {lowStockFilaments.length > 0 && (
+              <span style={{
+                background: 'var(--danger)', color: '#fff', borderRadius: '999px',
+                padding: '0.1rem 0.55rem', fontSize: '0.75rem', fontWeight: 700
+              }}>{lowStockFilaments.length}</span>
+            )}
+          </h2>
+          {lowStockFilaments.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--success)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✓</div>
+              <p style={{ fontWeight: 600 }}>Todos os estoques estão OK</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto' }}>
+              {lowStockFilaments.map(f => {
+                const isEmpty = (f.currentStock || 0) <= 0;
+                return (
+                  <div key={f.id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.75rem 1rem', borderRadius: '0.5rem',
+                    background: isEmpty ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)',
+                    border: `1px solid ${isEmpty ? 'rgba(239,68,68,0.35)' : 'rgba(245,158,11,0.35)'}`,
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{f.marca} - {f.cor}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{f.categoria} · SKU {f.sku}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 700, color: isEmpty ? 'var(--danger)' : '#F59E0B', fontSize: '0.9rem' }}>
+                        {isEmpty ? 'ESGOTADO' : (f.currentStock / 1000).toFixed(2).replace('.', ',') + 'kg'}
+                      </div>
+                      {!isEmpty && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>&lt; 250g restantes</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
