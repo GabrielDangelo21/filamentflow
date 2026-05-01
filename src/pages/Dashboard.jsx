@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getAllFilamentsWithStock, getOrders, getPrints, exportBackup, importBackup } from '../services/storage';
-import { getColorFromName, ColorDot } from '../utils/colorUtils';
+import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -185,7 +185,11 @@ const Dashboard = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', minWidth: '1.2rem', fontWeight: 700 }}>#{idx + 1}</span>
                         <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: barColor, flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }} />
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.marca} - {f.cor}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ color: getBrandColor(f.marca) }}>{f.marca}</span>
+                          <span style={{ color: 'var(--text-muted)' }}> – </span>
+                          <span style={{ color: getColorFromName(f.cor) }}>{f.cor}</span>
+                        </span>
                       </div>
                       <span style={{ fontWeight: 700, color: barColor, fontSize: '0.85rem', flexShrink: 0, marginLeft: '0.5rem' }}>
                         {f.grams >= 1000 ? (f.grams / 1000).toFixed(2).replace('.', ',') + 'kg' : f.grams.toFixed(0) + 'g'}
@@ -333,14 +337,14 @@ const Dashboard = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <ColorDot cor={f.cor} size={12} />
-                                <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '0.3px' }}>{f.cor}</span>
+                                <span style={{ fontWeight: 800, fontSize: '1.05rem', color: getColorFromName(f.cor), letterSpacing: '0.3px' }}>{f.cor}</span>
                               </div>
                               <span style={{ fontWeight: 700, fontSize: '0.95rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
                                 {(parseFloat(f.currentStock) / 1000).toFixed(2).replace('.', ',')}kg
                               </span>
                             </div>
                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                              <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{f.marca}</span>
+                              <span style={{ fontWeight: 600, fontSize: '0.85rem', color: getBrandColor(f.marca) }}>{f.marca}</span>
                               <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>[{f.sku}]</span>
                             </div>
                             <div className="progress-container" style={{ height: '6px' }}>
@@ -445,7 +449,10 @@ const Dashboard = () => {
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                               <ColorDot cor={filament?.cor} size={9} />
-                              <strong>{filament?.marca || 'N/A'}</strong> - {filament?.cor || 'N/A'} ({item.sku})
+                              <span style={{ color: getBrandColor(filament?.marca) }}><strong>{filament?.marca || 'N/A'}</strong></span>
+                              <span style={{ color: 'var(--text-muted)' }}>–</span>
+                              <span style={{ color: getColorFromName(filament?.cor) }}>{filament?.cor || 'N/A'}</span>
+                              <span style={{ color: 'var(--text-muted)' }}>({item.sku})</span>
                             </div>
                             <div style={{ color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                               {filament?.categoria || 'N/A'} • {parseFloat(item.weightGrams).toFixed(2).replace('.', ',')}g

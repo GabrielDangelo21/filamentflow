@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFilaments, saveOrder, getOrders, deleteOrder } from '../services/storage';
-import { ColorDot } from '../utils/colorUtils';
+import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 
 const Orders = () => {
   const [filaments, setFilaments] = useState([]);
@@ -186,7 +186,9 @@ const Orders = () => {
                           <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                               <ColorDot cor={f.cor} size={9} />
-                              {f.marca} - {f.cor}
+                              <span style={{ color: getBrandColor(f.marca) }}>{f.marca}</span>
+                              <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>–</span>
+                              <span style={{ color: getColorFromName(f.cor) }}>{f.cor}</span>
                             </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{f.categoria}</div>
                           </div>
@@ -307,12 +309,12 @@ const Orders = () => {
                       }
                     })()}</td>
                     <td><span className="badge badge-primary">{order.items[0].sku}</span></td>
-                    <td style={{ fontWeight: 600 }}>{filament?.marca || '-'}</td>
+                    <td style={{ fontWeight: 600, color: getBrandColor(filament?.marca) }}>{filament?.marca || '-'}</td>
                     <td>{filament?.categoria || '-'}</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {filament?.cor && <ColorDot cor={filament.cor} size={9} />}
-                        {filament?.cor || '-'}
+                        <span style={{ color: filament?.cor ? getColorFromName(filament.cor) : 'inherit' }}>{filament?.cor || '-'}</span>
                       </div>
                     </td>
                     <td style={{ fontWeight: 600 }}>{(parseFloat(order.items[0].weightGrams) / 1000).toFixed(2).replace('.', ',')}kg</td>

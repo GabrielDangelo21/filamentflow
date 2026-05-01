@@ -39,3 +39,9 @@ export const ColorDot = ({ cor, size = 10 }) => (
     flexShrink: 0,
   }} />
 );
+
+export const getBrandColor = (brand) => {
+  if (!brand) return 'inherit';
+  if (brand.toLowerCase().includes('bambu')) return '#00AE42';
+  return 'inherit';
+};

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram } from '../services/storage';
-import { ColorDot } from '../utils/colorUtils';
+import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 
 const Prints = () => {
   const [filaments, setFilaments] = useState([]);
@@ -507,7 +507,9 @@ const Prints = () => {
                                   <div style={{ flex: 1 }}>
                                     <div style={{ fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                       <ColorDot cor={f.cor} size={9} />
-                                      {f.marca} - {f.cor}
+                                      <span style={{ color: getBrandColor(f.marca) }}>{f.marca}</span>
+                                      <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>–</span>
+                                      <span style={{ color: getColorFromName(f.cor) }}>{f.cor}</span>
                                     </div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{f.categoria}</div>
                                   </div>
@@ -678,7 +680,9 @@ const Prints = () => {
                                   <div>
                                     <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                       <ColorDot cor={info.cor} size={10} />
-                                      {info.marca} - {info.cor}
+                                      <span style={{ color: getBrandColor(info.marca) }}>{info.marca}</span>
+                                      <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>–</span>
+                                      <span style={{ color: getColorFromName(info.cor) }}>{info.cor}</span>
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
                                   </div>
