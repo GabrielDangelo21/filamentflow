@@ -10,16 +10,19 @@ const Layout = ({ children, activeTab, onTabChange }) => {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       {/* Sidebar */}
       <aside style={{
         width: '260px',
+        height: '100vh',
         background: 'var(--card-bg)',
         backdropFilter: 'blur(16px)',
         borderRight: '1px solid var(--card-border)',
         padding: '2rem 1rem',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        flexShrink: 0,
+        overflowY: 'auto'
       }}>
         <div style={{ padding: '0 1rem', marginBottom: '3rem' }}>
           <h2 style={{ 

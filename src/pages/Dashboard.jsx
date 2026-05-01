@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getAllFilamentsWithStock, getOrders, getPrints, exportBackup, importBackup } from '../services/storage';
+import { getAllFilamentsWithStock, getOrders, getPrints, exportBackup, importBackup, getPrintCost } from '../services/storage';
 import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
 
 const Dashboard = () => {
@@ -8,7 +8,8 @@ const Dashboard = () => {
     totalStockGrams: 0,
     totalOrders: 0,
     totalPrints: 0,
-    totalCost: 0
+    totalCost: 0,
+    totalPrintCost: 0
   });
 
   const [filaments, setFilaments] = useState([]);
@@ -60,13 +61,15 @@ const Dashboard = () => {
 
     const totalStock = allFilaments.reduce((acc, f) => acc + (f.currentStock || 0), 0);
     const totalCost = allOrders.reduce((acc, o) => acc + (o.items[0].price || 0), 0);
+    const totalPrintCost = allPrints.reduce((acc, p) => acc + getPrintCost(p), 0);
 
     setStats({
       totalFilaments: allFilaments.length,
       totalStockGrams: totalStock,
       totalOrders: allOrders.length,
       totalPrints: allPrints.length,
-      totalCost: totalCost
+      totalCost: totalCost,
+      totalPrintCost: totalPrintCost
     });
 
     setFilaments(allFilaments.sort((a, b) => {
@@ -139,11 +142,19 @@ const Dashboard = () => {
               ↑ Importar Backup
             </button>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Investimento Total</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--success)' }}>
-              € {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
-            </p>
+          <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-end' }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Custo em Impressões</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--danger)' }}>
+                € {stats.totalPrintCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Investimento Total</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--success)' }}>
+                € {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
           </div>
         </div>
       </div>
