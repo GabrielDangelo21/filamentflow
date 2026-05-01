@@ -8,6 +8,7 @@ const Orders = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedFilament, setSelectedFilament] = useState(null);
   const searchInputRef = useRef(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
@@ -38,15 +39,42 @@ const Orders = () => {
     setSearchTerm(`${filament.marca} - ${filament.cor} (${filament.sku})`);
     setFormData({ ...formData, sku: filament.sku });
     setShowSuggestions(false);
+    setHighlightedIndex(-1);
   };
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
     setShowSuggestions(true);
+    setHighlightedIndex(-1);
     if (!value) {
       setSelectedFilament(null);
       setFormData({ ...formData, sku: '' });
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (!showSuggestions || filteredFilaments.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => {
+        const next = Math.min(prev + 1, filteredFilaments.length - 1);
+        setTimeout(() => document.getElementById(`order-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+        return next;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => {
+        const next = Math.max(prev - 1, 0);
+        setTimeout(() => document.getElementById(`order-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+        return next;
+      });
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSelectFilament(filteredFilaments[highlightedIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
     }
   };
 
@@ -119,6 +147,7 @@ const Orders = () => {
                   onChange={handleSearchChange}
                   onFocus={() => setShowSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  onKeyDown={handleSearchKeyDown}
                   required
                 />
                 {showSuggestions && searchTerm && filteredFilaments.length > 0 && (
@@ -136,18 +165,20 @@ const Orders = () => {
                     overflowY: 'auto',
                     boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
                   }}>
-                    {filteredFilaments.map(f => (
+                    {filteredFilaments.map((f, listIndex) => (
                       <div
                         key={f.id}
+                        id={`order-sug-${listIndex}`}
                         onClick={() => handleSelectFilament(f)}
                         style={{
                           padding: '0.75rem 1rem',
                           cursor: 'pointer',
                           borderBottom: '1px solid rgba(255,255,255,0.05)',
-                          transition: 'all 0.2s'
+                          transition: 'background 0.15s',
+                          background: listIndex === highlightedIndex ? 'rgba(59, 130, 246, 0.25)' : 'transparent'
                         }}
-                        onMouseEnter={(e) => e.target.style.background = 'rgba(59, 130, 246, 0.1)'}
-                        onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'}
+                        onMouseLeave={e => e.currentTarget.style.background = listIndex === highlightedIndex ? 'rgba(59, 130, 246, 0.25)' : 'transparent'}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>{f.sku}</span>

@@ -43,6 +43,9 @@ const Prints = () => {
   const [usedFilaments, setUsedFilaments] = useState([{ sku: '', weightGrams: '' }]);
   const [searchTerms, setSearchTerms] = useState(['']);
   const [showSuggestions, setShowSuggestions] = useState([false]);
+  const [highlightedIndexes, setHighlightedIndexes] = useState([-1]);
+  const [showDescSuggestions, setShowDescSuggestions] = useState(false);
+  const [descHighlightedIndex, setDescHighlightedIndex] = useState(-1);
 
   useEffect(() => {
     const withStock = getAllFilamentsWithStock().filter(f => (f.currentStock || 0) > 0);
@@ -58,20 +61,24 @@ const Prints = () => {
       const newUsed = [...usedFilaments];
       const newTerms = [...searchTerms];
       const newShow = [...showSuggestions];
+      const newHighlighted = [...highlightedIndexes];
       if (numCores > usedFilaments.length) {
         for (let i = usedFilaments.length; i < numCores; i++) {
           newUsed.push({ sku: '', weightGrams: '' });
           newTerms.push('');
           newShow.push(false);
+          newHighlighted.push(-1);
         }
       } else {
         newUsed.splice(numCores);
         newTerms.splice(numCores);
         newShow.splice(numCores);
+        newHighlighted.splice(numCores);
       }
       setUsedFilaments(newUsed);
       setSearchTerms(newTerms);
       setShowSuggestions(newShow);
+      setHighlightedIndexes(newHighlighted);
     }
   }, [formData.colors]);
 
@@ -91,6 +98,9 @@ const Prints = () => {
     const newShow = [...showSuggestions];
     newShow[index] = false;
     setShowSuggestions(newShow);
+    const newHighlighted = [...highlightedIndexes];
+    newHighlighted[index] = -1;
+    setHighlightedIndexes(newHighlighted);
   };
 
   const handleSearchChangeForSlot = (index, value) => {
@@ -100,10 +110,87 @@ const Prints = () => {
     const newShow = [...showSuggestions];
     newShow[index] = true;
     setShowSuggestions(newShow);
+    const newHighlighted = [...highlightedIndexes];
+    newHighlighted[index] = -1;
+    setHighlightedIndexes(newHighlighted);
     if (!value) {
       const newUsed = [...usedFilaments];
       newUsed[index].sku = '';
       setUsedFilaments(newUsed);
+    }
+  };
+
+  const getFilteredForSlot = (index) => {
+    const search = (searchTerms[index] || '').toLowerCase();
+    return filaments.filter(f =>
+      f.sku.toLowerCase().includes(search) ||
+      f.marca.toLowerCase().includes(search) ||
+      f.cor.toLowerCase().includes(search) ||
+      f.categoria.toLowerCase().includes(search)
+    );
+  };
+
+  const handleKeyDownForSlot = (e, index) => {
+    const filtered = getFilteredForSlot(index);
+    if (!showSuggestions[index] || filtered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const newHighlighted = [...highlightedIndexes];
+      const next = Math.min((newHighlighted[index] ?? -1) + 1, filtered.length - 1);
+      newHighlighted[index] = next;
+      setHighlightedIndexes(newHighlighted);
+      setTimeout(() => document.getElementById(`print-sug-${index}-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const newHighlighted = [...highlightedIndexes];
+      const next = Math.max((newHighlighted[index] ?? 0) - 1, 0);
+      newHighlighted[index] = next;
+      setHighlightedIndexes(newHighlighted);
+      setTimeout(() => document.getElementById(`print-sug-${index}-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+    } else if (e.key === 'Enter' && (highlightedIndexes[index] ?? -1) >= 0) {
+      e.preventDefault();
+      handleSelectFilamentForSlot(index, filtered[highlightedIndexes[index]]);
+    } else if (e.key === 'Escape') {
+      setShowForSlot(index, false);
+      const newHighlighted = [...highlightedIndexes];
+      newHighlighted[index] = -1;
+      setHighlightedIndexes(newHighlighted);
+    }
+  };
+
+  const getFilteredDescriptions = () => {
+    const typed = formData.description.toLowerCase();
+    if (!typed) return [];
+    return [...new Set(prints.map(p => p.description).filter(Boolean))]
+      .filter(d => d.toLowerCase().includes(typed) && d !== formData.description)
+      .slice(0, 10);
+  };
+
+  const handleDescKeyDown = (e) => {
+    const filtered = getFilteredDescriptions();
+    if (!showDescSuggestions || filtered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setDescHighlightedIndex(prev => {
+        const next = Math.min(prev + 1, filtered.length - 1);
+        setTimeout(() => document.getElementById(`desc-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+        return next;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setDescHighlightedIndex(prev => {
+        const next = Math.max(prev - 1, 0);
+        setTimeout(() => document.getElementById(`desc-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+        return next;
+      });
+    } else if (e.key === 'Enter' && descHighlightedIndex >= 0) {
+      e.preventDefault();
+      setFormData({ ...formData, description: filtered[descHighlightedIndex] });
+      setShowDescSuggestions(false);
+      setDescHighlightedIndex(-1);
+    } else if (e.key === 'Escape') {
+      setShowDescSuggestions(false);
+      setDescHighlightedIndex(-1);
     }
   };
 
@@ -154,6 +241,9 @@ const Prints = () => {
     setUsedFilaments([{ sku: '', weightGrams: '' }]);
     setSearchTerms(['']);
     setShowSuggestions([false]);
+    setHighlightedIndexes([-1]);
+    setShowDescSuggestions(false);
+    setDescHighlightedIndex(-1);
     setIsEditing(false);
   };
 
@@ -178,6 +268,7 @@ const Prints = () => {
     });
     setSearchTerms(terms);
     setShowSuggestions(print.filamentsUsed.map(() => false));
+    setHighlightedIndexes(print.filamentsUsed.map(() => -1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -218,14 +309,60 @@ const Prints = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-group" style={{ marginBottom: '1.5rem' }}>
             <label className="form-label">Nome/Descrição da Impressão</label>
-            <input
-              ref={descriptionInputRef}
-              type="text"
-              className="form-input"
-              placeholder="Ex: Miniatura para RPG, Case de AirPods..."
-              value={formData.description}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                ref={descriptionInputRef}
+                type="text"
+                className="form-input"
+                placeholder="Ex: Miniatura para RPG, Case de AirPods..."
+                value={formData.description}
+                onChange={e => {
+                  setFormData({ ...formData, description: e.target.value });
+                  setShowDescSuggestions(true);
+                  setDescHighlightedIndex(-1);
+                }}
+                onFocus={() => setShowDescSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowDescSuggestions(false), 200)}
+                onKeyDown={handleDescKeyDown}
+              />
+              {showDescSuggestions && (() => {
+                const filtered = getFilteredDescriptions();
+                if (filtered.length === 0) return null;
+                return (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+                    background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '0.5rem', marginTop: '0.25rem',
+                    maxHeight: '280px', overflowY: 'auto',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                  }}>
+                    {filtered.map((desc, listIndex) => (
+                      <div
+                        key={listIndex}
+                        id={`desc-sug-${listIndex}`}
+                        onMouseDown={() => {
+                          setFormData({ ...formData, description: desc });
+                          setShowDescSuggestions(false);
+                          setDescHighlightedIndex(-1);
+                        }}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid rgba(255,255,255,0.05)',
+                          transition: 'background 0.15s',
+                          background: listIndex === descHighlightedIndex ? 'rgba(59, 130, 246, 0.25)' : 'transparent',
+                          fontSize: '0.9rem'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'}
+                        onMouseLeave={e => e.currentTarget.style.background = listIndex === descHighlightedIndex ? 'rgba(59, 130, 246, 0.25)' : 'transparent'}
+                      >
+                        {desc}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
 
           <div className="grid-3" style={{ marginBottom: '2rem' }}>
@@ -327,17 +464,12 @@ const Prints = () => {
                         onChange={e => handleSearchChangeForSlot(index, e.target.value)}
                         onFocus={() => setShowForSlot(index, true)}
                         onBlur={() => setTimeout(() => setShowForSlot(index, false), 200)}
+                        onKeyDown={e => handleKeyDownForSlot(e, index)}
                         required={!item.sku}
                       />
                       <input type="hidden" value={item.sku} required />
                       {showSuggestions[index] && searchTerms[index] && (() => {
-                        const search = (searchTerms[index] || '').toLowerCase();
-                        const filtered = filaments.filter(f =>
-                          f.sku.toLowerCase().includes(search) ||
-                          f.marca.toLowerCase().includes(search) ||
-                          f.cor.toLowerCase().includes(search) ||
-                          f.categoria.toLowerCase().includes(search)
-                        );
+                        const filtered = getFilteredForSlot(index);
                         if (filtered.length === 0) return (
                           <div style={{
                             position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
@@ -355,17 +487,19 @@ const Prints = () => {
                             maxHeight: '250px', overflowY: 'auto',
                             boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
                           }}>
-                            {filtered.map(f => (
+                            {filtered.map((f, listIndex) => (
                               <div
                                 key={f.id}
+                                id={`print-sug-${index}-${listIndex}`}
                                 onMouseDown={() => handleSelectFilamentForSlot(index, f)}
                                 style={{
                                   padding: '0.75rem 1rem', cursor: 'pointer',
                                   borderBottom: '1px solid rgba(255,255,255,0.05)',
-                                  transition: 'all 0.2s'
+                                  transition: 'background 0.15s',
+                                  background: listIndex === (highlightedIndexes[index] ?? -1) ? 'rgba(59, 130, 246, 0.25)' : 'transparent'
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.1)'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.15)'}
+                                onMouseLeave={e => e.currentTarget.style.background = listIndex === (highlightedIndexes[index] ?? -1) ? 'rgba(59, 130, 246, 0.25)' : 'transparent'}
                               >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                   <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>{f.sku}</span>
