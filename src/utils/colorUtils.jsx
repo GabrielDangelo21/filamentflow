@@ -40,8 +40,4 @@ export const ColorDot = ({ cor, size = 10 }) => (
   }} />
 );
 
-export const getBrandColor = (brand) => {
-  if (!brand) return 'inherit';
-  if (brand.toLowerCase().includes('bambu')) return '#00AE42';
-  return 'inherit';
-};
+export const getBrandColor = (_brand) => 'inherit';

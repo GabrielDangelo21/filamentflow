@@ -331,7 +331,7 @@ const Dashboard = () => {
                     }}>
                       {categories[categoria].filaments.map(f => {
                         const perc = Math.min((f.currentStock / 1000) * 100, 100);
-                        const barColor = perc < 20 ? 'var(--danger)' : perc < 50 ? '#F59E0B' : 'var(--primary)';
+                        const barColor = getColorFromName(f.cor);
                         return (
                           <div key={f.id} style={{ marginBottom: '1.5rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
