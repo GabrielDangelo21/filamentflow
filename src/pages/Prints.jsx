@@ -13,10 +13,30 @@ const Prints = () => {
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
     description: '',
+    startTime: '',
+    endTime: '',
     timeMinutes: '',
     colors: 1,
     weightGrams: '',
     id: null
+  };
+
+  const calcMinutes = (start, end) => {
+    if (!start || !end) return '';
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    let total = (eh * 60 + em) - (sh * 60 + sm);
+    if (total < 0) total += 24 * 60;
+    return total;
+  };
+
+  const formatDuration = (mins) => {
+    if (!mins) return '';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m} min`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}min`;
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -95,6 +115,11 @@ const Prints = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.timeMinutes) {
+      setSuccessMessage('Informe a Hora Inicial e a Hora Final da impressão');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      return;
+    }
     if (usedFilaments.some(f => !f.sku || !f.weightGrams)) {
       setSuccessMessage('Preencha o filamento e o peso para todas as cores');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -215,15 +240,55 @@ const Prints = () => {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Tempo Gasto (Minutos)</label>
-              <input
-                type="number"
-                className="form-input"
-                placeholder="Ex: 120"
-                value={formData.timeMinutes}
-                onChange={e => setFormData({ ...formData, timeMinutes: e.target.value })}
-                required
-              />
+              <label className="form-label">Tempo de Impressão</label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Hora Inicial</div>
+                  <input
+                    type="time"
+                    className="form-input"
+                    value={formData.startTime}
+                    onChange={e => {
+                      const start = e.target.value;
+                      const mins = calcMinutes(start, formData.endTime);
+                      setFormData({ ...formData, startTime: start, timeMinutes: mins !== '' ? mins : formData.timeMinutes });
+                    }}
+                  />
+                </div>
+                <div style={{ paddingTop: '1.4rem', color: 'var(--primary)', fontWeight: 700, fontSize: '1.1rem' }}>→</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Hora Final</div>
+                  <input
+                    type="time"
+                    className="form-input"
+                    value={formData.endTime}
+                    onChange={e => {
+                      const end = e.target.value;
+                      const mins = calcMinutes(formData.startTime, end);
+                      setFormData({ ...formData, endTime: end, timeMinutes: mins !== '' ? mins : formData.timeMinutes });
+                    }}
+                  />
+                </div>
+              </div>
+              {formData.timeMinutes !== '' && (
+                <div style={{
+                  marginTop: '0.5rem',
+                  background: 'rgba(0, 240, 255, 0.08)',
+                  border: '1px solid rgba(0, 240, 255, 0.25)',
+                  borderRadius: '0.4rem',
+                  padding: '0.4rem 0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.05rem' }}>
+                    {formatDuration(Number(formData.timeMinutes))}
+                  </span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                    ({formData.timeMinutes} min)
+                  </span>
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Quantidade de Cores</label>
