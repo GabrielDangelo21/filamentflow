@@ -66,7 +66,7 @@ const Accessories = () => {
 
   const initialForm = {
     id: null, name: '', category: '', quantity: 1,
-    price: '', date: new Date().toISOString().split('T')[0], notes: ''
+    price: '', date: new Date().toISOString().split('T')[0], store: ''
   };
   const [formData, setFormData] = useState(initialForm);
 
@@ -223,11 +223,11 @@ const Accessories = () => {
               </div>
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-              <label className="form-label">Notas (Opcional)</label>
+              <label className="form-label">Onde foi Comprado (Opcional)</label>
               <input type="text" className="form-input"
-                placeholder="Ex: Bambu Cool Plate, 3 pacotes de 50g, para PLA..."
-                value={formData.notes}
-                onChange={e => setFormData({ ...formData, notes: e.target.value })} />
+                placeholder="Ex: Bol, Amazon, Aliexpress, Bambu Lab..."
+                value={formData.store}
+                onChange={e => setFormData({ ...formData, store: e.target.value })} />
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
@@ -254,7 +254,7 @@ const Accessories = () => {
               <th>Categoria</th>
               <th>Qtd</th>
               <th>Preço</th>
-              <th>Notas</th>
+              <th>Loja</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -290,7 +290,7 @@ const Accessories = () => {
                   </td>
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem', maxWidth: '200px' }}>
                     <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.notes || '—'}
+                      {item.store || '—'}
                     </span>
                   </td>
                   <td>

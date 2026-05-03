@@ -1,82 +1,103 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getFilaments, saveOrder, getOrders, deleteOrder } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+
+const createEmptyItem = () => ({
+  _id: Math.random(),
+  searchTerm: '',
+  selectedFilament: null,
+  sku: '',
+  weightGrams: 1000,
+  price: '',
+  showSuggestions: false,
+  highlightedIndex: -1
+});
 
 const Orders = () => {
   const [filaments, setFilaments] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedFilament, setSelectedFilament] = useState(null);
-  const searchInputRef = useRef(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  const initialFormState = {
-    date: new Date().toISOString().split('T')[0],
-    sku: '',
-    weightGrams: 1000,
-    price: ''
-  };
-
-  const [formData, setFormData] = useState(initialFormState);
+  const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
+  const [shipping, setShipping] = useState('');
+  const [otherCosts, setOtherCosts] = useState('');
+  const [items, setItems] = useState([createEmptyItem()]);
 
   useEffect(() => {
     setFilaments(getFilaments());
     setOrders(getOrders().reverse());
   }, []);
 
-  const filteredFilaments = filaments.filter(f => {
-    const search = searchTerm.toLowerCase();
-    return (
-      f.sku.toLowerCase().includes(search) ||
-      f.marca.toLowerCase().includes(search) ||
-      f.cor.toLowerCase().includes(search) ||
-      f.categoria.toLowerCase().includes(search)
+  const updateItem = (index, changes) =>
+    setItems(prev => prev.map((item, i) => i === index ? { ...item, ...changes } : item));
+
+  const getFilteredForItem = (item) => {
+    if (!item.searchTerm) return [];
+    const s = item.searchTerm.toLowerCase();
+    return filaments.filter(f =>
+      f.sku.toLowerCase().includes(s) ||
+      f.marca.toLowerCase().includes(s) ||
+      f.cor.toLowerCase().includes(s) ||
+      f.categoria.toLowerCase().includes(s)
     );
-  });
-
-  const handleSelectFilament = (filament) => {
-    setSelectedFilament(filament);
-    setSearchTerm(`${filament.marca} - ${filament.cor} (${filament.sku})`);
-    setFormData({ ...formData, sku: filament.sku });
-    setShowSuggestions(false);
-    setHighlightedIndex(-1);
   };
 
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    setShowSuggestions(true);
-    setHighlightedIndex(-1);
-    if (!value) {
-      setSelectedFilament(null);
-      setFormData({ ...formData, sku: '' });
-    }
+  const handleSelectFilament = (index, filament) => {
+    updateItem(index, {
+      selectedFilament: filament,
+      searchTerm: `${filament.marca} - ${filament.cor} (${filament.sku})`,
+      sku: filament.sku,
+      showSuggestions: false,
+      highlightedIndex: -1
+    });
   };
 
-  const handleSearchKeyDown = (e) => {
-    if (!showSuggestions || filteredFilaments.length === 0) return;
+  const handleItemKeyDown = (e, index) => {
+    const filtered = getFilteredForItem(items[index]);
+    const item = items[index];
+    if (!item.showSuggestions || filtered.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightedIndex(prev => {
-        const next = Math.min(prev + 1, filteredFilaments.length - 1);
-        setTimeout(() => document.getElementById(`order-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
-        return next;
-      });
+      const next = Math.min(item.highlightedIndex + 1, filtered.length - 1);
+      updateItem(index, { highlightedIndex: next });
+      setTimeout(() => document.getElementById(`sug-${index}-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlightedIndex(prev => {
-        const next = Math.max(prev - 1, 0);
-        setTimeout(() => document.getElementById(`order-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
-        return next;
-      });
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      const next = Math.max(item.highlightedIndex - 1, 0);
+      updateItem(index, { highlightedIndex: next });
+      setTimeout(() => document.getElementById(`sug-${index}-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+    } else if (e.key === 'Enter' && item.highlightedIndex >= 0) {
       e.preventDefault();
-      handleSelectFilament(filteredFilaments[highlightedIndex]);
+      handleSelectFilament(index, filtered[item.highlightedIndex]);
     } else if (e.key === 'Escape') {
-      setShowSuggestions(false);
-      setHighlightedIndex(-1);
+      updateItem(index, { showSuggestions: false, highlightedIndex: -1 });
     }
+  };
+
+  const addItem = () => setItems(prev => [...prev, createEmptyItem()]);
+  const removeItem = (index) => { if (items.length > 1) setItems(prev => prev.filter((_, i) => i !== index)); };
+
+  const totalExtra = (Number(shipping) || 0) + (Number(otherCosts) || 0);
+  const extraPerItem = items.length > 0 ? totalExtra / items.length : 0;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const validItems = items.filter(item => item.sku);
+    if (validItems.length === 0) return alert('Adicione pelo menos um filamento');
+    const extra = totalExtra / validItems.length;
+    saveOrder({
+      date: orderDate,
+      shipping: Number(shipping) || 0,
+      otherCosts: Number(otherCosts) || 0,
+      items: validItems.map(item => ({
+        sku: item.sku,
+        weightGrams: Number(item.weightGrams) || 1000,
+        price: (Number(item.price) || 0) + extra
+      }))
+    });
+    setItems([createEmptyItem()]);
+    setShipping('');
+    setOtherCosts('');
+    setOrders(getOrders().reverse());
+    alert('Pedido registrado com sucesso!');
   };
 
   const handleDeleteOrder = (id) => {
@@ -86,37 +107,12 @@ const Orders = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.sku) return alert('Selecione um filamento');
-
-    saveOrder({
-      date: formData.date,
-      items: [{
-        sku: formData.sku,
-        weightGrams: Number(formData.weightGrams),
-        price: Number(formData.price)
-      }]
-    });
-
-    // Keep the date, reset only filament-related fields
-    setFormData({
-      ...formData,
-      sku: '',
-      weightGrams: 1000,
-      price: ''
-    });
-    setSearchTerm('');
-    setSelectedFilament(null);
-    setOrders(getOrders().reverse());
-    alert('Pedido registrado com sucesso!');
-
-    // Focus search input after submit
-    setTimeout(() => {
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-      }
-    }, 0);
+  const formatCurrency = (v) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v);
+  const formatDate = (dateStr) => {
+    try {
+      const d = dateStr.includes('T') ? new Date(dateStr) : new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString();
+    } catch { return '-'; }
   };
 
   return (
@@ -125,149 +121,197 @@ const Orders = () => {
 
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
         <form onSubmit={handleSubmit}>
-          <div className="grid-2">
-            <div className="form-group">
-              <label className="form-label">Data da Compra</label>
-              <input
-                type="date"
-                className="form-input"
-                value={formData.date}
-                onChange={e => setFormData({ ...formData, date: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Filamento Comprado</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  className="form-input"
-                  placeholder="Digite SKU, marca, cor ou categoria..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  onFocus={() => setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  onKeyDown={handleSearchKeyDown}
-                  required
-                />
-                {showSuggestions && searchTerm && filteredFilaments.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    zIndex: 1000,
-                    background: '#1f2937',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '0.5rem',
-                    marginTop: '0.25rem',
-                    maxHeight: '300px',
-                    overflowY: 'auto',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
-                  }}>
-                    {filteredFilaments.map((f, listIndex) => (
-                      <div
-                        key={f.id}
-                        id={`order-sug-${listIndex}`}
-                        onClick={() => handleSelectFilament(f)}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid rgba(255,255,255,0.05)',
-                          transition: 'background 0.15s',
-                          background: listIndex === highlightedIndex ? 'rgba(59, 130, 246, 0.25)' : 'transparent'
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'}
-                        onMouseLeave={e => e.currentTarget.style.background = listIndex === highlightedIndex ? 'rgba(59, 130, 246, 0.25)' : 'transparent'}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>{f.sku}</span>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <ColorDot cor={f.cor} size={9} />
-                              <span style={{ color: getBrandColor(f.marca) }}>{f.marca}</span>
-                              <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>–</span>
-                              <span style={{ color: getColorFromName(f.cor) }}>{f.cor}</span>
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{f.categoria}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {showSuggestions && searchTerm && filteredFilaments.length === 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    zIndex: 1000,
-                    background: '#1f2937',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '0.5rem',
-                    marginTop: '0.25rem',
-                    padding: '1rem',
-                    textAlign: 'center',
-                    color: 'var(--text-muted)',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
-                  }}>
-                    Nenhum filamento encontrado
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Quantidade (Gramas)</label>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.weightGrams}
-                onChange={e => setFormData({ ...formData, weightGrams: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Preço Pago (Opcional)</label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ paddingLeft: '2rem' }}
-                  placeholder="0,00"
-                  value={formData.price}
-                  onChange={e => {
-                    const value = e.target.value.replace(',', '.');
-                    if (value === '' || !isNaN(value)) {
-                      setFormData({ ...formData, price: value });
-                    }
-                  }}
-                  onKeyDown={e => {
-                    // Allow: backspace, delete, tab, escape, enter, decimal point and comma
-                    if ([46, 8, 9, 27, 13, 110, 188, 190].indexOf(e.keyCode) !== -1 ||
-                      // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                      (e.keyCode === 65 && e.ctrlKey === true) ||
-                      (e.keyCode === 67 && e.ctrlKey === true) ||
-                      (e.keyCode === 86 && e.ctrlKey === true) ||
-                      (e.keyCode === 88 && e.ctrlKey === true) ||
-                      // Allow: home, end, left, right
-                      (e.keyCode >= 35 && e.keyCode <= 39)) {
-                      return;
-                    }
-                    // Ensure that it is a number and stop the keypress if not
-                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-                      e.preventDefault();
-                    }
-                  }}
-                />
-              </div>
-            </div>
+
+          {/* Date */}
+          <div style={{ marginBottom: '1.5rem', maxWidth: '240px' }}>
+            <label className="form-label">Data da Compra</label>
+            <input type="date" className="form-input" value={orderDate}
+              onChange={e => setOrderDate(e.target.value)} required />
           </div>
-          <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+
+          {/* Filament items */}
+          <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block' }}>
+            Filamentos Comprados
+          </label>
+
+          {items.map((item, index) => {
+            const filtered = getFilteredForItem(item);
+            return (
+              <div key={item._id} style={{
+                display: 'grid', gridTemplateColumns: '1fr 130px 140px auto',
+                gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'start'
+              }}>
+                {/* Search */}
+                <div style={{ position: 'relative' }}>
+                  {index === 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Filamento</div>}
+                  <input
+                    type="text" className="form-input"
+                    placeholder="Digite SKU, marca, cor..."
+                    value={item.searchTerm}
+                    onChange={e => {
+                      const v = e.target.value;
+                      updateItem(index, {
+                        searchTerm: v, showSuggestions: true, highlightedIndex: -1,
+                        sku: v ? item.sku : '', selectedFilament: v ? item.selectedFilament : null
+                      });
+                    }}
+                    onFocus={() => updateItem(index, { showSuggestions: true })}
+                    onBlur={() => setTimeout(() => updateItem(index, { showSuggestions: false }), 200)}
+                    onKeyDown={e => handleItemKeyDown(e, index)}
+                  />
+                  {item.showSuggestions && item.searchTerm && filtered.length > 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+                      background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '0.5rem', marginTop: '0.25rem', maxHeight: '250px',
+                      overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                    }}>
+                      {filtered.map((f, fi) => (
+                        <div key={f.id} id={`sug-${index}-${fi}`}
+                          onMouseDown={() => handleSelectFilament(index, f)}
+                          style={{
+                            padding: '0.65rem 1rem', cursor: 'pointer',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            background: fi === item.highlightedIndex ? 'rgba(59,130,246,0.25)' : 'transparent'
+                          }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>{f.sku}</span>
+                            <ColorDot cor={f.cor} size={8} />
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem', color: getBrandColor(f.marca) }}>{f.marca}</span>
+                            <span style={{ fontSize: '0.85rem', color: getColorFromName(f.cor) }}>{f.cor}</span>
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{f.categoria}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {item.showSuggestions && item.searchTerm && filtered.length === 0 && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+                      background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '0.5rem', marginTop: '0.25rem', padding: '0.75rem',
+                      textAlign: 'center', color: 'var(--text-muted)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                    }}>Nenhum filamento encontrado</div>
+                  )}
+                </div>
+
+                {/* Weight */}
+                <div>
+                  {index === 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Peso (g)</div>}
+                  <input type="number" className="form-input" min="1" value={item.weightGrams}
+                    onChange={e => updateItem(index, { weightGrams: e.target.value })} />
+                </div>
+
+                {/* Base price */}
+                <div>
+                  {index === 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Preço base (€)</div>}
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
+                    <input type="text" className="form-input" style={{ paddingLeft: '1.75rem' }}
+                      placeholder="0,00" value={item.price}
+                      onChange={e => {
+                        const v = e.target.value.replace(',', '.');
+                        if (v === '' || !isNaN(v)) updateItem(index, { price: v });
+                      }} />
+                  </div>
+                </div>
+
+                {/* Remove */}
+                <div style={{ paddingTop: index === 0 ? '1.4rem' : '0' }}>
+                  <button type="button" onClick={() => removeItem(index)}
+                    disabled={items.length === 1}
+                    style={{
+                      background: items.length === 1 ? 'transparent' : 'rgba(255,75,75,0.15)',
+                      color: items.length === 1 ? 'var(--border)' : 'var(--danger)',
+                      border: `1px solid ${items.length === 1 ? 'transparent' : 'rgba(255,75,75,0.3)'}`,
+                      borderRadius: '0.5rem', padding: '0.55rem 0.75rem',
+                      cursor: items.length === 1 ? 'default' : 'pointer', fontSize: '1rem', lineHeight: 1
+                    }}>✕</button>
+                </div>
+              </div>
+            );
+          })}
+
+          <button type="button" className="btn btn-secondary" onClick={addItem}
+            style={{ marginBottom: '1.5rem', fontSize: '0.85rem', padding: '0.5rem 1.25rem' }}>
+            + Adicionar Filamento
+          </button>
+
+          {/* Extras + live preview */}
+          <div style={{
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1.5rem'
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', alignItems: 'end' }}>
+              <div>
+                <label className="form-label">Gastos de Envio</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
+                  <input type="text" className="form-input" style={{ paddingLeft: '2rem' }}
+                    placeholder="0,00" value={shipping}
+                    onChange={e => { const v = e.target.value.replace(',', '.'); if (v === '' || !isNaN(v)) setShipping(v); }} />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">Outros Gastos</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
+                  <input type="text" className="form-input" style={{ paddingLeft: '2rem' }}
+                    placeholder="0,00" value={otherCosts}
+                    onChange={e => { const v = e.target.value.replace(',', '.'); if (v === '' || !isNaN(v)) setOtherCosts(v); }} />
+                </div>
+              </div>
+              {totalExtra > 0 && (
+                <div style={{
+                  padding: '0.75rem 1rem', background: 'rgba(0,240,255,0.07)',
+                  borderRadius: '0.5rem', border: '1px solid rgba(0,240,255,0.2)'
+                }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Extra por filamento</div>
+                  <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.05rem' }}>
+                    +{formatCurrency(extraPerItem)}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    {formatCurrency(totalExtra)} ÷ {items.length} item{items.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Per-item final price preview */}
+            {items.some(i => i.price || totalExtra > 0) && items.some(i => i.sku) && (
+              <div style={{ marginTop: '1rem' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Preço final por filamento:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {items.filter(i => i.sku).map((item, i) => {
+                    const base = Number(item.price) || 0;
+                    const final = base + extraPerItem;
+                    return (
+                      <div key={item._id} style={{
+                        background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+                        borderRadius: '0.5rem', padding: '0.4rem 0.75rem', fontSize: '0.8rem',
+                        display: 'flex', alignItems: 'center', gap: '0.4rem'
+                      }}>
+                        {item.selectedFilament?.cor && <ColorDot cor={item.selectedFilament.cor} size={8} />}
+                        <span style={{ color: 'var(--text-muted)' }}>
+                          {item.selectedFilament?.cor || `Item ${i + 1}`}:
+                        </span>
+                        {base > 0 && extraPerItem > 0 && (
+                          <span style={{ color: 'var(--text-muted)', textDecoration: 'line-through', fontSize: '0.75rem' }}>
+                            {formatCurrency(base)}
+                          </span>
+                        )}
+                        <span style={{ color: 'var(--success)', fontWeight: 700 }}>{formatCurrency(final)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button type="submit" className="btn btn-primary" style={{ minWidth: '200px' }}>
-              Registrar Compra
+              Registrar Pedido
             </button>
           </div>
         </form>
@@ -280,53 +324,79 @@ const Orders = () => {
             <tr>
               <th>Data</th>
               <th>SKU</th>
-              <th>Marca</th>
+              <th>Marca / Cor</th>
               <th>Categoria</th>
-              <th>Cor</th>
-              <th>Qtd Adquirida</th>
-              <th>Preço</th>
+              <th>Peso</th>
+              <th>Preço Final</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   Nenhum pedido registrado.
                 </td>
               </tr>
             ) : (
               orders.map(order => {
-                const filament = filaments.find(f => f.sku === order.items[0].sku);
+                const hasExtras = (order.shipping || 0) > 0 || (order.otherCosts || 0) > 0;
+                const itemCount = order.items.length;
                 return (
-                  <tr key={order.id}>
-                    <td>{(() => {
-                      try {
-                        const d = order.date.includes('T') ? new Date(order.date) : new Date(order.date + 'T12:00:00');
-                        return d.toLocaleDateString();
-                      } catch (e) {
-                        return 'Data Inválida';
-                      }
-                    })()}</td>
-                    <td><span className="badge badge-primary">{order.items[0].sku}</span></td>
-                    <td style={{ fontWeight: 600, color: getBrandColor(filament?.marca) }}>{filament?.marca || '-'}</td>
-                    <td>{filament?.categoria || '-'}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {filament?.cor && <ColorDot cor={filament.cor} size={9} />}
-                        <span style={{ color: filament?.cor ? getColorFromName(filament.cor) : 'inherit' }}>{filament?.cor || '-'}</span>
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{(parseFloat(order.items[0].weightGrams) / 1000).toFixed(2).replace('.', ',')}kg</td>
-                    <td>{order.items[0].price ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.items[0].price) : '-'}</td>
-                    <td>
-                      <button
-                        className="btn btn-danger"
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                        onClick={() => handleDeleteOrder(order.id)}
-                      >Excluir</button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={order.id}>
+                    {order.items.map((orderItem, itemIndex) => {
+                      const filament = filaments.find(f => f.sku === orderItem.sku);
+                      const isFirst = itemIndex === 0;
+                      const isLast = itemIndex === itemCount - 1;
+                      return (
+                        <tr key={`${order.id}-${itemIndex}`} style={{
+                          borderLeft: itemCount > 1 ? '3px solid rgba(0,240,255,0.25)' : 'none',
+                          borderBottom: isLast ? '1px solid rgba(255,255,255,0.08)' : '1px dashed rgba(255,255,255,0.04)'
+                        }}>
+                          <td style={{ verticalAlign: 'top', paddingTop: '0.85rem' }}>
+                            {isFirst ? (
+                              <>
+                                <div>{formatDate(order.date)}</div>
+                                {hasExtras && (
+                                  <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                                    {(order.shipping || 0) > 0 && <div>Envio: {formatCurrency(order.shipping)}</div>}
+                                    {(order.otherCosts || 0) > 0 && <div>Outros: {formatCurrency(order.otherCosts)}</div>}
+                                  </div>
+                                )}
+                              </>
+                            ) : null}
+                          </td>
+                          <td><span className="badge badge-primary">{orderItem.sku}</span></td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              {filament?.cor && <ColorDot cor={filament.cor} size={9} />}
+                              <div>
+                                <div style={{ fontWeight: 600, fontSize: '0.85rem', color: getBrandColor(filament?.marca) }}>
+                                  {filament?.marca || '-'}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: filament?.cor ? getColorFromName(filament.cor) : 'var(--text-muted)' }}>
+                                  {filament?.cor || '-'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ fontSize: '0.85rem' }}>{filament?.categoria || '-'}</td>
+                          <td style={{ fontWeight: 600 }}>
+                            {(parseFloat(orderItem.weightGrams) / 1000).toFixed(2).replace('.', ',')}kg
+                          </td>
+                          <td style={{ fontWeight: 600, color: 'var(--success)' }}>
+                            {orderItem.price ? formatCurrency(orderItem.price) : '-'}
+                          </td>
+                          <td>
+                            {isFirst ? (
+                              <button className="btn btn-danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                onClick={() => handleDeleteOrder(order.id)}>Excluir</button>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
                 );
               })
             )}
