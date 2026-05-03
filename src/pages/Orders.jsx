@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getFilaments, saveOrder, getOrders, deleteOrder } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 
@@ -18,13 +18,24 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [shipping, setShipping] = useState('');
+  const itemInputRefs = useRef([]);
+  const prevItemsLength = useRef(1);
   const [otherCosts, setOtherCosts] = useState('');
   const [items, setItems] = useState([createEmptyItem()]);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     setFilaments(getFilaments());
     setOrders(getOrders().reverse());
   }, []);
+
+  useEffect(() => {
+    if (items.length > prevItemsLength.current) {
+      const lastInput = itemInputRefs.current[items.length - 1];
+      if (lastInput) lastInput.focus();
+    }
+    prevItemsLength.current = items.length;
+  }, [items.length]);
 
   const updateItem = (index, changes) =>
     setItems(prev => prev.map((item, i) => i === index ? { ...item, ...changes } : item));
@@ -97,7 +108,8 @@ const Orders = () => {
     setShipping('');
     setOtherCosts('');
     setOrders(getOrders().reverse());
-    alert('Pedido registrado com sucesso!');
+    setSuccessMessage('✓ Pedido registrado!');
+    setTimeout(() => setSuccessMessage(''), 1000);
   };
 
   const handleDeleteOrder = (id) => {
@@ -117,6 +129,17 @@ const Orders = () => {
 
   return (
     <div className="animate-fade-in">
+      {successMessage && (
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: 10000,
+          background: 'var(--primary)', color: 'white',
+          padding: '1rem 1.5rem', borderRadius: '0.5rem',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          fontSize: '0.95rem', fontWeight: 600
+        }}>
+          {successMessage}
+        </div>
+      )}
       <h1>Entrada de Estoque (Pedidos)</h1>
 
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
@@ -145,6 +168,7 @@ const Orders = () => {
                 <div style={{ position: 'relative' }}>
                   {index === 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Filamento</div>}
                   <input
+                    ref={el => itemInputRefs.current[index] = el}
                     type="text" className="form-input"
                     placeholder="Digite SKU, marca, cor..."
                     value={item.searchTerm}
