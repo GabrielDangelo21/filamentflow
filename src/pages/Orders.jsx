@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFilaments, saveOrder, updateOrder, getOrders, deleteOrder } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+import MaskedNumberInput from '../components/MaskedNumberInput';
 
 const createEmptyItem = () => ({
   _id: Math.random(),
@@ -56,7 +57,7 @@ const Orders = () => {
   const handleSelectFilament = (index, filament) => {
     updateItem(index, {
       selectedFilament: filament,
-      searchTerm: `${filament.marca} - ${filament.cor} (${filament.sku})`,
+      searchTerm: `${filament.categoria} - ${filament.cor} (${filament.sku})`,
       sku: filament.sku,
       showSuggestions: false,
       highlightedIndex: -1
@@ -99,7 +100,7 @@ const Orders = () => {
       const filament = filaments.find(f => f.sku === orderItem.sku);
       return {
         _id: Math.random(),
-        searchTerm: filament ? `${filament.marca} - ${filament.cor} (${orderItem.sku})` : orderItem.sku,
+        searchTerm: filament ? `${filament.categoria} - ${filament.cor} (${orderItem.sku})` : orderItem.sku,
         selectedFilament: filament || null,
         sku: orderItem.sku,
         weightGrams: orderItem.weightGrams,
@@ -264,22 +265,22 @@ const Orders = () => {
                 {/* Weight */}
                 <div>
                   {index === 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Peso (g)</div>}
-                  <input type="number" className="form-input" min="1" value={item.weightGrams}
-                    onChange={e => updateItem(index, { weightGrams: e.target.value })} />
+                  <MaskedNumberInput
+                    value={item.weightGrams}
+                    onChange={v => updateItem(index, { weightGrams: v })}
+                    className="form-input"
+                  />
                 </div>
 
                 {/* Base price */}
                 <div>
                   {index === 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Preço base (€)</div>}
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
-                    <input type="text" className="form-input" style={{ paddingLeft: '1.75rem' }}
-                      placeholder="0,00" value={item.price}
-                      onChange={e => {
-                        const v = e.target.value.replace(',', '.');
-                        if (v === '' || !isNaN(v)) updateItem(index, { price: v });
-                      }} />
-                  </div>
+                  <MaskedNumberInput
+                    value={item.price}
+                    onChange={v => updateItem(index, { price: v })}
+                    prefix="€"
+                    className="form-input"
+                  />
                 </div>
 
                 {/* Remove */}
@@ -311,21 +312,21 @@ const Orders = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', alignItems: 'end' }}>
               <div>
                 <label className="form-label">Gastos de Envio</label>
-                <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
-                  <input type="text" className="form-input" style={{ paddingLeft: '2rem' }}
-                    placeholder="0,00" value={shipping}
-                    onChange={e => { const v = e.target.value.replace(',', '.'); if (v === '' || !isNaN(v)) setShipping(v); }} />
-                </div>
+                <MaskedNumberInput
+                  value={shipping}
+                  onChange={v => setShipping(v)}
+                  prefix="€"
+                  className="form-input"
+                />
               </div>
               <div>
                 <label className="form-label">Outros Gastos</label>
-                <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
-                  <input type="text" className="form-input" style={{ paddingLeft: '2rem' }}
-                    placeholder="0,00" value={otherCosts}
-                    onChange={e => { const v = e.target.value.replace(',', '.'); if (v === '' || !isNaN(v)) setOtherCosts(v); }} />
-                </div>
+                <MaskedNumberInput
+                  value={otherCosts}
+                  onChange={v => setOtherCosts(v)}
+                  prefix="€"
+                  className="form-input"
+                />
               </div>
               {totalExtra > 0 && (
                 <div style={{
@@ -421,8 +422,8 @@ const Orders = () => {
                       const isLast = itemIndex === itemCount - 1;
                       return (
                         <tr key={`${order.id}-${itemIndex}`} style={{
-                          borderLeft: itemCount > 1 ? '3px solid rgba(0,240,255,0.25)' : 'none',
-                          borderBottom: isLast ? '1px solid rgba(255,255,255,0.08)' : '1px dashed rgba(255,255,255,0.04)'
+                          borderLeft: itemCount > 1 ? '3px solid rgba(0,240,255,0.25)' : '3px solid transparent',
+                          borderBottom: isLast ? 'none' : '1px dashed rgba(255,255,255,0.04)'
                         }}>
                           <td style={{ verticalAlign: 'top', paddingTop: '0.85rem' }}>
                             {isFirst ? (
@@ -471,6 +472,23 @@ const Orders = () => {
                         </tr>
                       );
                     })}
+                    <tr style={{
+                      borderLeft: itemCount > 1 ? '3px solid rgba(0,240,255,0.25)' : '3px solid transparent',
+                      borderBottom: '2px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.03)'
+                    }}>
+                      <td></td>
+                      <td colSpan="3" style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'right', paddingRight: '1rem' }}>
+                        Total do pedido ({itemCount} {itemCount === 1 ? 'item' : 'itens'})
+                      </td>
+                      <td style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                        {(order.items.reduce((acc, i) => acc + (Number(i.weightGrams) || 0), 0) / 1000).toFixed(2).replace('.', ',')}kg
+                      </td>
+                      <td style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--primary)' }}>
+                        {formatCurrency(order.items.reduce((acc, i) => acc + (Number(i.price) || 0), 0))}
+                      </td>
+                      <td></td>
+                    </tr>
                   </React.Fragment>
                 );
               })

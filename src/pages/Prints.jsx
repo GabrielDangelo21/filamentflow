@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+import MaskedNumberInput from '../components/MaskedNumberInput';
 
 const Prints = () => {
   const [filaments, setFilaments] = useState([]);
@@ -523,14 +524,10 @@ const Prints = () => {
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Peso Gasto (Gramas)</label>
-                    <input
-                      type="number"
-                      step="any"
-                      className="form-input"
-                      placeholder="Peso nesta cor"
+                    <MaskedNumberInput
                       value={item.weightGrams}
-                      onChange={e => handleFilamentChange(index, 'weightGrams', e.target.value)}
-                      required
+                      onChange={v => handleFilamentChange(index, 'weightGrams', v)}
+                      className="form-input"
                     />
                   </div>
                 </div>

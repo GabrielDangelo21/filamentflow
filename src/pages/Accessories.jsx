@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAccessories, saveAccessory, deleteAccessory, getAccCategories, saveAccCategory, deleteAccCategory, saveAllAccCategories } from '../services/storage';
+import MaskedNumberInput from '../components/MaskedNumberInput';
 
 const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose }) => {
   const [newItem, setNewItem] = useState('');
@@ -207,20 +208,12 @@ const Accessories = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Preço Pago (Opcional)</label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>€</span>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ paddingLeft: '2rem' }}
-                  placeholder="0,00"
-                  value={formData.price}
-                  onChange={e => {
-                    const v = e.target.value.replace(',', '.');
-                    if (v === '' || !isNaN(v)) setFormData({ ...formData, price: v });
-                  }}
-                />
-              </div>
+              <MaskedNumberInput
+                value={formData.price}
+                onChange={v => setFormData({ ...formData, price: v })}
+                prefix="€"
+                className="form-input"
+              />
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label className="form-label">Onde foi Comprado (Opcional)</label>
