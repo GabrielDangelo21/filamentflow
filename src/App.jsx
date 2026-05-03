@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Filaments from './pages/Filaments';
 import Orders from './pages/Orders';
 import Prints from './pages/Prints';
+import Accessories from './pages/Accessories';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -14,6 +15,7 @@ function App() {
       case 'filaments': return <Filaments />;
       case 'orders': return <Orders />;
       case 'prints': return <Prints />;
+      case 'accessories': return <Accessories />;
       default: return <Dashboard />;
     }
   };

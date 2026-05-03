@@ -6,7 +6,8 @@ const Layout = ({ children, activeTab, onTabChange }) => {
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'filaments', label: 'Filamentos', icon: '🧵' },
     { id: 'orders', label: 'Pedidos (Entrada)', icon: '📦' },
-    { id: 'prints', label: 'Impressões (Saída)', icon: '🖨️' }
+    { id: 'prints', label: 'Impressões (Saída)', icon: '🖨️' },
+    { id: 'accessories', label: 'Acessórios', icon: '🔧' }
   ];
 
   return (

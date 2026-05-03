@@ -3,7 +3,9 @@ const STORAGE_KEYS = {
   ORDERS: 'filamentflow_orders',
   PRINTS: 'filamentflow_prints',
   CATEGORIES: 'filamentflow_categories',
-  BRANDS: 'filamentflow_brands'
+  BRANDS: 'filamentflow_brands',
+  ACCESSORIES: 'filamentflow_accessories',
+  ACC_CATEGORIES: 'filamentflow_acc_categories'
 };
 
 // --- GENERIC HELPERS ---
@@ -23,8 +25,17 @@ export const getFilaments = () => getFromStorage(STORAGE_KEYS.FILAMENTS);
 
 export const saveFilament = (filament) => {
   const filaments = getFilaments();
-  const existingIndex = filaments.findIndex(f => f.sku === filament.sku);
 
+  if (filament.id) {
+    const existingIndex = filaments.findIndex(f => f.id === filament.id);
+    if (existingIndex >= 0) {
+      filaments[existingIndex] = { ...filaments[existingIndex], ...filament };
+      saveToStorage(STORAGE_KEYS.FILAMENTS, filaments);
+      return;
+    }
+  }
+
+  const existingIndex = filaments.findIndex(f => f.sku === filament.sku);
   if (existingIndex >= 0) {
     filaments[existingIndex] = { ...filaments[existingIndex], ...filament };
   } else {
@@ -225,6 +236,48 @@ export const getPrintCost = (print) => {
   }, 0);
 };
 
+// --- ACCESSORIES ---
+const DEFAULT_ACC_CATEGORIES = ['Ferramentas', 'Consumíveis', 'Adesivos', 'Superfície de Impressão', 'Armazenamento', 'Limpeza', 'Electrónica', 'Outros'];
+
+export const getAccessories = () => getFromStorage(STORAGE_KEYS.ACCESSORIES);
+
+export const saveAccessory = (item) => {
+  const items = getAccessories();
+  if (item.id) {
+    const idx = items.findIndex(i => i.id === item.id);
+    if (idx >= 0) {
+      items[idx] = { ...items[idx], ...item };
+      saveToStorage(STORAGE_KEYS.ACCESSORIES, items);
+      return items[idx];
+    }
+  }
+  const newItem = { ...item, id: generateId(), createdAt: new Date().toISOString() };
+  items.push(newItem);
+  saveToStorage(STORAGE_KEYS.ACCESSORIES, items);
+  return newItem;
+};
+
+export const deleteAccessory = (id) => {
+  saveToStorage(STORAGE_KEYS.ACCESSORIES, getAccessories().filter(i => i.id !== id));
+};
+
+export const getAccCategories = () => {
+  const cats = localStorage.getItem(STORAGE_KEYS.ACC_CATEGORIES);
+  if (!cats) { saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, DEFAULT_ACC_CATEGORIES); return DEFAULT_ACC_CATEGORIES; }
+  return JSON.parse(cats);
+};
+
+export const saveAccCategory = (cat) => {
+  const cats = getAccCategories();
+  if (!cats.includes(cat)) { cats.push(cat); saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, cats); }
+};
+
+export const deleteAccCategory = (cat) => {
+  saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, getAccCategories().filter(c => c !== cat));
+};
+
+export const saveAllAccCategories = (cats) => saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, cats);
+
 // --- BACKUP ---
 export const exportBackup = () => ({
   version: 1,
@@ -233,7 +286,9 @@ export const exportBackup = () => ({
   orders: getOrders(),
   prints: getPrints(),
   categories: getCategories(),
-  brands: getBrands()
+  brands: getBrands(),
+  accessories: getAccessories(),
+  accCategories: getAccCategories()
 });
 
 export const importBackup = (backup) => {
@@ -243,4 +298,6 @@ export const importBackup = (backup) => {
   if (backup.prints) saveToStorage(STORAGE_KEYS.PRINTS, backup.prints);
   if (backup.categories) saveToStorage(STORAGE_KEYS.CATEGORIES, backup.categories);
   if (backup.brands) saveToStorage(STORAGE_KEYS.BRANDS, backup.brands);
+  if (backup.accessories) saveToStorage(STORAGE_KEYS.ACCESSORIES, backup.accessories);
+  if (backup.accCategories) saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, backup.accCategories);
 };

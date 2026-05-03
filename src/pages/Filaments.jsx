@@ -110,7 +110,8 @@ const Filaments = () => {
   const [filaments, setFilaments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [formData, setFormData] = useState({ marca: '', sku: '', cor: '', categoria: '' });
+  const [formData, setFormData] = useState({ marca: '', sku: '', cor: '', categoria: '', id: null });
+  const [isEditing, setIsEditing] = useState(false);
   const [modalOpen, setModalOpen] = useState(null); // 'brands' | 'categories' | null
   const skuInputRef = useRef(null);
 
@@ -146,14 +147,23 @@ const Filaments = () => {
       marca: formData.marca || 'NÃO ESPECIFICADO',
       cor: formData.cor || 'NÃO ESPECIFICADO'
     });
-    setFormData(prev => ({ ...prev, sku: '', cor: '' }));
+    setFormData(prev => ({ ...prev, sku: '', cor: '', id: null }));
+    setIsEditing(false);
     loadFilaments();
-    // Focus SKU input after submit
     setTimeout(() => {
-      if (skuInputRef.current) {
-        skuInputRef.current.focus();
-      }
+      if (skuInputRef.current) skuInputRef.current.focus();
     }, 0);
+  };
+
+  const handleEdit = (f) => {
+    setFormData({ id: f.id, marca: f.marca, sku: f.sku, cor: f.cor, categoria: f.categoria });
+    setIsEditing(true);
+    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setFormData(prev => ({ ...prev, sku: '', cor: '', id: null }));
+    setIsEditing(false);
   };
 
   // ── Brand modal handlers ──
@@ -215,7 +225,7 @@ const Filaments = () => {
 
   return (
     <div className="animate-fade-in">
-      <h1>Gestão de Filamentos</h1>
+      <h1>{isEditing ? 'Editar Filamento' : 'Gestão de Filamentos'}</h1>
 
       {/* Modals */}
       {modalOpen === 'brands' && (
@@ -240,7 +250,7 @@ const Filaments = () => {
       )}
 
       {/* Filament Form */}
-      <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
+      <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', border: isEditing ? '1px solid var(--primary)' : undefined }}>
         <form onSubmit={handleSubmit} className="grid-3">
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -292,8 +302,15 @@ const Filaments = () => {
               ))}
             </select>
           </div>
-          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
-            <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem', fontSize: '1rem' }}>Cadastrar Filamento</button>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem' }}>
+            {isEditing && (
+              <button type="button" className="btn btn-secondary" style={{ padding: '0.75rem 2rem', fontSize: '1rem' }} onClick={handleCancelEdit}>
+                Cancelar Edição
+              </button>
+            )}
+            <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem', fontSize: '1rem' }}>
+              {isEditing ? 'Salvar Alterações' : 'Cadastrar Filamento'}
+            </button>
           </div>
         </form>
       </div>
@@ -332,11 +349,18 @@ const Filaments = () => {
                     {(parseFloat(f.currentStock) / 1000).toFixed(3).replace('.', ',')}kg
                   </td>
                   <td>
-                    <button
-                      className="btn btn-danger"
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                      onClick={() => { if (confirm('Excluir?')) { deleteFilament(f.id); loadFilaments(); } }}
-                    >Excluir</button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                        onClick={() => handleEdit(f)}
+                      >Editar</button>
+                      <button
+                        className="btn btn-danger"
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                        onClick={() => { if (confirm('Excluir?')) { deleteFilament(f.id); loadFilaments(); } }}
+                      >Excluir</button>
+                    </div>
                   </td>
                 </tr>
               ))
