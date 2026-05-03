@@ -100,7 +100,7 @@ const Accessories = () => {
   };
 
   const handleEdit = (item) => {
-    setFormData({ ...item, price: item.price != null ? item.price : '' });
+    setFormData({ ...item, price: item.price != null ? item.price : '', store: item.store || '', name: item.name || '' });
     setIsEditing(true);
     document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -125,7 +125,7 @@ const Accessories = () => {
   };
 
   const getFilteredNames = () => {
-    const typed = formData.name.toLowerCase();
+    const typed = (formData.name || '').toLowerCase();
     if (!typed) return [];
     return [...new Set(accessories.map(a => a.name).filter(Boolean))]
       .filter(n => n.toLowerCase().includes(typed) && n !== formData.name)
@@ -133,7 +133,7 @@ const Accessories = () => {
   };
 
   const getFilteredStores = () => {
-    const typed = formData.store.toLowerCase();
+    const typed = (formData.store || '').toLowerCase();
     if (!typed) return [];
     return [...new Set(accessories.map(a => a.store).filter(Boolean))]
       .filter(s => s.toLowerCase().includes(typed) && s !== formData.store)
