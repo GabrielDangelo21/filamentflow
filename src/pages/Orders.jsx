@@ -265,11 +265,8 @@ const Orders = () => {
                 {/* Weight */}
                 <div>
                   {index === 0 && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Peso (g)</div>}
-                  <MaskedNumberInput
-                    value={item.weightGrams}
-                    onChange={v => updateItem(index, { weightGrams: v })}
-                    className="form-input"
-                  />
+                  <input type="number" className="form-input" min="1" value={item.weightGrams}
+                    onChange={e => updateItem(index, { weightGrams: e.target.value })} />
                 </div>
 
                 {/* Base price */}

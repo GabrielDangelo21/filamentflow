@@ -65,6 +65,11 @@ const Accessories = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const nameInputRef = useRef(null);
 
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+  const [nameHighlightedIndex, setNameHighlightedIndex] = useState(-1);
+  const [showStoreSuggestions, setShowStoreSuggestions] = useState(false);
+  const [storeHighlightedIndex, setStoreHighlightedIndex] = useState(-1);
+
   const initialForm = {
     id: null, name: '', category: '', quantity: 1,
     price: '', date: new Date().toISOString().split('T')[0], store: ''
@@ -117,6 +122,78 @@ const Accessories = () => {
     const updated = getAccCategories();
     setCategories(updated);
     if (formData.category === name) setFormData(prev => ({ ...prev, category: updated[0] || '' }));
+  };
+
+  const getFilteredNames = () => {
+    const typed = formData.name.toLowerCase();
+    if (!typed) return [];
+    return [...new Set(accessories.map(a => a.name).filter(Boolean))]
+      .filter(n => n.toLowerCase().includes(typed) && n !== formData.name)
+      .slice(0, 8);
+  };
+
+  const getFilteredStores = () => {
+    const typed = formData.store.toLowerCase();
+    if (!typed) return [];
+    return [...new Set(accessories.map(a => a.store).filter(Boolean))]
+      .filter(s => s.toLowerCase().includes(typed) && s !== formData.store)
+      .slice(0, 8);
+  };
+
+  const handleNameKeyDown = (e) => {
+    const filtered = getFilteredNames();
+    if (!showNameSuggestions || filtered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setNameHighlightedIndex(prev => {
+        const next = Math.min(prev + 1, filtered.length - 1);
+        setTimeout(() => document.getElementById(`name-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+        return next;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setNameHighlightedIndex(prev => {
+        const next = Math.max(prev - 1, 0);
+        setTimeout(() => document.getElementById(`name-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+        return next;
+      });
+    } else if (e.key === 'Enter' && nameHighlightedIndex >= 0) {
+      e.preventDefault();
+      setFormData({ ...formData, name: filtered[nameHighlightedIndex] });
+      setShowNameSuggestions(false);
+      setNameHighlightedIndex(-1);
+    } else if (e.key === 'Escape') {
+      setShowNameSuggestions(false);
+      setNameHighlightedIndex(-1);
+    }
+  };
+
+  const handleStoreKeyDown = (e) => {
+    const filtered = getFilteredStores();
+    if (!showStoreSuggestions || filtered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setStoreHighlightedIndex(prev => {
+        const next = Math.min(prev + 1, filtered.length - 1);
+        setTimeout(() => document.getElementById(`store-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+        return next;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setStoreHighlightedIndex(prev => {
+        const next = Math.max(prev - 1, 0);
+        setTimeout(() => document.getElementById(`store-sug-${next}`)?.scrollIntoView({ block: 'nearest' }), 0);
+        return next;
+      });
+    } else if (e.key === 'Enter' && storeHighlightedIndex >= 0) {
+      e.preventDefault();
+      setFormData({ ...formData, store: filtered[storeHighlightedIndex] });
+      setShowStoreSuggestions(false);
+      setStoreHighlightedIndex(-1);
+    } else if (e.key === 'Escape') {
+      setShowStoreSuggestions(false);
+      setStoreHighlightedIndex(-1);
+    }
   };
 
   const handleReorderCategories = (fromIdx, toIdx) => {
@@ -177,15 +254,44 @@ const Accessories = () => {
           <div className="grid-2" style={{ marginBottom: '1rem' }}>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label className="form-label">Nome do Acessório</label>
-              <input
-                ref={nameInputRef}
-                type="text"
-                className="form-input"
-                placeholder="Ex: Placa de impressão, Dissecante, Alicate de bico..."
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex: Placa de impressão, Dissecante, Alicate de bico..."
+                  value={formData.name}
+                  onChange={e => { setFormData({ ...formData, name: e.target.value }); setShowNameSuggestions(true); setNameHighlightedIndex(-1); }}
+                  onFocus={() => setShowNameSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowNameSuggestions(false), 200)}
+                  onKeyDown={handleNameKeyDown}
+                  required
+                />
+                {showNameSuggestions && (() => {
+                  const filtered = getFilteredNames();
+                  if (!filtered.length) return null;
+                  return (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+                      background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '0.5rem', marginTop: '0.25rem', maxHeight: '220px',
+                      overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                    }}>
+                      {filtered.map((name, i) => (
+                        <div key={i} id={`name-sug-${i}`}
+                          onMouseDown={() => { setFormData({ ...formData, name }); setShowNameSuggestions(false); setNameHighlightedIndex(-1); }}
+                          style={{
+                            padding: '0.7rem 1rem', cursor: 'pointer', fontSize: '0.9rem',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            background: i === nameHighlightedIndex ? 'rgba(59,130,246,0.25)' : 'transparent'
+                          }}>
+                          {name}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -217,10 +323,40 @@ const Accessories = () => {
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label className="form-label">Onde foi Comprado (Opcional)</label>
-              <input type="text" className="form-input"
-                placeholder="Ex: Bol, Amazon, Aliexpress, Bambu Lab..."
-                value={formData.store}
-                onChange={e => setFormData({ ...formData, store: e.target.value })} />
+              <div style={{ position: 'relative' }}>
+                <input type="text" className="form-input"
+                  placeholder="Ex: Bol, Amazon, Aliexpress, Bambu Lab..."
+                  value={formData.store}
+                  onChange={e => { setFormData({ ...formData, store: e.target.value }); setShowStoreSuggestions(true); setStoreHighlightedIndex(-1); }}
+                  onFocus={() => setShowStoreSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowStoreSuggestions(false), 200)}
+                  onKeyDown={handleStoreKeyDown}
+                />
+                {showStoreSuggestions && (() => {
+                  const filtered = getFilteredStores();
+                  if (!filtered.length) return null;
+                  return (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+                      background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '0.5rem', marginTop: '0.25rem', maxHeight: '220px',
+                      overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                    }}>
+                      {filtered.map((store, i) => (
+                        <div key={i} id={`store-sug-${i}`}
+                          onMouseDown={() => { setFormData({ ...formData, store }); setShowStoreSuggestions(false); setStoreHighlightedIndex(-1); }}
+                          style={{
+                            padding: '0.7rem 1rem', cursor: 'pointer', fontSize: '0.9rem',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            background: i === storeHighlightedIndex ? 'rgba(59,130,246,0.25)' : 'transparent'
+                          }}>
+                          {store}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
