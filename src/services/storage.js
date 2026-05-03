@@ -5,7 +5,8 @@ const STORAGE_KEYS = {
   CATEGORIES: 'filamentflow_categories',
   BRANDS: 'filamentflow_brands',
   ACCESSORIES: 'filamentflow_accessories',
-  ACC_CATEGORIES: 'filamentflow_acc_categories'
+  ACC_CATEGORIES: 'filamentflow_acc_categories',
+  ACC_ORDERS: 'filamentflow_acc_orders'
 };
 
 // --- GENERIC HELPERS ---
@@ -245,29 +246,55 @@ export const getPrintCost = (print) => {
   }, 0);
 };
 
-// --- ACCESSORIES ---
+// --- ACCESSORIES (legacy individual items) ---
 const DEFAULT_ACC_CATEGORIES = ['Ferramentas', 'Consumíveis', 'Adesivos', 'Superfície de Impressão', 'Armazenamento', 'Limpeza', 'Electrónica', 'Outros'];
 
 export const getAccessories = () => getFromStorage(STORAGE_KEYS.ACCESSORIES);
 
-export const saveAccessory = (item) => {
-  const items = getAccessories();
-  if (item.id) {
-    const idx = items.findIndex(i => i.id === item.id);
-    if (idx >= 0) {
-      items[idx] = { ...items[idx], ...item };
-      saveToStorage(STORAGE_KEYS.ACCESSORIES, items);
-      return items[idx];
-    }
-  }
-  const newItem = { ...item, id: generateId(), createdAt: new Date().toISOString() };
-  items.push(newItem);
-  saveToStorage(STORAGE_KEYS.ACCESSORIES, items);
-  return newItem;
+// --- ACCESSORY ORDERS (new order-based format) ---
+export const getAccOrders = () => {
+  const stored = localStorage.getItem(STORAGE_KEYS.ACC_ORDERS);
+  if (stored !== null) return JSON.parse(stored);
+
+  // One-time migration from old individual-item format
+  const oldItems = getFromStorage(STORAGE_KEYS.ACCESSORIES);
+  const migrated = oldItems.map(item => ({
+    id: item.id || generateId(),
+    date: item.date || new Date().toISOString().split('T')[0],
+    store: item.store || '',
+    shipping: 0,
+    otherCosts: 0,
+    createdAt: item.createdAt || new Date().toISOString(),
+    items: [{
+      name: item.name || '',
+      category: item.category || '',
+      quantity: Number(item.quantity) || 1,
+      price: item.price != null ? Number(item.price) : null
+    }]
+  }));
+  saveToStorage(STORAGE_KEYS.ACC_ORDERS, migrated);
+  return migrated;
 };
 
-export const deleteAccessory = (id) => {
-  saveToStorage(STORAGE_KEYS.ACCESSORIES, getAccessories().filter(i => i.id !== id));
+export const saveAccOrder = (order) => {
+  const orders = getAccOrders();
+  const newOrder = { ...order, id: generateId(), createdAt: new Date().toISOString() };
+  orders.push(newOrder);
+  saveToStorage(STORAGE_KEYS.ACC_ORDERS, orders);
+  return newOrder;
+};
+
+export const updateAccOrder = (order) => {
+  const orders = getAccOrders();
+  const idx = orders.findIndex(o => o.id === order.id);
+  if (idx >= 0) {
+    orders[idx] = order;
+    saveToStorage(STORAGE_KEYS.ACC_ORDERS, orders);
+  }
+};
+
+export const deleteAccOrder = (id) => {
+  saveToStorage(STORAGE_KEYS.ACC_ORDERS, getAccOrders().filter(o => o.id !== id));
 };
 
 export const getAccCategories = () => {
@@ -297,6 +324,7 @@ export const exportBackup = () => ({
   categories: getCategories(),
   brands: getBrands(),
   accessories: getAccessories(),
+  accOrders: getAccOrders(),
   accCategories: getAccCategories()
 });
 
@@ -308,5 +336,6 @@ export const importBackup = (backup) => {
   if (backup.categories) saveToStorage(STORAGE_KEYS.CATEGORIES, backup.categories);
   if (backup.brands) saveToStorage(STORAGE_KEYS.BRANDS, backup.brands);
   if (backup.accessories) saveToStorage(STORAGE_KEYS.ACCESSORIES, backup.accessories);
+  if (backup.accOrders) saveToStorage(STORAGE_KEYS.ACC_ORDERS, backup.accOrders);
   if (backup.accCategories) saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, backup.accCategories);
 };
