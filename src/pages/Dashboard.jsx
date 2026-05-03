@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getAllFilamentsWithStock, getOrders, getPrints, exportBackup, importBackup, getPrintCost } from '../services/storage';
+import { getAllFilamentsWithStock, getOrders, getPrints, getAccessories, exportBackup, importBackup, getPrintCost } from '../services/storage';
 import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
 
 const Dashboard = () => {
@@ -62,7 +62,9 @@ const Dashboard = () => {
     const allPrints = getPrints();
 
     const totalStock = allFilaments.reduce((acc, f) => acc + (f.currentStock || 0), 0);
-    const totalCost = allOrders.reduce((acc, o) => acc + (o.items[0].price || 0), 0);
+    const allAccessories = getAccessories();
+    const accessoriesTotalCost = allAccessories.reduce((acc, a) => acc + (a.price != null ? Number(a.price) * (Number(a.quantity) || 1) : 0), 0);
+    const totalCost = allOrders.reduce((acc, o) => acc + o.items.reduce((s, i) => s + (Number(i.price) || 0), 0), 0) + accessoriesTotalCost;
     const totalPrintCost = allPrints.reduce((acc, p) => acc + getPrintCost(p), 0);
     const totalPurchasedGrams = allOrders.reduce((acc, o) => acc + o.items.reduce((s, i) => s + Number(i.weightGrams || 0), 0), 0);
     const totalUsedGrams = allPrints.reduce((acc, p) => acc + (p.totalWeight || 0), 0);
