@@ -69,7 +69,13 @@ const Orders = () => {
     prevAccessoryLength.current = accessoryItems.length;
   }, [accessoryItems.length]);
 
-  const loadData = () => setOrders(getUnifiedOrders().reverse());
+  const loadData = () => setOrders(
+    getUnifiedOrders().sort((a, b) => {
+      const da = a.date?.includes('T') ? new Date(a.date) : new Date(a.date + 'T12:00:00');
+      const db = b.date?.includes('T') ? new Date(b.date) : new Date(b.date + 'T12:00:00');
+      return db - da;
+    })
+  );
 
   // --- Filament item helpers ---
   const updateFilamentItem = (index, changes) =>
