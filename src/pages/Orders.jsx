@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getFilaments, saveOrder, getOrders, deleteOrder } from '../services/storage';
+import { getFilaments, saveOrder, updateOrder, getOrders, deleteOrder } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 
 const createEmptyItem = () => ({
@@ -23,6 +23,8 @@ const Orders = () => {
   const [otherCosts, setOtherCosts] = useState('');
   const [items, setItems] = useState([createEmptyItem()]);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState(null);
 
   useEffect(() => {
     setFilaments(getFilaments());
@@ -86,6 +88,38 @@ const Orders = () => {
   const addItem = () => setItems(prev => [...prev, createEmptyItem()]);
   const removeItem = (index) => { if (items.length > 1) setItems(prev => prev.filter((_, i) => i !== index)); };
 
+  const handleEdit = (order) => {
+    const extraPerItem = ((order.shipping || 0) + (order.otherCosts || 0)) / order.items.length;
+    setEditingOrderId(order.id);
+    setIsEditing(true);
+    setOrderDate(order.date.includes('T') ? order.date.split('T')[0] : order.date);
+    setShipping(order.shipping ? String(order.shipping) : '');
+    setOtherCosts(order.otherCosts ? String(order.otherCosts) : '');
+    setItems(order.items.map(orderItem => {
+      const filament = filaments.find(f => f.sku === orderItem.sku);
+      return {
+        _id: Math.random(),
+        searchTerm: filament ? `${filament.marca} - ${filament.cor} (${orderItem.sku})` : orderItem.sku,
+        selectedFilament: filament || null,
+        sku: orderItem.sku,
+        weightGrams: orderItem.weightGrams,
+        price: String(Math.round((orderItem.price - extraPerItem) * 100) / 100 || ''),
+        showSuggestions: false,
+        highlightedIndex: -1
+      };
+    }));
+    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditingOrderId(null);
+    setItems([createEmptyItem()]);
+    setShipping('');
+    setOtherCosts('');
+    setOrderDate(new Date().toISOString().split('T')[0]);
+  };
+
   const totalExtra = (Number(shipping) || 0) + (Number(otherCosts) || 0);
   const extraPerItem = items.length > 0 ? totalExtra / items.length : 0;
 
@@ -94,7 +128,7 @@ const Orders = () => {
     const validItems = items.filter(item => item.sku);
     if (validItems.length === 0) return alert('Adicione pelo menos um filamento');
     const extra = totalExtra / validItems.length;
-    saveOrder({
+    const orderData = {
       date: orderDate,
       shipping: Number(shipping) || 0,
       otherCosts: Number(otherCosts) || 0,
@@ -103,12 +137,20 @@ const Orders = () => {
         weightGrams: Number(item.weightGrams) || 1000,
         price: (Number(item.price) || 0) + extra
       }))
-    });
+    };
+    if (isEditing && editingOrderId) {
+      updateOrder({ ...orderData, id: editingOrderId });
+      setSuccessMessage('✓ Pedido atualizado!');
+    } else {
+      saveOrder(orderData);
+      setSuccessMessage('✓ Pedido registrado!');
+    }
+    setIsEditing(false);
+    setEditingOrderId(null);
     setItems([createEmptyItem()]);
     setShipping('');
     setOtherCosts('');
     setOrders(getOrders().reverse());
-    setSuccessMessage('✓ Pedido registrado!');
     setTimeout(() => setSuccessMessage(''), 1000);
   };
 
@@ -140,9 +182,9 @@ const Orders = () => {
           {successMessage}
         </div>
       )}
-      <h1>Entrada de Estoque (Pedidos)</h1>
+      <h1>{isEditing ? 'Editar Pedido' : 'Entrada de Estoque (Pedidos)'}</h1>
 
-      <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
+      <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', border: isEditing ? '1px solid var(--primary)' : undefined }}>
         <form onSubmit={handleSubmit}>
 
           {/* Date */}
@@ -333,9 +375,14 @@ const Orders = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            {isEditing && (
+              <button type="button" className="btn btn-secondary" onClick={handleCancelEdit}>
+                Cancelar Edição
+              </button>
+            )}
             <button type="submit" className="btn btn-primary" style={{ minWidth: '200px' }}>
-              Registrar Pedido
+              {isEditing ? 'Salvar Alterações' : 'Registrar Pedido'}
             </button>
           </div>
         </form>
@@ -413,8 +460,12 @@ const Orders = () => {
                           </td>
                           <td>
                             {isFirst ? (
-                              <button className="btn btn-danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                                onClick={() => handleDeleteOrder(order.id)}>Excluir</button>
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                  onClick={() => handleEdit(order)}>Editar</button>
+                                <button className="btn btn-danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                  onClick={() => handleDeleteOrder(order.id)}>Excluir</button>
+                              </div>
                             ) : null}
                           </td>
                         </tr>

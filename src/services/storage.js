@@ -84,6 +84,15 @@ export const deleteOrder = (id) => {
   return filtered;
 };
 
+export const updateOrder = (order) => {
+  const orders = getOrders();
+  const idx = orders.findIndex(o => o.id === order.id);
+  if (idx >= 0) {
+    orders[idx] = order;
+    saveToStorage(STORAGE_KEYS.ORDERS, orders);
+  }
+};
+
 // --- PRINTS ---
 export const getPrints = () => {
   const prints = getFromStorage(STORAGE_KEYS.PRINTS);
