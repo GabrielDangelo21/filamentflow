@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getAllFilamentsWithStock, getOrders, getPrints, getAccOrders, exportBackup, importBackup, getPrintCost } from '../services/storage';
+import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, getPrintCost } from '../services/storage';
 import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
 
 const Dashboard = () => {
@@ -58,16 +58,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     const allFilaments = getAllFilamentsWithStock();
-    const allOrders = getOrders();
+    const allOrders = getUnifiedOrders();
     const allPrints = getPrints();
 
     const totalStock = allFilaments.reduce((acc, f) => acc + (f.currentStock || 0), 0);
-    const allAccOrders = getAccOrders();
-    const accessoriesTotalCost = allAccOrders.reduce((acc, o) =>
-      acc + (o.items || []).reduce((s, i) => s + (i.price != null ? Number(i.price) : 0), 0), 0);
-    const totalCost = allOrders.reduce((acc, o) => acc + o.items.reduce((s, i) => s + (Number(i.price) || 0), 0), 0) + accessoriesTotalCost;
+    const totalCost = allOrders.reduce((acc, o) =>
+      acc + o.items.reduce((s, i) => s + (i.price != null ? Number(i.price) : 0), 0), 0);
     const totalPrintCost = allPrints.reduce((acc, p) => acc + getPrintCost(p), 0);
-    const totalPurchasedGrams = allOrders.reduce((acc, o) => acc + o.items.reduce((s, i) => s + Number(i.weightGrams || 0), 0), 0);
+    const totalPurchasedGrams = allOrders.reduce((acc, o) =>
+      acc + o.items.filter(i => i.type === 'filament').reduce((s, i) => s + Number(i.weightGrams || 0), 0), 0);
     const totalUsedGrams = allPrints.reduce((acc, p) => acc + (p.totalWeight || 0), 0);
 
     setStats({
@@ -75,6 +74,7 @@ const Dashboard = () => {
       totalStockGrams: totalStock,
       totalOrders: allOrders.length,
       totalPrints: allPrints.length,
+
       totalCost: totalCost,
       totalPrintCost: totalPrintCost,
       totalPurchasedGrams: totalPurchasedGrams,
@@ -103,7 +103,7 @@ const Dashboard = () => {
       });
     setTopFilaments(topList);
 
-    const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.map(i => i.sku)));
+    const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
     const lowStock = allFilaments
       .filter(f => purchasedSKUs.has(f.sku) && (f.currentStock || 0) < 250)
       .sort((a, b) => (a.currentStock || 0) - (b.currentStock || 0));
@@ -266,8 +266,8 @@ const Dashboard = () => {
           <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Estado do Inventário</h2>
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             {(() => {
-              const allOrders = getOrders();
-              const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.map(item => item.sku)));
+              const allOrders = getUnifiedOrders();
+              const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
               const purchasedFilaments = filaments.filter(f => purchasedSKUs.has(f.sku));
 
               if (purchasedFilaments.length === 0) {
