@@ -368,7 +368,7 @@ export default function Estoque() {
   // Summary stats
   const totalFilaments = filaments.length;
   const inStock = filaments.filter(f => f.currentStock > 0).length;
-  const lowStock = filaments.filter(f => f.currentStock > 0 && f.currentStock < LOW_STOCK).length;
+  const lowStock = filaments.filter(f => f.currentStock > 0 && f.currentStock < MEDIUM_STOCK).length;
   const empty = filaments.filter(f => f.currentStock <= 0).length;
   const totalGrams = filaments.reduce((s, f) => s + Math.max(0, f.currentStock), 0);
 
