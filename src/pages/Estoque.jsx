@@ -228,7 +228,8 @@ const Shelf = ({ category, filaments }) => {
   if (filaments.length === 0) return null;
 
   const totalStock = filaments.reduce((s, f) => s + Math.max(0, f.currentStock), 0);
-  const lowCount = filaments.filter(f => f.currentStock > 0 && f.currentStock < LOW_STOCK).length;
+  const criticalCount = filaments.filter(f => f.currentStock > 0 && f.currentStock < LOW_STOCK).length;
+  const lowCount = filaments.filter(f => f.currentStock >= LOW_STOCK && f.currentStock < MEDIUM_STOCK).length;
   const emptyCount = filaments.filter(f => f.currentStock <= 0).length;
 
   return (
@@ -277,6 +278,18 @@ const Shelf = ({ category, filaments }) => {
               fontWeight: '600',
             }}>
               {lowCount} baixo
+            </span>
+          )}
+          {criticalCount > 0 && (
+            <span style={{
+              fontSize: '0.7rem',
+              color: '#F87171',
+              background: 'rgba(220,38,38,0.15)',
+              padding: '2px 8px',
+              borderRadius: '20px',
+              fontWeight: '600',
+            }}>
+              {criticalCount} crítico
             </span>
           )}
           {emptyCount > 0 && (
