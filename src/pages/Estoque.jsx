@@ -330,7 +330,9 @@ export default function Estoque() {
     setCategories(getCategories());
   }, []);
 
-  const brands = [...new Set(filaments.map(f => f.marca))].sort();
+  const inStockFilaments = filaments.filter(f => f.currentStock > 0);
+  const availableCategories = categories.filter(c => inStockFilaments.some(f => f.categoria === c));
+  const brands = [...new Set(inStockFilaments.map(f => f.marca))].sort();
 
   const filtered = filaments.filter(f => {
     if (f.currentStock <= 0) return false;
@@ -429,7 +431,7 @@ export default function Estoque() {
         <Select
           value={filterCategory}
           onChange={setFilterCategory}
-          options={[{ value: 'all', label: 'Todas as categorias' }, ...categories.map(c => ({ value: c, label: c }))]}
+          options={[{ value: 'all', label: 'Todas as categorias' }, ...availableCategories.map(c => ({ value: c, label: c }))]}
         />
 
         <Select
