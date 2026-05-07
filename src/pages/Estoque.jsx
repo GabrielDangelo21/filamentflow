@@ -253,14 +253,14 @@ export default function Estoque() {
   const brands = [...new Set(filaments.map(f => f.marca))].sort();
 
   const filtered = filaments.filter(f => {
+    if (f.currentStock <= 0) return false;
     const q = search.toLowerCase();
     const matchSearch = !q || f.cor.toLowerCase().includes(q) || f.marca.toLowerCase().includes(q) || f.sku.toLowerCase().includes(q) || f.categoria.toLowerCase().includes(q);
     const matchCat = filterCategory === 'all' || f.categoria === filterCategory;
     const matchBrand = filterBrand === 'all' || f.marca === filterBrand;
     const matchStatus = filterStatus === 'all'
       || (filterStatus === 'ok' && f.currentStock >= MEDIUM_STOCK)
-      || (filterStatus === 'low' && f.currentStock > 0 && f.currentStock < MEDIUM_STOCK)
-      || (filterStatus === 'empty' && f.currentStock <= 0);
+      || (filterStatus === 'low' && f.currentStock < MEDIUM_STOCK);
     return matchSearch && matchCat && matchBrand && matchStatus;
   });
 
@@ -287,6 +287,7 @@ export default function Estoque() {
     fontFamily: 'var(--font-family)',
     outline: 'none',
     cursor: 'pointer',
+    colorScheme: 'dark',
   };
 
   return (
@@ -360,7 +361,6 @@ export default function Estoque() {
           <option value="all">Todos os status</option>
           <option value="ok">OK (≥ {MEDIUM_STOCK}g)</option>
           <option value="low">Baixo (&lt; {MEDIUM_STOCK}g)</option>
-          <option value="empty">Vazio</option>
         </select>
 
         {(search || filterStatus !== 'all' || filterCategory !== 'all' || filterBrand !== 'all') && (
