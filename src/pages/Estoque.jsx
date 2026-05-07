@@ -175,7 +175,7 @@ const SpoolCard = ({ filament }) => {
           marginBottom: '3px',
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
+          justifyContent: 'space-between',
         }}>
           <span>{filament.marca}</span>
           {filament.marca === 'Bambu Lab' && (
