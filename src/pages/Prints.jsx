@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram } from '../services/storage';
+import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram, getAccessoriesByCategory } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 import MaskedNumberInput from '../components/MaskedNumberInput';
+
+const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
 
 const Prints = () => {
   const [filaments, setFilaments] = useState([]);
   const [allFilaments, setAllFilaments] = useState([]);
   const [prints, setPrints] = useState([]);
+  const [placas, setPlacas] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [viewingPrintIdx, setViewingPrintIdx] = useState(null);
   const descriptionInputRef = useRef(null);
@@ -20,6 +23,7 @@ const Prints = () => {
     timeMinutes: '',
     colors: 1,
     weightGrams: '',
+    placa: DEFAULT_PLACA,
     id: null
   };
 
@@ -55,6 +59,9 @@ const Prints = () => {
     setFilaments(withStock);
     setAllFilaments(getFilaments());
     setPrints(getPrints().reverse());
+    const accPlacas = getAccessoriesByCategory('Placas de impressão');
+    const allPlacas = [DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)];
+    setPlacas(allPlacas);
   }, []);
 
   useEffect(() => {
@@ -224,6 +231,7 @@ const Prints = () => {
       timeMinutes: Number(formData.timeMinutes),
       totalWeight: totalWeight,
       colors: Number(formData.colors),
+      placa: formData.placa || DEFAULT_PLACA,
       filamentsUsed: usedFilaments.map(f => ({
         sku: f.sku,
         weightGrams: Number(f.weightGrams)
@@ -261,7 +269,8 @@ const Prints = () => {
       description: print.description || '',
       timeMinutes: print.timeMinutes,
       colors: print.colors,
-      weightGrams: print.totalWeight
+      weightGrams: print.totalWeight,
+      placa: print.placa || DEFAULT_PLACA,
     });
     setUsedFilaments(print.filamentsUsed);
     const terms = print.filamentsUsed.map(f => {
@@ -439,6 +448,19 @@ const Prints = () => {
                 max="16"
                 required
               />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Placa de Impressão</label>
+              <select
+                className="form-input"
+                value={formData.placa}
+                onChange={e => setFormData({ ...formData, placa: e.target.value })}
+                style={{ colorScheme: 'dark' }}
+              >
+                {placas.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -641,6 +663,10 @@ const Prints = () => {
                             <div>
                               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cores Usadas</p>
                               <p style={{ fontWeight: 600 }}>{print.colors}</p>
+                            </div>
+                            <div>
+                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Placa de Impressão</p>
+                              <p style={{ fontWeight: 600 }}>{print.placa || DEFAULT_PLACA}</p>
                             </div>
                             <div>
                               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>

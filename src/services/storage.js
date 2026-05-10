@@ -191,6 +191,18 @@ export const getPrintCost = (print) => {
   }, 0);
 };
 
+// --- ACCESSORIES HELPERS ---
+export const getAccessoriesByCategory = (category) => {
+  const orders = getUnifiedOrders();
+  const names = new Set();
+  orders.forEach(order => {
+    order.items
+      .filter(i => i.type === 'accessory' && i.category === category)
+      .forEach(i => names.add(i.name));
+  });
+  return [...names].sort();
+};
+
 // --- ACCESSORY CATEGORIES ---
 const DEFAULT_ACC_CATEGORIES = ['Ferramentas', 'Consumíveis', 'Adesivos', 'Superfície de Impressão', 'Armazenamento', 'Limpeza', 'Electrónica', 'Outros'];
 
