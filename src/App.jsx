@@ -9,7 +9,7 @@ import Accessories from './pages/Accessories';
 import ProximasImpressoes from './pages/ProximasImpressoes';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('estoque');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const renderPage = () => {
     switch (activeTab) {

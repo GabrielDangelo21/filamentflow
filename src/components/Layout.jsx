@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 const Layout = ({ children, activeTab, onTabChange }) => {
 
   const navItems = [
-    { id: 'estoque', label: 'Estoque', icon: '🗄️' },
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'estoque', label: 'Estoque', icon: '🗄️' },
     { id: 'orders', label: 'Pedidos', icon: '📦' },
     { id: 'prints', label: 'Impressões', icon: '🖨️' },
     { id: 'filaments', label: 'Filamentos', icon: '🧵' },
