@@ -105,7 +105,7 @@ const Dashboard = () => {
 
     const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
     const lowStock = allFilaments
-      .filter(f => purchasedSKUs.has(f.sku) && (f.currentStock || 0) < 250)
+      .filter(f => purchasedSKUs.has(f.sku) && (f.currentStock || 0) < 500)
       .sort((a, b) => (a.currentStock || 0) - (b.currentStock || 0));
     setLowStockFilaments(lowStock);
   }, []);
@@ -250,7 +250,7 @@ const Dashboard = () => {
                       <div style={{ fontWeight: 700, color: isEmpty ? 'var(--danger)' : '#F59E0B', fontSize: '0.9rem' }}>
                         {isEmpty ? 'ESGOTADO' : (f.currentStock / 1000).toFixed(2).replace('.', ',') + 'kg'}
                       </div>
-                      {!isEmpty && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>&lt; 250g restantes</div>}
+                      {!isEmpty && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>&lt; 500g restantes</div>}
                     </div>
                   </div>
                 );
