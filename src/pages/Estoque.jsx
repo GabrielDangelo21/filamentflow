@@ -1,82 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAllFilamentsWithStock, getCategories, getBrands } from '../services/storage';
 import { getColorFromName } from '../utils/colorUtils';
+import CustomSelect from '../components/CustomSelect';
+
+const Select = CustomSelect;
 
 const LOW_STOCK = 250;
 const MEDIUM_STOCK = 500;
 const FULL_SPOOL = 1000;
-
-const Select = ({ value, onChange, options }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const selected = options.find(o => o.value === value) || options[0];
-
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  return (
-    <div ref={ref} style={{ position: 'relative', userSelect: 'none' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: 'var(--card-bg)',
-          border: '1px solid var(--card-border)',
-          borderRadius: '8px',
-          padding: '0.5rem 0.85rem',
-          color: 'var(--text)',
-          fontSize: '0.85rem',
-          fontFamily: 'var(--font-family)',
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {selected.label}
-        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: '2px' }}>▾</span>
-      </button>
-
-      {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 6px)',
-          left: 0,
-          zIndex: 100,
-          background: '#1a1f2e',
-          border: '1px solid var(--card-border)',
-          borderRadius: '8px',
-          overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          minWidth: '100%',
-        }}>
-          {options.map(opt => (
-            <div
-              key={opt.value}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              style={{
-                padding: '0.55rem 1rem',
-                fontSize: '0.85rem',
-                color: opt.value === value ? 'var(--primary)' : 'var(--text)',
-                background: opt.value === value ? 'rgba(0,240,255,0.08)' : 'transparent',
-                cursor: 'pointer',
-                transition: 'background 0.15s',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-              onMouseLeave={e => { if (opt.value !== value) e.currentTarget.style.background = 'transparent'; }}
-            >
-              {opt.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const getStockStatus = (stock) => {
   if (stock <= 0) return { label: 'Vazio', color: '#374151', textColor: '#6B7280', badge: '#374151' };

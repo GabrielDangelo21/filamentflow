@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram, getAccessoriesByCategory } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+import CustomSelect from '../components/CustomSelect';
 import MaskedNumberInput from '../components/MaskedNumberInput';
 
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
@@ -376,7 +377,7 @@ const Prints = () => {
             </div>
           </div>
 
-          <div className="grid-3" style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1.5fr', gap: '1.5rem', marginBottom: '2rem' }}>
             <div className="form-group">
               <label className="form-label">Data da Impressão</label>
               <input
@@ -438,7 +439,7 @@ const Prints = () => {
               )}
             </div>
             <div className="form-group">
-              <label className="form-label">Quantidade de Cores</label>
+              <label className="form-label">Qtd. de Cores</label>
               <input
                 type="number"
                 className="form-input"
@@ -451,16 +452,12 @@ const Prints = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Placa de Impressão</label>
-              <select
-                className="form-input"
+              <CustomSelect
+                fullWidth
                 value={formData.placa}
-                onChange={e => setFormData({ ...formData, placa: e.target.value })}
-                style={{ colorScheme: 'dark' }}
-              >
-                {placas.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
+                onChange={v => setFormData({ ...formData, placa: v })}
+                options={placas.map(p => ({ value: p, label: p }))}
+              />
             </div>
           </div>
 
