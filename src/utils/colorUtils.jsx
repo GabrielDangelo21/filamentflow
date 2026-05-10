@@ -3,7 +3,7 @@ import React from 'react';
 export const getColorFromName = (corName) => {
   if (!corName) return '#00F0FF';
   const n = corName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  if (n.includes('preto') || n.includes('negro') || n.includes('black')) return '#6B7280';
+  if (n.includes('preto') || n.includes('negro') || n.includes('black') || n.includes('carvao') || n.includes('carvão')) return '#6B7280';
   if (n.includes('branco') || n.includes('white') || n.includes('ivory') || n.includes('marfim')) return '#E2E8F0';
   if (n.includes('cinza escuro')) return '#64748B';
   if (n.includes('cinza') || n.includes('prata') || n.includes('prateado') || n.includes('silver')) return '#94A3B8';
