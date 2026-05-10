@@ -6,6 +6,7 @@ import Filaments from './pages/Filaments';
 import Orders from './pages/Orders';
 import Prints from './pages/Prints';
 import Accessories from './pages/Accessories';
+import ProximasImpressoes from './pages/ProximasImpressoes';
 
 function App() {
   const [activeTab, setActiveTab] = useState('estoque');
@@ -18,6 +19,7 @@ function App() {
       case 'orders': return <Orders />;
       case 'prints': return <Prints />;
       case 'accessories': return <Accessories />;
+      case 'proximas': return <ProximasImpressoes />;
       default: return <Estoque />;
     }
   };

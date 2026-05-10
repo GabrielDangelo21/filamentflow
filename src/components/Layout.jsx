@@ -5,10 +5,11 @@ const Layout = ({ children, activeTab, onTabChange }) => {
   const navItems = [
     { id: 'estoque', label: 'Estoque', icon: '🗄️' },
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'orders', label: 'Pedidos', icon: '📦' },
+    { id: 'prints', label: 'Impressões', icon: '🖨️' },
     { id: 'filaments', label: 'Filamentos', icon: '🧵' },
-    { id: 'orders', label: 'Pedidos (Entrada)', icon: '📦' },
-    { id: 'prints', label: 'Impressões (Saída)', icon: '🖨️' },
-    { id: 'accessories', label: 'Acessórios', icon: '🔧' }
+    { id: 'accessories', label: 'Acessórios', icon: '🔧' },
+    { id: 'proximas', label: 'Próximas impressões', icon: '📋' },
   ];
 
   return (

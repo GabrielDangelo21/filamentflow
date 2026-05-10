@@ -4,7 +4,8 @@ const STORAGE_KEYS = {
   PRINTS: 'filamentflow_prints',
   CATEGORIES: 'filamentflow_categories',
   BRANDS: 'filamentflow_brands',
-  ACC_CATEGORIES: 'filamentflow_acc_categories'
+  ACC_CATEGORIES: 'filamentflow_acc_categories',
+  PROXIMAS: 'filamentflow_proximas'
 };
 
 // --- GENERIC HELPERS ---
@@ -209,6 +210,21 @@ export const deleteAccCategory = (cat) => {
 };
 
 export const saveAllAccCategories = (cats) => saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, cats);
+
+// --- PRÓXIMAS IMPRESSÕES ---
+export const getProximas = () => getFromStorage(STORAGE_KEYS.PROXIMAS);
+
+export const saveProxima = (item) => {
+  const list = getProximas();
+  list.push({ id: generateId(), ...item, createdAt: new Date().toISOString() });
+  saveToStorage(STORAGE_KEYS.PROXIMAS, list);
+};
+
+export const deleteProxima = (id) => {
+  saveToStorage(STORAGE_KEYS.PROXIMAS, getProximas().filter(p => p.id !== id));
+};
+
+export const reorderProximas = (list) => saveToStorage(STORAGE_KEYS.PROXIMAS, list);
 
 // --- BACKUP ---
 export const exportBackup = () => ({
