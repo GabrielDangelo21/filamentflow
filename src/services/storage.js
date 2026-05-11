@@ -21,8 +21,13 @@ const saveToStorage = (key, data) => {
 const generateId = () => crypto.randomUUID();
 
 // --- FILAMENTS ---
-export const getFilaments = () =>
-  getFromStorage(STORAGE_KEYS.FILAMENTS).map(f => ({ ...f, sku: String(f.sku) }));
+export const getFilaments = () => {
+  const raw = getFromStorage(STORAGE_KEYS.FILAMENTS).map(f => ({ ...f, sku: String(f.sku) }));
+  const seen = new Set();
+  const deduped = raw.filter(f => { if (seen.has(f.sku)) return false; seen.add(f.sku); return true; });
+  if (deduped.length !== raw.length) saveToStorage(STORAGE_KEYS.FILAMENTS, deduped);
+  return deduped;
+};
 
 export const saveFilament = (filament) => {
   const filaments = getFilaments();
@@ -55,11 +60,16 @@ export const deleteFilament = (id) => {
 // Each item: { type: 'filament', sku, weightGrams, price }
 //         OR { type: 'accessory', name, category, quantity, price }
 
-export const getUnifiedOrders = () =>
-  getFromStorage(STORAGE_KEYS.UNIFIED_ORDERS).map(o => ({
+export const getUnifiedOrders = () => {
+  const raw = getFromStorage(STORAGE_KEYS.UNIFIED_ORDERS).map(o => ({
     ...o,
     items: (o.items || []).map(i => i.type === 'filament' ? { ...i, sku: String(i.sku) } : i)
   }));
+  const seen = new Set();
+  const deduped = raw.filter(o => { if (seen.has(o.id)) return false; seen.add(o.id); return true; });
+  if (deduped.length !== raw.length) saveToStorage(STORAGE_KEYS.UNIFIED_ORDERS, deduped);
+  return deduped;
+};
 
 export const saveUnifiedOrder = (order) => {
   const orders = getUnifiedOrders();
@@ -92,8 +102,10 @@ export const getPrints = () => {
       p.filamentsUsed = p.filamentsUsed.map(f => ({ ...f, sku: String(f.sku) }));
     }
   });
-  if (migrated) saveToStorage(STORAGE_KEYS.PRINTS, prints);
-  return prints;
+  const seen = new Set();
+  const deduped = prints.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+  if (migrated || deduped.length !== prints.length) saveToStorage(STORAGE_KEYS.PRINTS, deduped);
+  return deduped;
 };
 
 export const savePrint = (print) => {
