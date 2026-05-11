@@ -21,7 +21,8 @@ const saveToStorage = (key, data) => {
 const generateId = () => crypto.randomUUID();
 
 // --- FILAMENTS ---
-export const getFilaments = () => getFromStorage(STORAGE_KEYS.FILAMENTS);
+export const getFilaments = () =>
+  getFromStorage(STORAGE_KEYS.FILAMENTS).map(f => ({ ...f, sku: String(f.sku) }));
 
 export const saveFilament = (filament) => {
   const filaments = getFilaments();
@@ -54,7 +55,11 @@ export const deleteFilament = (id) => {
 // Each item: { type: 'filament', sku, weightGrams, price }
 //         OR { type: 'accessory', name, category, quantity, price }
 
-export const getUnifiedOrders = () => getFromStorage(STORAGE_KEYS.UNIFIED_ORDERS);
+export const getUnifiedOrders = () =>
+  getFromStorage(STORAGE_KEYS.UNIFIED_ORDERS).map(o => ({
+    ...o,
+    items: (o.items || []).map(i => i.type === 'filament' ? { ...i, sku: String(i.sku) } : i)
+  }));
 
 export const saveUnifiedOrder = (order) => {
   const orders = getUnifiedOrders();
@@ -81,7 +86,12 @@ export const deleteUnifiedOrder = (id) => {
 export const getPrints = () => {
   const prints = getFromStorage(STORAGE_KEYS.PRINTS);
   let migrated = false;
-  prints.forEach(p => { if (!p.id) { p.id = generateId(); migrated = true; } });
+  prints.forEach(p => {
+    if (!p.id) { p.id = generateId(); migrated = true; }
+    if (p.filamentsUsed) {
+      p.filamentsUsed = p.filamentsUsed.map(f => ({ ...f, sku: String(f.sku) }));
+    }
+  });
   if (migrated) saveToStorage(STORAGE_KEYS.PRINTS, prints);
   return prints;
 };
