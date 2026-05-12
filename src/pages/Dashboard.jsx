@@ -158,13 +158,13 @@ const Dashboard = () => {
 
       {/* Cards Superiores */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EF4444' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>INVESTIMENTO TOTAL</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EF4444' }}>€ {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
+        </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EAB308' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>TOTAL COMPRADO</p>
           <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EAB308' }}>{(stats.totalPurchasedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
-        </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #10B981' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>INVESTIMENTO TOTAL</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#10B981' }}>€ {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3B82F6' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>IMPRESSÕES REALIZADAS</p>
