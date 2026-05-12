@@ -11,7 +11,8 @@ const Dashboard = () => {
     totalCost: 0,
     totalPrintCost: 0,
     totalPurchasedGrams: 0,
-    totalUsedGrams: 0
+    totalUsedGrams: 0,
+    totalTimeMinutes: 0,
   });
 
   const [filaments, setFilaments] = useState([]);
@@ -68,17 +69,18 @@ const Dashboard = () => {
     const totalPurchasedGrams = allOrders.reduce((acc, o) =>
       acc + o.items.filter(i => i.type === 'filament').reduce((s, i) => s + Number(i.weightGrams || 0), 0), 0);
     const totalUsedGrams = allPrints.reduce((acc, p) => acc + (p.totalWeight || 0), 0);
+    const totalTimeMinutes = allPrints.reduce((acc, p) => acc + (Number(p.timeMinutes) || 0), 0);
 
     setStats({
       totalFilaments: allFilaments.length,
       totalStockGrams: totalStock,
       totalOrders: allOrders.length,
       totalPrints: allPrints.length,
-
       totalCost: totalCost,
       totalPrintCost: totalPrintCost,
       totalPurchasedGrams: totalPurchasedGrams,
-      totalUsedGrams: totalUsedGrams
+      totalUsedGrams: totalUsedGrams,
+      totalTimeMinutes: totalTimeMinutes,
     });
 
     setFilaments(allFilaments.sort((a, b) => {
@@ -155,26 +157,32 @@ const Dashboard = () => {
       </div>
 
       {/* Cards Superiores */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>TOTAL COMPRADO</p>
-          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{(stats.totalPurchasedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EAB308' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>TOTAL COMPRADO</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EAB308' }}>{(stats.totalPurchasedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
         </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--success)' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>INVESTIMENTO TOTAL</p>
-          <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--success)' }}>€ {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #10B981' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>INVESTIMENTO TOTAL</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#10B981' }}>€ {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
         </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--secondary)' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>TOTAL USADO</p>
-          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{(stats.totalUsedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3B82F6' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>IMPRESSÕES REALIZADAS</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#3B82F6' }}>{stats.totalPrints}</p>
         </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--danger)' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>CUSTO EM IMPRESSÕES</p>
-          <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--danger)' }}>€ {stats.totalPrintCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EF4444' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>CUSTO EM IMPRESSÕES</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EF4444' }}>€ {stats.totalPrintCost.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</p>
         </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid #F59E0B' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>IMPRESSÕES REALIZADAS</p>
-          <p style={{ fontSize: '2rem', fontWeight: 700 }}>{stats.totalPrints}</p>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EAB308' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>TOTAL USADO</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EAB308' }}>{(stats.totalUsedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
+        </div>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #F97316' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>TEMPO TOTAL</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#F97316' }}>
+            {Math.floor((stats.totalTimeMinutes || 0) / 60)}h {(stats.totalTimeMinutes || 0) % 60}min
+          </p>
         </div>
       </div>
 
