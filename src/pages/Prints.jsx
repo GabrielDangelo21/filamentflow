@@ -19,6 +19,7 @@ const Prints = () => {
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
     description: '',
+    project: '',
     startTime: '',
     endTime: '',
     timeMinutes: '',
@@ -53,6 +54,10 @@ const Prints = () => {
   const [highlightedIndexes, setHighlightedIndexes] = useState([-1]);
   const [showDescSuggestions, setShowDescSuggestions] = useState(false);
   const [descHighlightedIndex, setDescHighlightedIndex] = useState(-1);
+  const [showProjectSuggestions, setShowProjectSuggestions] = useState(false);
+  const [projectHighlightedIndex, setProjectHighlightedIndex] = useState(-1);
+  const [viewMode, setViewMode] = useState('individual');
+  const [expandedProjects, setExpandedProjects] = useState(new Set());
 
   useEffect(() => {
     const withStock = getAllFilamentsWithStock().filter(f => (f.currentStock || 0) > 0);
@@ -176,6 +181,62 @@ const Prints = () => {
       .slice(0, 10);
   };
 
+  const getExistingProjects = () => {
+    const s = new Set();
+    prints.forEach(p => { if (p.project) s.add(p.project); });
+    return [...s].sort();
+  };
+
+  const getFilteredProjects = () => {
+    const typed = (formData.project || '').toLowerCase();
+    const all = getExistingProjects();
+    if (!typed) return all.slice(0, 10);
+    return all.filter(p => p.toLowerCase().includes(typed) && p !== formData.project).slice(0, 10);
+  };
+
+  const handleProjectKeyDown = (e) => {
+    const filtered = getFilteredProjects();
+    if (!showProjectSuggestions || filtered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setProjectHighlightedIndex(prev => Math.min(prev + 1, filtered.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setProjectHighlightedIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' && projectHighlightedIndex >= 0) {
+      e.preventDefault();
+      setFormData({ ...formData, project: filtered[projectHighlightedIndex] });
+      setShowProjectSuggestions(false);
+      setProjectHighlightedIndex(-1);
+    } else if (e.key === 'Escape') {
+      setShowProjectSuggestions(false);
+      setProjectHighlightedIndex(-1);
+    }
+  };
+
+  const getGroupedPrints = () => {
+    const groups = {};
+    prints.forEach(print => {
+      const key = print.project || print.description || '(sem nome)';
+      if (!groups[key]) groups[key] = { name: key, prints: [], totalWeight: 0, totalTime: 0, totalCost: 0, latestDate: null };
+      groups[key].prints.push(print);
+      groups[key].totalWeight += Number(print.totalWeight) || 0;
+      groups[key].totalTime += Number(print.timeMinutes) || 0;
+      groups[key].totalCost += getPrintCost(print);
+      const d = new Date(print.date.includes('T') ? print.date : print.date + 'T12:00:00');
+      if (!groups[key].latestDate || d > groups[key].latestDate) groups[key].latestDate = d;
+    });
+    return Object.values(groups).sort((a, b) => b.latestDate - a.latestDate);
+  };
+
+  const toggleProject = (name) => {
+    setExpandedProjects(prev => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+  };
+
   const handleDescKeyDown = (e) => {
     const filtered = getFilteredDescriptions();
     if (!showDescSuggestions || filtered.length === 0) return;
@@ -229,6 +290,7 @@ const Prints = () => {
       id: formData.id,
       date: formData.date,
       description: formData.description,
+      project: formData.project || '',
       timeMinutes: Number(formData.timeMinutes),
       totalWeight: totalWeight,
       colors: Number(formData.colors),
@@ -268,6 +330,7 @@ const Prints = () => {
       id: print.id,
       date: print.date,
       description: print.description || '',
+      project: print.project || '',
       timeMinutes: print.timeMinutes,
       colors: print.colors,
       weightGrams: print.totalWeight,
@@ -370,6 +433,51 @@ const Prints = () => {
                       >
                         {desc}
                       </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+            <label className="form-label">
+              Projeto <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '0.85rem' }}>(opcional — agrupa partes do mesmo modelo)</span>
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Ex: Hermione Knitted, Gaita Harry Potter..."
+                value={formData.project}
+                onChange={e => { setFormData({ ...formData, project: e.target.value }); setShowProjectSuggestions(true); setProjectHighlightedIndex(-1); }}
+                onFocus={() => setShowProjectSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowProjectSuggestions(false), 200)}
+                onKeyDown={handleProjectKeyDown}
+              />
+              {showProjectSuggestions && (() => {
+                const filtered = getFilteredProjects();
+                if (filtered.length === 0) return null;
+                return (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+                    background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '0.5rem', marginTop: '0.25rem',
+                    maxHeight: '200px', overflowY: 'auto',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                  }}>
+                    {filtered.map((proj, i) => (
+                      <div key={i}
+                        onMouseDown={() => { setFormData({ ...formData, project: proj }); setShowProjectSuggestions(false); setProjectHighlightedIndex(-1); }}
+                        style={{
+                          padding: '0.75rem 1rem', cursor: 'pointer',
+                          borderBottom: '1px solid rgba(255,255,255,0.05)',
+                          background: i === projectHighlightedIndex ? 'rgba(59,130,246,0.25)' : 'transparent',
+                          fontSize: '0.9rem'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.15)'}
+                        onMouseLeave={e => e.currentTarget.style.background = i === projectHighlightedIndex ? 'rgba(59,130,246,0.25)' : 'transparent'}
+                      >{proj}</div>
                     ))}
                   </div>
                 );
@@ -567,171 +675,176 @@ const Prints = () => {
         </form>
       </div>
 
-      <h2>Histórico de Impressões</h2>
-      <div className="glass-panel" style={{ marginTop: '1rem' }}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Descrição</th>
-              <th>Cores</th>
-              <th>Peso Total</th>
-              <th>Tempo</th>
-              <th>Custo</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prints.length === 0 ? (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', marginBottom: '1rem' }}>
+        <h2 style={{ margin: 0 }}>Histórico de Impressões</h2>
+        <div style={{ display: 'flex', gap: '0', border: '1px solid var(--card-border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
+          {[{ id: 'individual', label: '▦ Individual' }, { id: 'projeto', label: '⊞ Por Projeto' }].map(m => (
+            <button key={m.id} onClick={() => setViewMode(m.id)} style={{
+              padding: '0.5rem 1.1rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+              background: viewMode === m.id ? 'var(--primary)' : 'transparent',
+              color: viewMode === m.id ? '#000' : 'var(--text-muted)',
+              transition: 'all 0.15s'
+            }}>{m.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Vista Individual ── */}
+      {viewMode === 'individual' && (
+        <div className="glass-panel" style={{ marginTop: '0' }}>
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                  Nenhuma impressão registrada.
-                </td>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Cores</th>
+                <th>Peso Total</th>
+                <th>Tempo</th>
+                <th>Custo</th>
+                <th>Ações</th>
               </tr>
-            ) : (
-              prints.map((print, index) => (
-                <React.Fragment key={index}>
-                  <tr style={{ background: viewingPrintIdx === index ? 'rgba(59, 130, 246, 0.08)' : undefined }}>
-                    <td>{(() => {
-                      try {
-                        const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
-                        return d.toLocaleDateString();
-                      } catch (e) {
-                        return 'Data Inválida';
-                      }
-                    })()}</td>
-                    <td style={{ fontWeight: 500, color: print.description ? 'var(--text-main)' : 'var(--text-muted)' }}>
-                      {print.description || '-'}
-                    </td>
-                    <td><span className="badge badge-outline">{print.colors}</span></td>
-                    <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</td>
-                    <td>{print.timeMinutes} min</td>
-                    <td style={{ fontWeight: 600, color: 'var(--success)' }}>
-                      {(() => {
-                        const cost = getPrintCost(print);
-                        return cost > 0
-                          ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cost)
-                          : <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>—</span>;
-                      })()}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: viewingPrintIdx === index ? 'rgba(0, 240, 255, 0.2)' : 'rgba(0, 240, 255, 0.1)', color: 'var(--primary)' }}
-                          onClick={() => setViewingPrintIdx(viewingPrintIdx === index ? null : index)}
-                        >
-                          {viewingPrintIdx === index ? 'Fechar' : 'Ver Detalhes'}
-                        </button>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                          onClick={() => handleEdit(print)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          className="btn btn-danger"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                          onClick={() => handleDelete(print.id)}
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {viewingPrintIdx === index && (
-                    <tr>
-                      <td colSpan="7" style={{ padding: 0, background: 'rgba(59, 130, 246, 0.05)' }}>
-                        <div style={{
-                          padding: '1.5rem',
-                          borderTop: '1px solid rgba(59, 130, 246, 0.3)',
-                          borderBottom: '1px solid rgba(59, 130, 246, 0.3)'
-                        }}>
-                          <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
-                            <div>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Data</p>
-                              <p style={{ fontWeight: 600 }}>{new Date((print.date.includes('T') ? print.date : print.date + 'T12:00:00')).toLocaleDateString()}</p>
-                            </div>
-                            <div>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Tempo Total</p>
-                              <p style={{ fontWeight: 600 }}>{print.timeMinutes} minutos</p>
-                            </div>
-                            <div>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cores Usadas</p>
-                              <p style={{ fontWeight: 600 }}>{print.colors}</p>
-                            </div>
-                            <div>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Placa de Impressão</p>
-                              <p style={{ fontWeight: 600 }}>{print.placa || DEFAULT_PLACA}</p>
-                            </div>
-                            <div>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p>
-                              <p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</p>
-                            </div>
-                            <div>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Custo Total</p>
-                              {(() => {
-                                const cost = getPrintCost(print);
-                                return cost > 0
-                                  ? <p style={{ fontWeight: 700, color: 'var(--success)', fontSize: '1.2rem' }}>{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cost)}</p>
-                                  : <p style={{ color: 'var(--text-muted)' }}>Sem preço cadastrado</p>;
-                              })()}
-                            </div>
-                          </div>
-
-                          <h3 style={{ fontSize: '1rem', marginBottom: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>
-                            Filamentos Consumidos
-                          </h3>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {print.filamentsUsed.map((f, idx) => {
-                              const info = getFilamentInfo(f.sku);
-                              return (
-                                <div key={idx} style={{
-                                  background: 'rgba(255,255,255,0.03)',
-                                  padding: '1rem',
-                                  borderRadius: '8px',
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  alignItems: 'center',
-                                  border: '1px solid var(--card-border)'
-                                }}>
-                                  <div>
-                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                      <ColorDot cor={info.cor} size={10} />
-                                      <span style={{ color: getBrandColor(info.marca) }}>{info.marca}</span>
-                                      <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>–</span>
-                                      <span style={{ color: getColorFromName(info.cor) }}>{info.cor}</span>
-                                    </div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
-                                  </div>
-                                  <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                                      {parseFloat(f.weightGrams).toFixed(2).replace('.', ',')}g
-                                    </div>
-                                    {(() => {
-                                      const pricePerGram = getFilamentPricePerGram(f.sku);
-                                      const cost = pricePerGram * Number(f.weightGrams);
-                                      return pricePerGram > 0
-                                        ? <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '0.2rem' }}>{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cost)}</div>
-                                        : null;
-                                    })()}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+            </thead>
+            <tbody>
+              {prints.length === 0 ? (
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Nenhuma impressão registrada.</td></tr>
+              ) : (
+                prints.map((print, index) => (
+                  <React.Fragment key={index}>
+                    <tr style={{ background: viewingPrintIdx === index ? 'rgba(59,130,246,0.08)' : undefined }}>
+                      <td>{(() => { try { const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00'); return d.toLocaleDateString(); } catch { return 'Inválida'; } })()}</td>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{print.description || '-'}</div>
+                        {print.project && <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.15rem' }}>📁 {print.project}</div>}
+                      </td>
+                      <td><span className="badge badge-outline">{print.colors}</span></td>
+                      <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</td>
+                      <td>{print.timeMinutes} min</td>
+                      <td style={{ fontWeight: 600, color: 'var(--success)' }}>
+                        {(() => { const c = getPrintCost(print); return c > 0 ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(c) : <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>—</span>; })()}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: viewingPrintIdx === index ? 'rgba(0,240,255,0.2)' : 'rgba(0,240,255,0.1)', color: 'var(--primary)' }} onClick={() => setViewingPrintIdx(viewingPrintIdx === index ? null : index)}>{viewingPrintIdx === index ? 'Fechar' : 'Ver Detalhes'}</button>
+                          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => handleEdit(print)}>Editar</button>
+                          <button className="btn btn-danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => handleDelete(print.id)}>Excluir</button>
                         </div>
                       </td>
                     </tr>
+                    {viewingPrintIdx === index && (
+                      <tr>
+                        <td colSpan="7" style={{ padding: 0, background: 'rgba(59,130,246,0.05)' }}>
+                          <div style={{ padding: '1.5rem', borderTop: '1px solid rgba(59,130,246,0.3)', borderBottom: '1px solid rgba(59,130,246,0.3)' }}>
+                            <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
+                              <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Data</p><p style={{ fontWeight: 600 }}>{new Date((print.date.includes('T') ? print.date : print.date + 'T12:00:00')).toLocaleDateString()}</p></div>
+                              <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Tempo Total</p><p style={{ fontWeight: 600 }}>{print.timeMinutes} minutos</p></div>
+                              <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cores Usadas</p><p style={{ fontWeight: 600 }}>{print.colors}</p></div>
+                              <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Placa de Impressão</p><p style={{ fontWeight: 600 }}>{print.placa || DEFAULT_PLACA}</p></div>
+                              <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p><p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</p></div>
+                              <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Custo Total</p>{(() => { const c = getPrintCost(print); return c > 0 ? <p style={{ fontWeight: 700, color: 'var(--success)', fontSize: '1.2rem' }}>{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(c)}</p> : <p style={{ color: 'var(--text-muted)' }}>Sem preço cadastrado</p>; })()}</div>
+                            </div>
+                            <h3 style={{ fontSize: '1rem', marginBottom: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>Filamentos Consumidos</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              {print.filamentsUsed.map((f, idx) => {
+                                const info = getFilamentInfo(f.sku);
+                                return (
+                                  <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--card-border)' }}>
+                                    <div>
+                                      <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <ColorDot cor={info.cor} size={10} />
+                                        <span style={{ color: getBrandColor(info.marca) }}>{info.marca}</span>
+                                        <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>–</span>
+                                        <span style={{ color: getColorFromName(info.cor) }}>{info.cor}</span>
+                                      </div>
+                                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SKU: {f.sku} | {info.categoria}</div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                      <div style={{ fontWeight: 700 }}>{parseFloat(f.weightGrams).toFixed(2).replace('.', ',')}g</div>
+                                      {(() => { const ppg = getFilamentPricePerGram(f.sku); const c = ppg * Number(f.weightGrams); return ppg > 0 ? <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '0.2rem' }}>{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(c)}</div> : null; })()}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Vista Por Projeto ── */}
+      {viewMode === 'projeto' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {prints.length === 0 ? (
+            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma impressão registrada.</div>
+          ) : (
+            getGroupedPrints().map(group => {
+              const isOpen = expandedProjects.has(group.name);
+              return (
+                <div key={group.name} className="glass-panel" style={{ overflow: 'hidden', padding: 0 }}>
+                  {/* Header do grupo */}
+                  <button onClick={() => toggleProject(group.name)} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '1rem',
+                    padding: '1rem 1.5rem', background: 'transparent', border: 'none',
+                    cursor: 'pointer', textAlign: 'left', color: 'inherit', fontFamily: 'inherit'
+                  }}>
+                    <span style={{ fontSize: '1rem', color: 'var(--primary)', transition: 'transform 0.2s', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'rotate(0)' }}>▶</span>
+                    <span style={{ fontWeight: 700, fontSize: '1rem', flex: 1 }}>{group.name}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', padding: '0.2rem 0.6rem', borderRadius: '999px' }}>
+                      {group.prints.length} {group.prints.length === 1 ? 'parte' : 'partes'}
+                    </span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)', minWidth: '80px', textAlign: 'right' }}>
+                      {parseFloat(group.totalWeight).toFixed(2).replace('.', ',')}g
+                    </span>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', minWidth: '70px', textAlign: 'right' }}>
+                      {formatDuration(group.totalTime)}
+                    </span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--success)', minWidth: '80px', textAlign: 'right' }}>
+                      {group.totalCost > 0 ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(group.totalCost) : '—'}
+                    </span>
+                  </button>
+
+                  {/* Partes expandidas */}
+                  {isOpen && (
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                      {group.prints.map((print, idx) => {
+                        const cost = getPrintCost(print);
+                        const dateStr = (() => { try { const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00'); return d.toLocaleDateString(); } catch { return '?'; } })();
+                        return (
+                          <div key={print.id} style={{
+                            display: 'flex', alignItems: 'center', gap: '1rem',
+                            padding: '0.85rem 1.5rem 0.85rem 3rem',
+                            borderBottom: idx < group.prints.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                            background: 'rgba(255,255,255,0.015)'
+                          }}>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', minWidth: '80px' }}>{dateStr}</span>
+                            <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--text-muted)' }}>{print.description || '—'}</span>
+                            <span className="badge badge-outline" style={{ fontSize: '0.75rem' }}>{print.colors} cor{print.colors !== 1 ? 'es' : ''}</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, minWidth: '70px', textAlign: 'right' }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: '60px', textAlign: 'right' }}>{print.timeMinutes} min</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--success)', minWidth: '70px', textAlign: 'right' }}>
+                              {cost > 0 ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cost) : '—'}
+                            </span>
+                            <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                              <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => handleEdit(print)}>Editar</button>
+                              <button className="btn btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => handleDelete(print.id)}>Excluir</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                </React.Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 };
