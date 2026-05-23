@@ -346,7 +346,7 @@ const Filaments = () => {
                     </div>
                   </td>
                   <td style={{ fontWeight: 600, color: f.currentStock > 0 ? 'var(--success)' : 'var(--danger)' }}>
-                    {(parseFloat(f.currentStock) / 1000).toFixed(3).replace('.', ',')}kg
+                    {(parseFloat(f.currentStock) / 1000).toFixed(2).replace('.', ',')}kg
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>

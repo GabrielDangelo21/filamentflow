@@ -197,7 +197,7 @@ const Shelf = ({ category, filaments }) => {
             padding: '2px 8px',
             borderRadius: '20px',
           }}>
-            {totalStock.toFixed(0)}g em estoque
+            {(totalStock / 1000).toFixed(2).replace('.', ',')}kg em estoque
           </span>
           {lowCount > 0 && (
             <span style={{
@@ -338,7 +338,7 @@ export default function Estoque() {
           { label: 'Total', value: totalFilaments, color: 'var(--primary)' },
           { label: 'Em estoque', value: inStock, color: '#34D399' },
           { label: 'Estoque baixo', value: lowStock, color: '#FCD34D' },
-          { label: 'Total em estoque', value: `${(totalGrams / 1000).toFixed(3).replace('.', ',')}kg`, color: 'var(--text-muted)' },
+          { label: 'Total em estoque', value: `${(totalGrams / 1000).toFixed(2).replace('.', ',')}kg`, color: 'var(--text-muted)' },
         ].map(stat => (
           <div key={stat.label} style={{
             background: 'var(--card-bg)',
