@@ -293,3 +293,27 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+/* Custom scrollbar — global */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.2);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.45);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
