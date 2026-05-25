@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getProximas, saveProxima, updateProxima, deleteProxima, reorderProximas } from '../services/storage';
+import OtimizadorModal from '../components/OtimizadorModal';
 
 const inputStyle = {
   background: 'var(--card-bg)',
@@ -127,6 +128,9 @@ export default function ProximasImpressoes() {
   const [editPlacas, setEditPlacas] = useState(emptyPlacas(1));
   const [editError, setEditError] = useState('');
 
+  // ── Otimizador ──
+  const [showOtimizador, setShowOtimizador] = useState(false);
+
   // ── Drag ──
   const [dragIdx, setDragIdx] = useState(null);
   const [overIdx, setOverIdx] = useState(null);
@@ -207,16 +211,43 @@ export default function ProximasImpressoes() {
     setDragIdx(null); setOverIdx(null);
   };
 
+  const getAllPlates = () =>
+    items.flatMap(item => {
+      const ps = item.placas?.length
+        ? item.placas
+        : item.tempoMinutos
+          ? [{ nome: 'Placa 1', tempoMinutos: item.tempoMinutos }]
+          : [];
+      return ps.filter(p => p.tempoMinutos > 0).map(p => ({ titulo: item.titulo, nomePlaca: p.nome, tempoMinutos: p.tempoMinutos }));
+    });
+
   return (
     <div>
+      {showOtimizador && <OtimizadorModal plates={getAllPlates()} onClose={() => setShowOtimizador(false)} />}
+
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--text)', marginBottom: '0.3rem' }}>
-          Próximas impressões
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Lista de modelos que pretende imprimir
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--text)', marginBottom: '0.3rem' }}>
+            Próximas impressões
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            Lista de modelos que pretende imprimir
+          </p>
+        </div>
+        <button
+          onClick={() => setShowOtimizador(true)}
+          style={{
+            padding: '0.65rem 1.25rem',
+            background: 'linear-gradient(to right, var(--primary), var(--secondary))',
+            border: 'none', borderRadius: '10px',
+            color: '#000', fontWeight: '700', fontSize: '0.9rem',
+            cursor: 'pointer', fontFamily: 'var(--font-family)',
+            display: 'flex', alignItems: 'center', gap: '0.4rem',
+            flexShrink: 0,
+          }}>
+          ⚡ Otimizador
+        </button>
       </div>
 
       {/* Add form */}
