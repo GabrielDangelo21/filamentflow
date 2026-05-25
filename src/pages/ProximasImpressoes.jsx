@@ -5,7 +5,7 @@ const inputStyle = {
   background: 'var(--card-bg)',
   border: '1px solid var(--card-border)',
   borderRadius: '8px',
-  padding: '0.65rem 1rem',
+  padding: '0.6rem 0.9rem',
   color: 'var(--text)',
   fontSize: '0.9rem',
   fontFamily: 'var(--font-family)',
@@ -14,15 +14,15 @@ const inputStyle = {
   boxSizing: 'border-box',
 };
 
-const timeInputStyle = {
+const timeNumStyle = {
   ...inputStyle,
-  width: '64px',
+  width: '58px',
   textAlign: 'center',
-  padding: '0.65rem 0.5rem',
+  padding: '0.6rem 0.4rem',
 };
 
 const fmtTempo = (min) => {
-  if (!min && min !== 0) return '—';
+  if (!min) return '—';
   const h = Math.floor(min / 60);
   const m = min % 60;
   if (h === 0) return `${m}min`;
@@ -30,65 +30,139 @@ const fmtTempo = (min) => {
   return `${h}h ${m}min`;
 };
 
-const TimeInputs = ({ h, setH, m, setM }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+const totalFromPlacas = (placas) =>
+  (placas || []).reduce((s, p) => s + (Number(p.tempoMinutos) || 0), 0);
+
+const emptyPlacas = (n) =>
+  Array.from({ length: n }, (_, i) => ({ nome: `Placa ${i + 1}`, h: '', m: '' }));
+
+const syncPlacas = (current, n) => {
+  const next = [...current];
+  while (next.length < n) next.push({ nome: `Placa ${next.length + 1}`, h: '', m: '' });
+  return next.slice(0, n);
+};
+
+const labelStyle = { fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' };
+
+/* ── Linha de placa no formulário ── */
+const PlacaRow = ({ placa, index, onChange }) => (
+  <div style={{
+    display: 'flex', alignItems: 'center', gap: '0.75rem',
+    background: 'rgba(255,255,255,0.02)', borderRadius: '8px',
+    padding: '0.65rem 1rem', border: '1px solid var(--card-border)',
+  }}>
+    <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 700, minWidth: '16px' }}>
+      {index + 1}
+    </span>
     <input
-      type="number"
-      style={timeInputStyle}
-      placeholder="0"
-      value={h}
-      onChange={e => setH(e.target.value)}
-      min="0"
-      max="99"
+      style={{ ...inputStyle, flex: 1 }}
+      value={placa.nome}
+      onChange={e => onChange(index, 'nome', e.target.value)}
+      placeholder={`Placa ${index + 1}`}
     />
-    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', flexShrink: 0 }}>h</span>
-    <input
-      type="number"
-      style={timeInputStyle}
-      placeholder="0"
-      value={m}
-      onChange={e => setM(e.target.value)}
-      min="0"
-      max="59"
-    />
-    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', flexShrink: 0 }}>min</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+      <input type="number" style={timeNumStyle} min="0" max="99"
+        placeholder="0" value={placa.h}
+        onChange={e => onChange(index, 'h', e.target.value)} />
+      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>h</span>
+      <input type="number" style={timeNumStyle} min="0" max="59"
+        placeholder="0" value={placa.m}
+        onChange={e => onChange(index, 'm', e.target.value)} />
+      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>min</span>
+    </div>
+  </div>
+);
+
+/* ── Formulário de add/edit ── */
+const FormFields = ({ t, setT, l, setL, np, setNP, ps, onPChange, onSubmit, onCancel, err, isEdit }) => (
+  <div>
+    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '1rem' }}>
+      <div style={{ flex: '1 1 180px' }}>
+        <label style={labelStyle}>Título *</label>
+        <input style={inputStyle} placeholder="Nome do modelo..." value={t} onChange={e => setT(e.target.value)} onKeyDown={e => !isEdit && e.key === 'Enter' && onSubmit()} />
+      </div>
+      <div style={{ flex: '2 1 220px' }}>
+        <label style={labelStyle}>Link</label>
+        <input style={inputStyle} placeholder="https://www.thingiverse.com/..." value={l} onChange={e => setL(e.target.value)} />
+      </div>
+      <div style={{ flexShrink: 0 }}>
+        <label style={labelStyle}>Nº de Placas</label>
+        <input type="number" min="1" max="20"
+          style={{ ...inputStyle, width: '80px', textAlign: 'center' }}
+          value={np} onChange={e => setNP(Math.max(1, parseInt(e.target.value) || 1))} />
+      </div>
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+      {ps.map((p, i) => <PlacaRow key={i} placa={p} index={i} onChange={onPChange} />)}
+    </div>
+    {err && <div style={{ fontSize: '0.8rem', color: '#F87171', marginBottom: '0.75rem' }}>{err}</div>}
+    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+      {isEdit && (
+        <button onClick={onCancel} style={{ padding: '0.6rem 1rem', background: 'transparent', border: '1px solid var(--card-border)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-family)' }}>
+          Cancelar
+        </button>
+      )}
+      <button onClick={onSubmit} style={{ padding: '0.65rem 1.5rem', background: 'linear-gradient(to right, var(--primary), var(--secondary))', border: 'none', borderRadius: '8px', color: '#000', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font-family)' }}>
+        {isEdit ? 'Salvar' : '+ Adicionar'}
+      </button>
+    </div>
   </div>
 );
 
 export default function ProximasImpressoes() {
   const [items, setItems] = useState([]);
 
-  // Add form state
+  // ── Add form ──
   const [titulo, setTitulo] = useState('');
   const [link, setLink] = useState('');
-  const [addH, setAddH] = useState('');
-  const [addM, setAddM] = useState('');
+  const [numPlacas, setNumPlacas] = useState(1);
+  const [placas, setPlacas] = useState(emptyPlacas(1));
   const [error, setError] = useState('');
 
-  // Edit state
+  // ── Edit state ──
   const [editingId, setEditingId] = useState(null);
   const [editTitulo, setEditTitulo] = useState('');
   const [editLink, setEditLink] = useState('');
-  const [editH, setEditH] = useState('');
-  const [editM, setEditM] = useState('');
+  const [editNumPlacas, setEditNumPlacas] = useState(1);
+  const [editPlacas, setEditPlacas] = useState(emptyPlacas(1));
   const [editError, setEditError] = useState('');
 
-  // Drag state
+  // ── Drag ──
   const [dragIdx, setDragIdx] = useState(null);
   const [overIdx, setOverIdx] = useState(null);
 
   useEffect(() => { setItems(getProximas()); }, []);
 
+  // Sync add placas when numPlacas changes
+  useEffect(() => {
+    setPlacas(prev => syncPlacas(prev, numPlacas));
+  }, [numPlacas]);
+
+  // Sync edit placas when editNumPlacas changes
+  useEffect(() => {
+    setEditPlacas(prev => syncPlacas(prev, editNumPlacas));
+  }, [editNumPlacas]);
+
   const reload = () => setItems(getProximas());
+
+  const handlePlacaChange = (idx, field, val) => {
+    setPlacas(prev => prev.map((p, i) => i === idx ? { ...p, [field]: val } : p));
+  };
+
+  const handleEditPlacaChange = (idx, field, val) => {
+    setEditPlacas(prev => prev.map((p, i) => i === idx ? { ...p, [field]: val } : p));
+  };
+
+  const buildPlacasSave = (ps) =>
+    ps.map(p => ({ nome: p.nome || `Placa`, tempoMinutos: (parseInt(p.h) || 0) * 60 + (parseInt(p.m) || 0) }));
 
   // ── Add ──
   const handleAdd = () => {
     if (!titulo.trim()) { setError('O título é obrigatório.'); return; }
-    const h = parseInt(addH) || 0;
-    const m = parseInt(addM) || 0;
-    if (h === 0 && m === 0) { setError('Informe o tempo estimado de impressão.'); return; }
-    saveProxima({ titulo: titulo.trim(), link: link.trim(), tempoMinutos: h * 60 + m });
-    setTitulo(''); setLink(''); setAddH(''); setAddM(''); setError('');
+    const saved = buildPlacasSave(placas);
+    if (saved.every(p => p.tempoMinutos === 0)) { setError('Informe o tempo de pelo menos uma placa.'); return; }
+    saveProxima({ titulo: titulo.trim(), link: link.trim(), placas: saved });
+    setTitulo(''); setLink(''); setNumPlacas(1); setPlacas(emptyPlacas(1)); setError('');
     reload();
   };
 
@@ -97,17 +171,20 @@ export default function ProximasImpressoes() {
     setEditingId(item.id);
     setEditTitulo(item.titulo || '');
     setEditLink(item.link || '');
-    setEditH(item.tempoMinutos ? String(Math.floor(item.tempoMinutos / 60)) : '');
-    setEditM(item.tempoMinutos ? String(item.tempoMinutos % 60) : '');
+    // Support old items with single tempoMinutos
+    const ps = item.placas?.length
+      ? item.placas.map(p => ({ nome: p.nome || 'Placa', h: String(Math.floor((p.tempoMinutos || 0) / 60)), m: String((p.tempoMinutos || 0) % 60) }))
+      : [{ nome: 'Placa 1', h: String(Math.floor((item.tempoMinutos || 0) / 60)), m: String((item.tempoMinutos || 0) % 60) }];
+    setEditNumPlacas(ps.length);
+    setEditPlacas(ps);
     setEditError('');
   };
 
   const handleSaveEdit = () => {
     if (!editTitulo.trim()) { setEditError('O título é obrigatório.'); return; }
-    const h = parseInt(editH) || 0;
-    const m = parseInt(editM) || 0;
-    if (h === 0 && m === 0) { setEditError('Informe o tempo estimado.'); return; }
-    updateProxima({ id: editingId, titulo: editTitulo.trim(), link: editLink.trim(), tempoMinutos: h * 60 + m });
+    const saved = buildPlacasSave(editPlacas);
+    if (saved.every(p => p.tempoMinutos === 0)) { setEditError('Informe o tempo de pelo menos uma placa.'); return; }
+    updateProxima({ id: editingId, titulo: editTitulo.trim(), link: editLink.trim(), placas: saved });
     setEditingId(null);
     reload();
   };
@@ -143,62 +220,19 @@ export default function ProximasImpressoes() {
       </div>
 
       {/* Add form */}
-      <div style={{
-        background: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
-        borderRadius: '14px',
-        padding: '1.5rem',
-        marginBottom: '2rem',
-      }}>
+      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '14px', padding: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Adicionar modelo
         </div>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ flex: '1 1 200px' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Título *
-            </label>
-            <input
-              style={inputStyle}
-              placeholder="Nome do modelo..."
-              value={titulo}
-              onChange={e => { setTitulo(e.target.value); setError(''); }}
-              onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            />
-          </div>
-          <div style={{ flex: '2 1 260px' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Link
-            </label>
-            <input
-              style={inputStyle}
-              placeholder="https://www.thingiverse.com/..."
-              value={link}
-              onChange={e => setLink(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            />
-          </div>
-          <div style={{ flexShrink: 0 }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Tempo estimado *
-            </label>
-            <TimeInputs h={addH} setH={setAddH} m={addM} setM={setAddM} />
-          </div>
-          <button
-            onClick={handleAdd}
-            style={{
-              padding: '0.65rem 1.5rem',
-              background: 'linear-gradient(to right, var(--primary), var(--secondary))',
-              border: 'none', borderRadius: '8px',
-              color: '#000', fontWeight: '700', fontSize: '0.9rem',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-              fontFamily: 'var(--font-family)', flexShrink: 0,
-            }}
-          >
-            + Adicionar
-          </button>
-        </div>
-        {error && <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#F87171' }}>{error}</div>}
+        <FormFields
+          t={titulo} setT={setTitulo}
+          l={link} setL={setLink}
+          np={numPlacas} setNP={setNumPlacas}
+          ps={placas} onPChange={handlePlacaChange}
+          onSubmit={handleAdd}
+          err={error}
+          isEdit={false}
+        />
       </div>
 
       {/* List */}
@@ -210,117 +244,125 @@ export default function ProximasImpressoes() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          {items.map((item, idx) => (
-            <div
-              key={item.id}
-              draggable={editingId !== item.id}
-              onDragStart={() => handleDragStart(idx)}
-              onDragOver={e => handleDragOver(e, idx)}
-              onDrop={handleDrop}
-              onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
-              style={{
-                background: 'var(--card-bg)',
-                border: `1px solid ${editingId === item.id ? 'var(--primary)' : overIdx === idx && dragIdx !== idx ? 'var(--primary)' : 'var(--card-border)'}`,
-                borderRadius: '12px',
-                padding: '1rem 1.25rem',
-                transition: 'border-color 0.15s, opacity 0.15s',
-                opacity: dragIdx === idx ? 0.4 : 1,
-                cursor: editingId === item.id ? 'default' : 'grab',
-              }}
-            >
-              {editingId === item.id ? (
-                /* ── Inline Edit Form ── */
-                <div>
-                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                    <div style={{ flex: '1 1 180px' }}>
-                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Título *</label>
-                      <input style={inputStyle} value={editTitulo} onChange={e => { setEditTitulo(e.target.value); setEditError(''); }} />
-                    </div>
-                    <div style={{ flex: '2 1 220px' }}>
-                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Link</label>
-                      <input style={inputStyle} value={editLink} onChange={e => setEditLink(e.target.value)} placeholder="https://..." />
-                    </div>
-                    <div style={{ flexShrink: 0 }}>
-                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tempo estimado *</label>
-                      <TimeInputs h={editH} setH={setEditH} m={editM} setM={setEditM} />
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-                      <button
-                        onClick={handleSaveEdit}
-                        style={{ padding: '0.6rem 1.2rem', background: 'var(--primary)', border: 'none', borderRadius: '8px', color: '#000', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-family)' }}
-                      >Salvar</button>
-                      <button
-                        onClick={handleCancelEdit}
-                        style={{ padding: '0.6rem 1rem', background: 'transparent', border: '1px solid var(--card-border)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-family)' }}
-                      >Cancelar</button>
-                    </div>
-                  </div>
-                  {editError && <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#F87171' }}>{editError}</div>}
-                </div>
-              ) : (
-                /* ── Normal Row ── */
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  {/* Drag handle + number */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>⠿</span>
-                    <span style={{
-                      width: '24px', height: '24px', borderRadius: '50%',
-                      background: 'rgba(0,240,255,0.1)', color: 'var(--primary)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.75rem', fontWeight: '700', flexShrink: 0,
-                    }}>{idx + 1}</span>
-                  </div>
+          {items.map((item, idx) => {
+            const itemPlacas = item.placas?.length
+              ? item.placas
+              : item.tempoMinutos
+                ? [{ nome: 'Placa 1', tempoMinutos: item.tempoMinutos }]
+                : [];
+            const totalMin = totalFromPlacas(itemPlacas);
+            const isEditing = editingId === item.id;
 
-                  {/* Title + link */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text)', marginBottom: '2px' }}>
-                      {item.titulo}
+            return (
+              <div
+                key={item.id}
+                draggable={!isEditing}
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={e => handleDragOver(e, idx)}
+                onDrop={handleDrop}
+                onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
+                style={{
+                  background: 'var(--card-bg)',
+                  border: `1px solid ${isEditing ? 'var(--primary)' : overIdx === idx && dragIdx !== idx ? 'var(--primary)' : 'var(--card-border)'}`,
+                  borderRadius: '12px',
+                  padding: '1rem 1.25rem',
+                  transition: 'border-color 0.15s, opacity 0.15s',
+                  opacity: dragIdx === idx ? 0.4 : 1,
+                  cursor: isEditing ? 'default' : 'grab',
+                }}
+              >
+                {isEditing ? (
+                  /* ── Inline Edit ── */
+                  <FormFields
+                    t={editTitulo} setT={setEditTitulo}
+                    l={editLink} setL={setEditLink}
+                    np={editNumPlacas} setNP={setEditNumPlacas}
+                    ps={editPlacas} onPChange={handleEditPlacaChange}
+                    onSubmit={handleSaveEdit}
+                    onCancel={handleCancelEdit}
+                    err={editError}
+                    isEdit={true}
+                  />
+                ) : (
+                  /* ── Normal display ── */
+                  <div>
+                    {/* Header row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: itemPlacas.length > 0 ? '0.75rem' : 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>⠿</span>
+                        <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(0,240,255,0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: '700', flexShrink: 0 }}>
+                          {idx + 1}
+                        </span>
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text)', marginBottom: '1px' }}>{item.titulo}</div>
+                        {item.link && (
+                          <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                            style={{ fontSize: '0.78rem', color: 'var(--primary)', textDecoration: 'none', opacity: 0.8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%' }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '0.8'}
+                          >🔗 {item.link}</a>
+                        )}
+                      </div>
+
+                      {/* Badges */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.6rem', borderRadius: '999px' }}>
+                          {itemPlacas.length} {itemPlacas.length === 1 ? 'placa' : 'placas'}
+                        </span>
+                        <span style={{ padding: '0.3rem 0.75rem', background: 'rgba(0,240,255,0.07)', border: '1px solid rgba(0,240,255,0.18)', borderRadius: '8px', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: '700' }}>
+                          🕐 {fmtTempo(totalMin)}
+                        </span>
+                      </div>
+
+                      {item.link && (
+                        <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                          style={{ padding: '0.4rem 0.9rem', background: 'rgba(0,240,255,0.08)', border: '1px solid rgba(0,240,255,0.2)', borderRadius: '8px', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: '600', textDecoration: 'none', flexShrink: 0, fontFamily: 'var(--font-family)' }}>
+                          Abrir
+                        </a>
+                      )}
+
+                      <button onClick={() => handleStartEdit(item)}
+                        style={{ background: 'transparent', border: '1px solid var(--card-border)', borderRadius: '8px', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', padding: '0.4rem 0.8rem', flexShrink: 0, fontFamily: 'var(--font-family)', transition: 'color 0.15s, border-color 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--text-muted)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--card-border)'; }}>
+                        Editar
+                      </button>
+
+                      <button onClick={() => handleDelete(item.id)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.25rem', borderRadius: '6px', flexShrink: 0, lineHeight: 1, transition: 'color 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#F87171'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                        title="Remover">✕
+                      </button>
                     </div>
-                    {item.link && (
-                      <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                        style={{ fontSize: '0.78rem', color: 'var(--primary)', textDecoration: 'none', opacity: 0.8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%' }}
-                        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                        onMouseLeave={e => e.currentTarget.style.opacity = '0.8'}
-                      >🔗 {item.link}</a>
+
+                    {/* Placas list */}
+                    {itemPlacas.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', paddingLeft: '3rem' }}>
+                        {itemPlacas.map((p, pi) => (
+                          <div key={pi} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.82rem' }}>
+                            <span style={{ color: 'var(--primary)', fontWeight: 600, minWidth: '14px' }}>{pi + 1}.</span>
+                            <span style={{ color: 'var(--text-muted)', flex: 1 }}>{p.nome || `Placa ${pi + 1}`}</span>
+                            <span style={{ color: p.tempoMinutos ? 'var(--text)' : 'var(--text-muted)', fontWeight: 600, minWidth: '60px', textAlign: 'right' }}>
+                              {fmtTempo(p.tempoMinutos)}
+                            </span>
+                            {/* Mini bar */}
+                            {totalMin > 0 && (
+                              <div style={{ width: '80px', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', flexShrink: 0 }}>
+                                <div style={{ width: `${((p.tempoMinutos || 0) / totalMin) * 100}%`, height: '100%', background: 'var(--primary)', borderRadius: '2px' }} />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-
-                  {/* Estimated time badge */}
-                  <div style={{
-                    flexShrink: 0, padding: '0.3rem 0.75rem',
-                    background: 'rgba(0,240,255,0.07)', border: '1px solid rgba(0,240,255,0.18)',
-                    borderRadius: '8px', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: '700',
-                  }}>
-                    🕐 {fmtTempo(item.tempoMinutos)}
-                  </div>
-
-                  {/* Open link */}
-                  {item.link && (
-                    <a href={item.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                      style={{ padding: '0.45rem 1rem', background: 'rgba(0,240,255,0.08)', border: '1px solid rgba(0,240,255,0.2)', borderRadius: '8px', color: 'var(--primary)', fontSize: '0.8rem', fontWeight: '600', textDecoration: 'none', flexShrink: 0, fontFamily: 'var(--font-family)' }}
-                    >Abrir</a>
-                  )}
-
-                  {/* Edit */}
-                  <button
-                    onClick={() => handleStartEdit(item)}
-                    style={{ background: 'transparent', border: '1px solid var(--card-border)', borderRadius: '8px', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', padding: '0.4rem 0.8rem', flexShrink: 0, fontFamily: 'var(--font-family)', transition: 'color 0.15s, border-color 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--text-muted)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--card-border)'; }}
-                  >Editar</button>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.25rem', borderRadius: '6px', flexShrink: 0, lineHeight: 1, transition: 'color 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#F87171'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-                    title="Remover"
-                  >✕</button>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
