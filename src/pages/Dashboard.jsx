@@ -240,7 +240,7 @@ const Dashboard = () => {
               <p style={{ fontWeight: 600 }}>Todos os estoques estão OK</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto', paddingRight: '6px' }}>
               {lowStockFilaments.map(f => {
                 const isEmpty = (f.currentStock || 0) <= 0;
                 return (
