@@ -254,6 +254,12 @@ export const saveProxima = (item) => {
   saveToStorage(STORAGE_KEYS.PROXIMAS, list);
 };
 
+export const updateProxima = (item) => {
+  const list = getProximas();
+  const idx = list.findIndex(p => p.id === item.id);
+  if (idx >= 0) { list[idx] = { ...list[idx], ...item }; saveToStorage(STORAGE_KEYS.PROXIMAS, list); }
+};
+
 export const deleteProxima = (id) => {
   saveToStorage(STORAGE_KEYS.PROXIMAS, getProximas().filter(p => p.id !== id));
 };
