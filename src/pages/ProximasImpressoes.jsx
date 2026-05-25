@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getProximas, saveProxima, updateProxima, deleteProxima, reorderProximas } from '../services/storage';
 import OtimizadorModal from '../components/OtimizadorModal';
 
@@ -46,7 +46,7 @@ const syncPlacas = (current, n) => {
 const labelStyle = { fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' };
 
 /* ── Linha de placa no formulário ── */
-const PlacaRow = ({ placa, index, onChange }) => (
+const PlacaRow = ({ placa, index, onChange, onSubmit }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: '0.75rem',
     background: 'rgba(255,255,255,0.02)', borderRadius: '8px',
@@ -59,32 +59,35 @@ const PlacaRow = ({ placa, index, onChange }) => (
       style={{ ...inputStyle, flex: 1 }}
       value={placa.nome}
       onChange={e => onChange(index, 'nome', e.target.value)}
+      onKeyDown={e => e.key === 'Enter' && onSubmit?.()}
       placeholder={`Placa ${index + 1}`}
     />
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
       <input type="number" style={timeNumStyle} min="0" max="99"
         placeholder="0" value={placa.h}
-        onChange={e => onChange(index, 'h', e.target.value)} />
+        onChange={e => onChange(index, 'h', e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && onSubmit?.()} />
       <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>h</span>
       <input type="number" style={timeNumStyle} min="0" max="59"
         placeholder="0" value={placa.m}
-        onChange={e => onChange(index, 'm', e.target.value)} />
+        onChange={e => onChange(index, 'm', e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && onSubmit?.()} />
       <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>min</span>
     </div>
   </div>
 );
 
 /* ── Formulário de add/edit ── */
-const FormFields = ({ t, setT, l, setL, np, setNP, ps, onPChange, onSubmit, onCancel, err, isEdit }) => (
+const FormFields = ({ t, setT, l, setL, np, setNP, ps, onPChange, onSubmit, onCancel, err, isEdit, titleRef }) => (
   <div>
     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '1rem' }}>
       <div style={{ flex: '1 1 180px' }}>
         <label style={labelStyle}>Título *</label>
-        <input style={inputStyle} placeholder="Nome do modelo..." value={t} onChange={e => setT(e.target.value)} onKeyDown={e => !isEdit && e.key === 'Enter' && onSubmit()} />
+        <input ref={titleRef} style={inputStyle} placeholder="Nome do modelo..." value={t} onChange={e => setT(e.target.value)} onKeyDown={e => e.key === 'Enter' && onSubmit()} />
       </div>
       <div style={{ flex: '2 1 220px' }}>
         <label style={labelStyle}>Link</label>
-        <input style={inputStyle} placeholder="https://www.thingiverse.com/..." value={l} onChange={e => setL(e.target.value)} />
+        <input style={inputStyle} placeholder="https://www.thingiverse.com/..." value={l} onChange={e => setL(e.target.value)} onKeyDown={e => e.key === 'Enter' && onSubmit()} />
       </div>
       <div style={{ flexShrink: 0 }}>
         <label style={labelStyle}>Nº de Placas</label>
@@ -94,7 +97,7 @@ const FormFields = ({ t, setT, l, setL, np, setNP, ps, onPChange, onSubmit, onCa
       </div>
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-      {ps.map((p, i) => <PlacaRow key={i} placa={p} index={i} onChange={onPChange} />)}
+      {ps.map((p, i) => <PlacaRow key={i} placa={p} index={i} onChange={onPChange} onSubmit={onSubmit} />)}
     </div>
     {err && <div style={{ fontSize: '0.8rem', color: '#F87171', marginBottom: '0.75rem' }}>{err}</div>}
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -114,6 +117,7 @@ export default function ProximasImpressoes() {
   const [items, setItems] = useState([]);
 
   // ── Add form ──
+  const addTitleRef = useRef(null);
   const [titulo, setTitulo] = useState('');
   const [link, setLink] = useState('');
   const [numPlacas, setNumPlacas] = useState(1);
@@ -168,6 +172,7 @@ export default function ProximasImpressoes() {
     saveProxima({ titulo: titulo.trim(), link: link.trim(), placas: saved });
     setTitulo(''); setLink(''); setNumPlacas(1); setPlacas(emptyPlacas(1)); setError('');
     reload();
+    setTimeout(() => addTitleRef.current?.focus(), 0);
   };
 
   // ── Edit ──
@@ -263,6 +268,7 @@ export default function ProximasImpressoes() {
           onSubmit={handleAdd}
           err={error}
           isEdit={false}
+          titleRef={addTitleRef}
         />
       </div>
 
