@@ -30,6 +30,31 @@ const fmtTempo = (min) => {
   return `${h}h ${m}min`;
 };
 
+const TimeInputs = ({ h, setH, m, setM }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+    <input
+      type="number"
+      style={timeInputStyle}
+      placeholder="0"
+      value={h}
+      onChange={e => setH(e.target.value)}
+      min="0"
+      max="99"
+    />
+    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', flexShrink: 0 }}>h</span>
+    <input
+      type="number"
+      style={timeInputStyle}
+      placeholder="0"
+      value={m}
+      onChange={e => setM(e.target.value)}
+      min="0"
+      max="59"
+    />
+    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', flexShrink: 0 }}>min</span>
+  </div>
+);
+
 export default function ProximasImpressoes() {
   const [items, setItems] = useState([]);
 
@@ -104,31 +129,6 @@ export default function ProximasImpressoes() {
     setItems(reordered);
     setDragIdx(null); setOverIdx(null);
   };
-
-  const TimeInputs = ({ h, setH, m, setM }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-      <input
-        type="number"
-        style={timeInputStyle}
-        placeholder="0"
-        value={h}
-        onChange={e => setH(e.target.value)}
-        min="0"
-        max="99"
-      />
-      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', flexShrink: 0 }}>h</span>
-      <input
-        type="number"
-        style={timeInputStyle}
-        placeholder="0"
-        value={m}
-        onChange={e => setM(e.target.value)}
-        min="0"
-        max="59"
-      />
-      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', flexShrink: 0 }}>min</span>
-    </div>
-  );
 
   return (
     <div>
