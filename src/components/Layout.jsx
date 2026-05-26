@@ -10,6 +10,7 @@ const Layout = ({ children, activeTab, onTabChange }) => {
     { id: 'filaments', label: 'Filamentos', icon: '🧵' },
     { id: 'accessories', label: 'Acessórios', icon: '🔧' },
     { id: 'proximas', label: 'Próximas impressões', icon: '📋' },
+    { id: 'calculadora', label: 'Calculadora de venda', icon: '🏷️' },
   ];
 
   return (

@@ -7,6 +7,7 @@ import Orders from './pages/Orders';
 import Prints from './pages/Prints';
 import Accessories from './pages/Accessories';
 import ProximasImpressoes from './pages/ProximasImpressoes';
+import Calculadora from './pages/Calculadora';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -20,6 +21,7 @@ function App() {
       case 'prints': return <Prints />;
       case 'accessories': return <Accessories />;
       case 'proximas': return <ProximasImpressoes />;
+      case 'calculadora': return <Calculadora />;
       default: return <Estoque />;
     }
   };
