@@ -72,7 +72,7 @@ export default function Calculadora() {
 
   // Eletricidade (salvo)
   const [wattage, setWattage] = useState(200);
-  const [kwh, setKwh] = useState(0.18);
+  const [kwh, setKwh] = useState(0.145);
   const [printH, setPrintH] = useState('');
   const [printM, setPrintM] = useState('');
 
