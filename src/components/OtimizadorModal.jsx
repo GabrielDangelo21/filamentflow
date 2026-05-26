@@ -41,24 +41,22 @@ function getCombinations(arr, n) {
   ];
 }
 
-function findBestForSlot(plates, slotMin) {
+function findBestSingle(plates, slotMin) {
   if (!plates.length) return null;
-  const maxN = Math.min(3, plates.length);
   let bestCover = null, bestCoverOver = Infinity;
   let bestFit = null, bestFitTotal = 0;
 
-  for (let n = 1; n <= maxN; n++) {
-    for (const combo of getCombinations(plates, n)) {
-      const total = combo.reduce((s, p) => s + p.tempoMinutos, 0);
-      if (total >= slotMin) {
-        const over = total - slotMin;
-        if (over < bestCoverOver) { bestCover = { combo, total }; bestCoverOver = over; }
-      } else {
-        if (total > bestFitTotal) { bestFit = { combo, total }; bestFitTotal = total; }
-      }
+  for (const p of plates) {
+    const t = p.tempoMinutos;
+    if (t >= slotMin) {
+      const over = t - slotMin;
+      if (over < bestCoverOver) { bestCover = p; bestCoverOver = over; }
+    } else {
+      if (t > bestFitTotal) { bestFit = p; bestFitTotal = t; }
     }
   }
-  return bestCover || bestFit;
+  const chosen = bestCover || bestFit;
+  return chosen ? { combo: [chosen], total: chosen.tempoMinutos } : null;
 }
 
 function buildSchedule(plates, currentTimeStr, absences) {
@@ -96,7 +94,7 @@ function buildSchedule(plates, currentTimeStr, absences) {
         avail -= p.tempoMinutos;
       }
     } else {
-      const best = findBestForSlot(remaining, period.duration);
+      const best = findBestSingle(remaining, period.duration);
       if (best) {
         for (const p of best.combo) {
           const idx = remaining.indexOf(p);
