@@ -35,16 +35,26 @@ const EMPTY_FORM = {
 };
 
 const inp = {
-  background: 'rgba(0,0,0,0.25)',
-  border: '1px solid var(--card-border)',
+  background: 'rgba(255,255,255,0.07)',
+  border: '1px solid rgba(255,255,255,0.18)',
   borderRadius: '8px',
-  padding: '0.55rem 0.85rem',
-  color: 'var(--text-main)',
+  padding: '0.6rem 0.9rem',
+  color: '#F8FAFC',
   fontFamily: 'var(--font-family)',
-  fontSize: '0.9rem',
+  fontSize: '0.92rem',
   outline: 'none',
   width: '100%',
   boxSizing: 'border-box',
+};
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '0.78rem',
+  color: '#94A3B8',
+  textTransform: 'uppercase',
+  letterSpacing: '0.6px',
+  fontWeight: 700,
+  marginBottom: '0.45rem',
 };
 
 // ── Modal ──────────────────────────────────────────────────────────────────────
@@ -91,38 +101,42 @@ const ItemModal = ({ item, onSave, onClose }) => {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '1rem',
       }}
     >
       <div style={{
-        background: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
+        background: '#151B2D',
+        border: '1px solid rgba(255,255,255,0.14)',
         borderRadius: '16px',
         padding: '2rem',
         width: '100%',
         maxWidth: '520px',
-        boxShadow: '0 25px 80px rgba(0,0,0,0.6)',
+        boxShadow: '0 30px 90px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,240,255,0.08)',
         maxHeight: '90vh',
         overflowY: 'auto',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)' }}>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#F8FAFC', fontWeight: 700 }}>
             {item ? 'Editar item' : 'Adicionar impressão ao orçamento'}
           </h2>
           <button onClick={onClose} style={{
-            background: 'transparent', border: 'none', color: 'var(--text-muted)',
-            fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1, padding: '0.1rem 0.3rem',
-          }}>×</button>
+            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '6px', color: '#94A3B8',
+            fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1,
+            padding: '0.2rem 0.55rem', transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = '#F8FAFC'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#94A3B8'; }}>
+            ×
+          </button>
         </div>
 
         <form onSubmit={handleSubmit}>
           {/* Descrição */}
           <div style={{ marginBottom: '1.1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, marginBottom: '0.4rem' }}>
-              Nome / Descrição *
-            </label>
+            <label style={labelStyle}>Nome / Descrição *</label>
             <input
               ref={descRef}
               type="text"
@@ -136,8 +150,11 @@ const ItemModal = ({ item, onSave, onClose }) => {
 
           {/* Projeto */}
           <div style={{ marginBottom: '1.1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, marginBottom: '0.4rem' }}>
-              Projeto <span style={{ fontWeight: 400, textTransform: 'none', fontSize: '0.75rem' }}>(opcional — agrupa partes)</span>
+            <label style={labelStyle}>
+              Projeto{' '}
+              <span style={{ fontWeight: 400, textTransform: 'none', fontSize: '0.75rem', color: '#64748B' }}>
+                (opcional — agrupa partes)
+              </span>
             </label>
             <input
               type="text"
@@ -150,45 +167,52 @@ const ItemModal = ({ item, onSave, onClose }) => {
 
           {/* Tempo */}
           <div style={{ marginBottom: '1.1rem' }}>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, marginBottom: '0.4rem' }}>
+            <label style={{ ...labelStyle, display: 'flex', justifyContent: 'space-between' }}>
               <span>Hora Inicial</span><span>Hora Final</span>
             </label>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <input type="time" value={form.startTime} onChange={e => handleTime('startTime', e.target.value)} style={{ ...inp, flex: 1 }} />
-              <span style={{ color: 'var(--primary)', fontWeight: 700, flexShrink: 0 }}>→</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 700, flexShrink: 0, fontSize: '1.1rem' }}>→</span>
               <input type="time" value={form.endTime}   onChange={e => handleTime('endTime',   e.target.value)} style={{ ...inp, flex: 1 }} />
             </div>
             {form.timeMinutes !== '' && form.timeMinutes > 0 && (
-              <div style={{ marginTop: '0.4rem', background: 'rgba(0,240,255,0.07)', border: '1px solid rgba(0,240,255,0.2)', borderRadius: '6px', padding: '0.35rem 0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <div style={{ marginTop: '0.4rem', background: 'rgba(0,240,255,0.09)', border: '1px solid rgba(0,240,255,0.25)', borderRadius: '6px', padding: '0.35rem 0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                 <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{fmtDur(Number(form.timeMinutes))}</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({form.timeMinutes} min)</span>
+                <span style={{ color: '#64748B', fontSize: '0.8rem' }}>({form.timeMinutes} min)</span>
               </div>
             )}
           </div>
 
+          {/* Divisor */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1rem 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ fontSize: '0.72rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+              ou preencha direto
+            </span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+          </div>
+
           {/* Tempo manual */}
           <div style={{ marginBottom: '1.1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, marginBottom: '0.4rem' }}>
-              Tempo de impressão (min) <span style={{ fontWeight: 400, textTransform: 'none', fontSize: '0.75rem' }}>(ou preencha os horários acima)</span>
-            </label>
+            <label style={labelStyle}>Tempo de impressão (min)</label>
             <input
               type="number"
               min="0"
               placeholder="Ex: 180"
               value={form.timeMinutes}
               onChange={e => set('timeMinutes', e.target.value)}
-              style={{ ...inp, width: '140px' }}
+              style={{ ...inp, width: '160px' }}
             />
           </div>
 
           {/* Peso + Custo material */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, marginBottom: '0.4rem' }}>Peso (g)</label>
+              <label style={labelStyle}>Peso (g)</label>
               <input type="number" min="0" step="0.1" placeholder="Ex: 45" value={form.totalWeight} onChange={e => set('totalWeight', e.target.value)} style={inp} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, marginBottom: '0.4rem' }}>Custo material (€)</label>
+              <label style={labelStyle}>Custo material (€)</label>
               <input type="number" min="0" step="0.01" placeholder="Ex: 0.85" value={form.materialCost} onChange={e => set('materialCost', e.target.value)} style={inp} />
             </div>
           </div>
