@@ -203,6 +203,18 @@ export default function ProximasImpressoes() {
   // ── Delete ──
   const handleDelete = (id) => { deleteProxima(id); reload(); };
 
+  // ── Delete placa individual ──
+  const handleDeletePlaca = (itemId, placaIndex) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    // Formato antigo sem array de placas → apaga o item inteiro
+    if (!item.placas?.length) { deleteProxima(itemId); reload(); return; }
+    const newPlacas = item.placas.filter((_, i) => i !== placaIndex);
+    if (newPlacas.length === 0) { deleteProxima(itemId); reload(); return; }
+    updateProxima({ ...item, placas: newPlacas });
+    reload();
+  };
+
   // ── Drag ──
   const handleDragStart = (idx) => setDragIdx(idx);
   const handleDragOver = (e, idx) => { e.preventDefault(); setOverIdx(idx); };
@@ -391,6 +403,14 @@ export default function ProximasImpressoes() {
                                 <div style={{ width: `${((p.tempoMinutos || 0) / totalMin) * 100}%`, height: '100%', background: 'var(--primary)', borderRadius: '2px' }} />
                               </div>
                             )}
+                            {/* Apagar placa */}
+                            <button
+                              onClick={() => handleDeletePlaca(item.id, pi)}
+                              style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.85rem', padding: '0 0.1rem', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s' }}
+                              onMouseEnter={e => e.currentTarget.style.color = '#F87171'}
+                              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
+                              title="Remover esta placa"
+                            >✕</button>
                           </div>
                         ))}
                       </div>
