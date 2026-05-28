@@ -48,7 +48,7 @@ export default function Orcamento() {
 
   const [wattage,      setWattage]      = useState(200);
   const [kwh,          setKwh]          = useState(0.145);
-  const [laborMinutes, setLaborMinutes] = useState(15);
+  const [laborMinutes, setLaborMinutes] = useState(5);
   const [hourlyRate,   setHourlyRate]   = useState(10);
   const [margin,       setMargin]       = useState(30);
 
