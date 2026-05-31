@@ -8,6 +8,8 @@ import CustomSelect from './CustomSelect';
 import MaskedNumberInput from './MaskedNumberInput';
 
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
+const DEFAULT_PRINTER = 'Bambu Lab P2S';
+const DEFAULT_PRINTERS = ['Bambu Lab P2S', 'Bambu Lab A1'];
 
 const calcMinutes = (start, end) => {
   if (!start || !end) return '';
@@ -54,6 +56,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
   const [filaments,    setFilaments]    = useState([]);
   const [allFilaments, setAllFilaments] = useState([]);
   const [placas,       setPlacas]       = useState([DEFAULT_PLACA]);
+  const [printers,     setPrinters]     = useState(DEFAULT_PRINTERS);
   const [prints,       setPrints]       = useState([]);
 
   const [formData, setFormData] = useState({
@@ -65,6 +68,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     timeMinutes: initialTimeMinutes || '',
     colors:      1,
     placa:       DEFAULT_PLACA,
+    printer:     DEFAULT_PRINTER,
   });
 
   const [usedFilaments,     setUsedFilaments]     = useState([{ sku: '', weightGrams: '' }]);
@@ -90,6 +94,8 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     setPrints(getPrints());
     const accPlacas = getAccessoriesByCategory('Placas de impressão');
     setPlacas([DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)]);
+    const accPrinters = getAccessoriesByCategory('Impressoras');
+    setPrinters([...new Set([...DEFAULT_PRINTERS, ...accPrinters])]);
     setTimeout(() => descRef.current?.focus(), 60);
   }, []);
 
@@ -197,6 +203,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
       totalWeight,
       colors:       Number(formData.colors),
       placa:        formData.placa || DEFAULT_PLACA,
+      printer:      formData.printer || DEFAULT_PRINTER,
       filamentsUsed: usedFilaments.map(f => ({ sku: f.sku, weightGrams: Number(f.weightGrams) })),
     });
     onSaved();
@@ -356,10 +363,10 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
             </div>
           </div>
 
-          {/* Linha 2: Cores + Placa de impressão */}
-          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0.85rem', marginBottom: '1.25rem' }}>
+          {/* Linha 2: Cores + Placa + Impressora */}
+          <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr', gap: '0.85rem', marginBottom: '1.25rem' }}>
             <div>
-              <label style={lbl}>Qtd. de Cores</label>
+              <label style={lbl}>Cores</label>
               <input type="number" min="1" max="16" value={formData.colors}
                 onChange={e => set('colors', e.target.value)}
                 style={{ ...inp, textAlign:'center' }} />
@@ -371,6 +378,15 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
                 value={formData.placa}
                 onChange={v => set('placa', v)}
                 options={placas.map(p => ({ value: p, label: p }))}
+              />
+            </div>
+            <div>
+              <label style={lbl}>Impressora</label>
+              <CustomSelect
+                fullWidth
+                value={formData.printer}
+                onChange={v => set('printer', v)}
+                options={printers.map(p => ({ value: p, label: p }))}
               />
             </div>
           </div>

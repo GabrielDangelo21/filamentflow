@@ -5,6 +5,8 @@ import CustomSelect from '../components/CustomSelect';
 import MaskedNumberInput from '../components/MaskedNumberInput';
 
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
+const DEFAULT_PRINTER = 'Bambu Lab P2S';
+const DEFAULT_PRINTERS = ['Bambu Lab P2S', 'Bambu Lab A1'];
 const PRICE_SETTINGS_KEY = 'filamentflow_calc_settings';
 
 const Prints = () => {
@@ -12,6 +14,7 @@ const Prints = () => {
   const [allFilaments, setAllFilaments] = useState([]);
   const [prints, setPrints] = useState([]);
   const [placas, setPlacas] = useState([]);
+  const [printers, setPrinters] = useState(DEFAULT_PRINTERS);
   const [isEditing, setIsEditing] = useState(false);
   const [viewingPrintIdx, setViewingPrintIdx] = useState(null);
   const descriptionInputRef = useRef(null);
@@ -27,6 +30,7 @@ const Prints = () => {
     colors: 1,
     weightGrams: '',
     placa: DEFAULT_PLACA,
+    printer: DEFAULT_PRINTER,
     id: null
   };
 
@@ -95,6 +99,8 @@ const Prints = () => {
     const accPlacas = getAccessoriesByCategory('Placas de impressão');
     const allPlacas = [DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)];
     setPlacas(allPlacas);
+    const accPrinters = getAccessoriesByCategory('Impressoras');
+    setPrinters([...new Set([...DEFAULT_PRINTERS, ...accPrinters])]);
   }, []);
 
   useEffect(() => {
@@ -322,6 +328,7 @@ const Prints = () => {
       totalWeight: totalWeight,
       colors: Number(formData.colors),
       placa: formData.placa || DEFAULT_PLACA,
+      printer: formData.printer || DEFAULT_PRINTER,
       filamentsUsed: usedFilaments.map(f => ({
         sku: f.sku,
         weightGrams: Number(f.weightGrams)
@@ -362,6 +369,7 @@ const Prints = () => {
       colors: print.colors,
       weightGrams: print.totalWeight,
       placa: print.placa || DEFAULT_PLACA,
+      printer: print.printer || DEFAULT_PRINTER,
     });
     setUsedFilaments(print.filamentsUsed);
     const terms = print.filamentsUsed.map(f => {
@@ -523,7 +531,7 @@ const Prints = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1.5fr', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1.5fr 1.5fr', gap: '1.5rem', marginBottom: '2rem' }}>
             <div className="form-group">
               <label className="form-label">Data da Impressão</label>
               <input
@@ -603,6 +611,15 @@ const Prints = () => {
                 value={formData.placa}
                 onChange={v => setFormData({ ...formData, placa: v })}
                 options={placas.map(p => ({ value: p, label: p }))}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Impressora</label>
+              <CustomSelect
+                fullWidth
+                value={formData.printer}
+                onChange={v => setFormData({ ...formData, printer: v })}
+                options={printers.map(p => ({ value: p, label: p }))}
               />
             </div>
           </div>

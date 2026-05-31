@@ -98,6 +98,7 @@ export const getPrints = () => {
   let migrated = false;
   prints.forEach(p => {
     if (!p.id) { p.id = generateId(); migrated = true; }
+    if (!p.printer) { p.printer = 'Bambu Lab P2S'; migrated = true; }
     if (p.filamentsUsed) {
       p.filamentsUsed = p.filamentsUsed.map(f => ({ ...f, sku: String(f.sku) }));
     }
