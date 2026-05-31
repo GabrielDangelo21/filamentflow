@@ -325,8 +325,8 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
             </div>
           </div>
 
-          {/* Data + Horas + Cores + Placa */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1.5fr', gap: '1rem', marginBottom: '1.25rem' }}>
+          {/* Linha 1: Data + Horas + Cores */}
+          <div style={{ display: 'grid', gridTemplateColumns: '155px 1fr 90px', gap: '0.85rem', marginBottom: '0.85rem' }}>
             <div>
               <label style={lbl}>Data</label>
               <input type="date" value={formData.date} onChange={e => set('date', e.target.value)} style={inp} required />
@@ -356,21 +356,22 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
             </div>
 
             <div>
-              <label style={lbl}>Qtd. de Cores</label>
+              <label style={lbl}>Cores</label>
               <input type="number" min="1" max="16" value={formData.colors}
                 onChange={e => set('colors', e.target.value)}
                 style={{ ...inp, textAlign:'center' }} />
             </div>
+          </div>
 
-            <div>
-              <label style={lbl}>Placa de Impressão</label>
-              <CustomSelect
-                fullWidth
-                value={formData.placa}
-                onChange={v => set('placa', v)}
-                options={placas.map(p => ({ value: p, label: p }))}
-              />
-            </div>
+          {/* Linha 2: Placa de impressão */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={lbl}>Placa de Impressão</label>
+            <CustomSelect
+              fullWidth
+              value={formData.placa}
+              onChange={v => set('placa', v)}
+              options={placas.map(p => ({ value: p, label: p }))}
+            />
           </div>
 
           {/* Filamentos */}
