@@ -223,17 +223,27 @@ export default function ProximasImpressoes() {
     });
   };
 
-  // ── Após guardar o registo: remove a placa da fila ──
-  const handleRegistrarSaved = () => {
-    const { itemId, placaIndex } = registrarModal;
+  // ── Remove placa da fila (usado por Registrar e por Excluir) ──
+  const removePlacaFromQueue = (itemId, placaIndex) => {
     const item = items.find(i => i.id === itemId);
-    setRegistrarModal(null);
     if (!item) { reload(); return; }
     if (!item.placas?.length) { deleteProxima(itemId); reload(); return; }
     const newPlacas = item.placas.filter((_, i) => i !== placaIndex);
     if (newPlacas.length === 0) { deleteProxima(itemId); }
     else { updateProxima({ ...item, placas: newPlacas }); }
     reload();
+  };
+
+  const handleRegistrarSaved = () => {
+    const { itemId, placaIndex } = registrarModal;
+    setRegistrarModal(null);
+    removePlacaFromQueue(itemId, placaIndex);
+  };
+
+  const handleExcluirDaFila = () => {
+    const { itemId, placaIndex } = registrarModal;
+    setRegistrarModal(null);
+    removePlacaFromQueue(itemId, placaIndex);
   };
 
   // ── Drag ──
@@ -270,6 +280,7 @@ export default function ProximasImpressoes() {
           initialTimeMinutes={registrarModal.timeMinutes}
           onClose={() => setRegistrarModal(null)}
           onSaved={handleRegistrarSaved}
+          onDelete={handleExcluirDaFila}
         />
       )}
 

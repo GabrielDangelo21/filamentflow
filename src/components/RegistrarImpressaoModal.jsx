@@ -50,7 +50,7 @@ const lbl = {
   marginBottom: '0.4rem',
 };
 
-export default function RegistrarImpressaoModal({ initialDescription, initialProject, initialTimeMinutes, onClose, onSaved }) {
+export default function RegistrarImpressaoModal({ initialDescription, initialProject, initialTimeMinutes, onClose, onSaved, onDelete }) {
   const [filaments,    setFilaments]    = useState([]);
   const [allFilaments, setAllFilaments] = useState([]);
   const [placas,       setPlacas]       = useState([DEFAULT_PLACA]);
@@ -448,21 +448,35 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
             </div>
           )}
 
-          <div style={{ display:'flex', justifyContent:'flex-end', gap:'0.75rem' }}>
-            <button type="button" onClick={onClose} style={{
-              padding:'0.65rem 1.2rem', background:'transparent',
-              border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px',
-              color:'#94A3B8', cursor:'pointer', fontFamily:'inherit', fontSize:'0.9rem',
-            }}>Cancelar</button>
-            <button type="submit" disabled={saving} style={{
-              padding:'0.65rem 1.75rem',
-              background:'linear-gradient(135deg, var(--primary), var(--secondary))',
-              border:'none', borderRadius:'8px',
-              color:'#000', fontWeight:800, cursor:'pointer', fontFamily:'inherit', fontSize:'0.9rem',
-              opacity: saving ? 0.7 : 1,
-            }}>
-              {saving ? 'A guardar...' : 'Registrar Impressão ✓'}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'0.75rem' }}>
+            {/* Excluir da fila */}
+            <button type="button" onClick={onDelete} style={{
+              padding:'0.65rem 1.1rem', background:'transparent',
+              border:'1px solid rgba(248,113,113,0.35)', borderRadius:'8px',
+              color:'#F87171', cursor:'pointer', fontFamily:'inherit', fontSize:'0.85rem', fontWeight:600,
+              transition:'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background='rgba(248,113,113,0.1)'; e.currentTarget.style.borderColor='rgba(248,113,113,0.6)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.borderColor='rgba(248,113,113,0.35)'; }}>
+              🗑 Excluir da fila
             </button>
+
+            <div style={{ display:'flex', gap:'0.75rem' }}>
+              <button type="button" onClick={onClose} style={{
+                padding:'0.65rem 1.2rem', background:'transparent',
+                border:'1px solid rgba(255,255,255,0.12)', borderRadius:'8px',
+                color:'#94A3B8', cursor:'pointer', fontFamily:'inherit', fontSize:'0.9rem',
+              }}>Cancelar</button>
+              <button type="submit" disabled={saving} style={{
+                padding:'0.65rem 1.75rem',
+                background:'linear-gradient(135deg, var(--primary), var(--secondary))',
+                border:'none', borderRadius:'8px',
+                color:'#000', fontWeight:800, cursor:'pointer', fontFamily:'inherit', fontSize:'0.9rem',
+                opacity: saving ? 0.7 : 1,
+              }}>
+                {saving ? 'A guardar...' : 'Registrar Impressão ✓'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
