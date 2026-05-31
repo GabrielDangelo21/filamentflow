@@ -325,8 +325,8 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
             </div>
           </div>
 
-          {/* Linha 1: Data + Horas + Cores */}
-          <div style={{ display: 'grid', gridTemplateColumns: '155px 1fr 90px', gap: '0.85rem', marginBottom: '0.85rem' }}>
+          {/* Linha 1: Data + Horas */}
+          <div style={{ display: 'grid', gridTemplateColumns: '155px 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
             <div>
               <label style={lbl}>Data</label>
               <input type="date" value={formData.date} onChange={e => set('date', e.target.value)} style={inp} required />
@@ -354,24 +354,25 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
                 </div>
               )}
             </div>
+          </div>
 
+          {/* Linha 2: Cores + Placa de impressão */}
+          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0.85rem', marginBottom: '1.25rem' }}>
             <div>
-              <label style={lbl}>Cores</label>
+              <label style={lbl}>Qtd. de Cores</label>
               <input type="number" min="1" max="16" value={formData.colors}
                 onChange={e => set('colors', e.target.value)}
                 style={{ ...inp, textAlign:'center' }} />
             </div>
-          </div>
-
-          {/* Linha 2: Placa de impressão */}
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label style={lbl}>Placa de Impressão</label>
-            <CustomSelect
-              fullWidth
-              value={formData.placa}
-              onChange={v => set('placa', v)}
-              options={placas.map(p => ({ value: p, label: p }))}
-            />
+            <div>
+              <label style={lbl}>Placa de Impressão</label>
+              <CustomSelect
+                fullWidth
+                value={formData.placa}
+                onChange={v => set('placa', v)}
+                options={placas.map(p => ({ value: p, label: p }))}
+              />
+            </div>
           </div>
 
           {/* Filamentos */}
