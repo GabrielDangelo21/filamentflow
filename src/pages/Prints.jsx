@@ -105,6 +105,7 @@ const Prints = () => {
     setPrinters(printerList);
     const defaultPrinter = printerList.find(p => p.includes('P2S')) || printerList[0];
     setFormData(f => ({ ...f, printer: printerList.includes(f.printer) ? f.printer : defaultPrinter }));
+    setTimeout(() => descriptionInputRef.current?.focus(), 0);
   }, []);
 
   useEffect(() => {
