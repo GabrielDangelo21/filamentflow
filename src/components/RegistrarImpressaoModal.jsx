@@ -372,21 +372,21 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
                 style={{ ...inp, textAlign:'center' }} />
             </div>
             <div>
-              <label style={lbl}>Placa de Impressão</label>
-              <CustomSelect
-                fullWidth
-                value={formData.placa}
-                onChange={v => set('placa', v)}
-                options={placas.map(p => ({ value: p, label: p }))}
-              />
-            </div>
-            <div>
               <label style={lbl}>Impressora</label>
               <CustomSelect
                 fullWidth
                 value={formData.printer}
                 onChange={v => set('printer', v)}
                 options={printers.map(p => ({ value: p, label: p }))}
+              />
+            </div>
+            <div>
+              <label style={lbl}>Placa de Impressão</label>
+              <CustomSelect
+                fullWidth
+                value={formData.placa}
+                onChange={v => set('placa', v)}
+                options={placas.map(p => ({ value: p, label: p }))}
               />
             </div>
           </div>
