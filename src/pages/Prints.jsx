@@ -100,7 +100,9 @@ const Prints = () => {
     const allPlacas = [DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)];
     setPlacas(allPlacas);
     const accPrinters = getAccessoriesByCategory('Impressora');
-    setPrinters(accPrinters.length ? accPrinters : DEFAULT_PRINTERS);
+    const printerList = accPrinters.length ? accPrinters : DEFAULT_PRINTERS;
+    setPrinters(printerList);
+    setFormData(f => ({ ...f, printer: f.printer || printerList[0] }));
   }, []);
 
   useEffect(() => {
@@ -605,21 +607,21 @@ const Prints = () => {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Placa de Impressão</label>
-              <CustomSelect
-                fullWidth
-                value={formData.placa}
-                onChange={v => setFormData({ ...formData, placa: v })}
-                options={placas.map(p => ({ value: p, label: p }))}
-              />
-            </div>
-            <div className="form-group">
               <label className="form-label">Impressora</label>
               <CustomSelect
                 fullWidth
                 value={formData.printer}
                 onChange={v => setFormData({ ...formData, printer: v })}
                 options={printers.map(p => ({ value: p, label: p }))}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Placa de Impressão</label>
+              <CustomSelect
+                fullWidth
+                value={formData.placa}
+                onChange={v => setFormData({ ...formData, placa: v })}
+                options={placas.map(p => ({ value: p, label: p }))}
               />
             </div>
           </div>
