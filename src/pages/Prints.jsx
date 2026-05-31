@@ -102,7 +102,8 @@ const Prints = () => {
     const accPrinters = getAccessoriesByCategory('Impressora');
     const printerList = accPrinters.length ? accPrinters : DEFAULT_PRINTERS;
     setPrinters(printerList);
-    setFormData(f => ({ ...f, printer: f.printer || printerList[0] }));
+    const defaultPrinter = printerList.find(p => p.includes('P2S')) || printerList[0];
+    setFormData(f => ({ ...f, printer: f.printer || defaultPrinter }));
   }, []);
 
   useEffect(() => {

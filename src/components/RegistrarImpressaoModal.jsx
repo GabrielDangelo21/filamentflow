@@ -95,7 +95,10 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     const accPlacas = getAccessoriesByCategory('Placas de impressão');
     setPlacas([DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)]);
     const accPrinters = getAccessoriesByCategory('Impressora');
-    setPrinters(accPrinters.length ? accPrinters : DEFAULT_PRINTERS);
+    const printerList = accPrinters.length ? accPrinters : DEFAULT_PRINTERS;
+    setPrinters(printerList);
+    const defaultPrinter = printerList.find(p => p.includes('P2S')) || printerList[0];
+    setFormData(f => ({ ...f, printer: f.printer || defaultPrinter }));
     setTimeout(() => descRef.current?.focus(), 60);
   }, []);
 
