@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getProximas, saveProxima, updateProxima, deleteProxima, reorderProximas } from '../services/storage';
 import OtimizadorModal from '../components/OtimizadorModal';
+import RegistrarImpressaoModal from '../components/RegistrarImpressaoModal';
 
 const inputStyle = {
   background: 'var(--card-bg)',
@@ -135,6 +136,9 @@ export default function ProximasImpressoes() {
   // ── Otimizador ──
   const [showOtimizador, setShowOtimizador] = useState(false);
 
+  // ── Registrar modal ──
+  const [registrarModal, setRegistrarModal] = useState(null); // { itemId, placaIndex, description, project, timeMinutes }
+
   // ── Drag ──
   const [dragIdx, setDragIdx] = useState(null);
   const [overIdx, setOverIdx] = useState(null);
@@ -203,15 +207,32 @@ export default function ProximasImpressoes() {
   // ── Delete ──
   const handleDelete = (id) => { deleteProxima(id); reload(); };
 
-  // ── Delete placa individual ──
+  // ── Clica no X da placa → abre modal de registo ──
   const handleDeletePlaca = (itemId, placaIndex) => {
     const item = items.find(i => i.id === itemId);
     if (!item) return;
-    // Formato antigo sem array de placas → apaga o item inteiro
+    const placa = item.placas?.[placaIndex];
+    const timeMinutes = placa?.tempoMinutos || item.tempoMinutos || '';
+    // Descrição: nome do modelo. Projeto vazio (utilizador preenche).
+    setRegistrarModal({
+      itemId,
+      placaIndex,
+      description: item.titulo || '',
+      project: '',
+      timeMinutes,
+    });
+  };
+
+  // ── Após guardar o registo: remove a placa da fila ──
+  const handleRegistrarSaved = () => {
+    const { itemId, placaIndex } = registrarModal;
+    const item = items.find(i => i.id === itemId);
+    setRegistrarModal(null);
+    if (!item) { reload(); return; }
     if (!item.placas?.length) { deleteProxima(itemId); reload(); return; }
     const newPlacas = item.placas.filter((_, i) => i !== placaIndex);
-    if (newPlacas.length === 0) { deleteProxima(itemId); reload(); return; }
-    updateProxima({ ...item, placas: newPlacas });
+    if (newPlacas.length === 0) { deleteProxima(itemId); }
+    else { updateProxima({ ...item, placas: newPlacas }); }
     reload();
   };
 
@@ -241,6 +262,16 @@ export default function ProximasImpressoes() {
   return (
     <div>
       {showOtimizador && <OtimizadorModal plates={getAllPlates()} onClose={() => setShowOtimizador(false)} />}
+
+      {registrarModal && (
+        <RegistrarImpressaoModal
+          initialDescription={registrarModal.description}
+          initialProject={registrarModal.project}
+          initialTimeMinutes={registrarModal.timeMinutes}
+          onClose={() => setRegistrarModal(null)}
+          onSaved={handleRegistrarSaved}
+        />
+      )}
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
@@ -409,7 +440,7 @@ export default function ProximasImpressoes() {
                               style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.85rem', padding: '0 0.1rem', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s' }}
                               onMouseEnter={e => e.currentTarget.style.color = '#F87171'}
                               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
-                              title="Remover esta placa"
+                              title="Registar impressão e remover da fila"
                             >✕</button>
                           </div>
                         ))}
