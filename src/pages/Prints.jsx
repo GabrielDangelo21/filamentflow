@@ -63,6 +63,7 @@ const Prints = () => {
   const [projectHighlightedIndex, setProjectHighlightedIndex] = useState(-1);
   const [viewMode, setViewMode] = useState('individual');
   const [expandedProjects, setExpandedProjects] = useState(new Set());
+  const [printerFilter, setPrinterFilter] = useState(null);
 
   // Configurações de preço de venda
   const [wattage, setWattage] = useState(200);
@@ -250,9 +251,13 @@ const Prints = () => {
     }
   };
 
+  const filteredPrints = printerFilter
+    ? prints.filter(p => (p.printer || DEFAULT_PRINTER) === printerFilter)
+    : prints;
+
   const getGroupedPrints = () => {
     const groups = {};
-    prints.forEach(print => {
+    filteredPrints.forEach(print => {
       const key = print.project || print.description || '(sem nome)';
       if (!groups[key]) groups[key] = { name: key, prints: [], totalWeight: 0, totalTime: 0, totalCost: 0, latestDate: null };
       groups[key].prints.push(print);
@@ -760,6 +765,28 @@ const Prints = () => {
         </div>
       </div>
 
+      {/* Filtro por impressora */}
+      {printers.length > 1 && (() => {
+        const usedPrinters = [...new Set(prints.map(p => p.printer || DEFAULT_PRINTER))].sort();
+        if (usedPrinters.length <= 1) return null;
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginRight: '0.25rem' }}>🖨️ Impressora:</span>
+            {[{ label: 'Todas', value: null }, ...usedPrinters.map(p => ({ label: p, value: p }))].map(({ label, value }) => (
+              <button key={label} onClick={() => setPrinterFilter(value)} style={{
+                padding: '0.3rem 0.85rem',
+                border: `1px solid ${printerFilter === value ? 'var(--primary)' : 'var(--card-border)'}`,
+                borderRadius: '999px',
+                background: printerFilter === value ? 'rgba(0,240,255,0.12)' : 'transparent',
+                color: printerFilter === value ? 'var(--primary)' : 'var(--text-muted)',
+                fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'inherit', transition: 'all 0.15s',
+              }}>{label}</button>
+            ))}
+          </div>
+        );
+      })()}
+
       {showPriceSettings && (
         <div style={{ marginBottom: '1rem', background: 'rgba(0,240,255,0.04)', border: '1px solid rgba(0,240,255,0.15)', borderRadius: '12px', padding: '1rem 1.5rem' }}>
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -806,10 +833,10 @@ const Prints = () => {
               </tr>
             </thead>
             <tbody>
-              {prints.length === 0 ? (
-                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Nenhuma impressão registrada.</td></tr>
+              {filteredPrints.length === 0 ? (
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{printerFilter ? `Nenhuma impressão com a impressora "${printerFilter}".` : 'Nenhuma impressão registrada.'}</td></tr>
               ) : (
-                prints.map((print, index) => (
+                filteredPrints.map((print, index) => (
                   <React.Fragment key={index}>
                     <tr style={{ background: viewingPrintIdx === index ? 'rgba(59,130,246,0.08)' : undefined }}>
                       <td>{(() => { try { const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00'); return d.toLocaleDateString(); } catch { return 'Inválida'; } })()}</td>
@@ -934,8 +961,8 @@ const Prints = () => {
       {/* ── Vista Por Projeto ── */}
       {viewMode === 'projeto' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {prints.length === 0 ? (
-            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma impressão registrada.</div>
+          {filteredPrints.length === 0 ? (
+            <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>{printerFilter ? `Nenhuma impressão com a impressora "${printerFilter}".` : 'Nenhuma impressão registrada.'}</div>
           ) : (
             getGroupedPrints().map(group => {
               const isOpen = expandedProjects.has(group.name);
