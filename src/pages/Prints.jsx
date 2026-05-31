@@ -99,8 +99,8 @@ const Prints = () => {
     const accPlacas = getAccessoriesByCategory('Placas de impressão');
     const allPlacas = [DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)];
     setPlacas(allPlacas);
-    const accPrinters = getAccessoriesByCategory('Impressoras');
-    setPrinters([...new Set([...DEFAULT_PRINTERS, ...accPrinters])]);
+    const accPrinters = getAccessoriesByCategory('Impressora');
+    setPrinters(accPrinters.length ? accPrinters : DEFAULT_PRINTERS);
   }, []);
 
   useEffect(() => {

@@ -94,8 +94,8 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     setPrints(getPrints());
     const accPlacas = getAccessoriesByCategory('Placas de impressão');
     setPlacas([DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)]);
-    const accPrinters = getAccessoriesByCategory('Impressoras');
-    setPrinters([...new Set([...DEFAULT_PRINTERS, ...accPrinters])]);
+    const accPrinters = getAccessoriesByCategory('Impressora');
+    setPrinters(accPrinters.length ? accPrinters : DEFAULT_PRINTERS);
     setTimeout(() => descRef.current?.focus(), 60);
   }, []);
 
