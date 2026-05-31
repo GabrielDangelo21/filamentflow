@@ -5,8 +5,8 @@ import CustomSelect from '../components/CustomSelect';
 import MaskedNumberInput from '../components/MaskedNumberInput';
 
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
-const DEFAULT_PRINTER = 'Bambu Lab P2S';
-const DEFAULT_PRINTERS = ['Bambu Lab P2S', 'Bambu Lab A1'];
+const DEFAULT_PRINTER = 'P2S';
+const DEFAULT_PRINTERS = ['P2S', 'A1 Combo'];
 const PRICE_SETTINGS_KEY = 'filamentflow_calc_settings';
 
 const Prints = () => {

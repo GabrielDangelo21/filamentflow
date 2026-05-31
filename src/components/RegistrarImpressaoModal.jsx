@@ -8,8 +8,8 @@ import CustomSelect from './CustomSelect';
 import MaskedNumberInput from './MaskedNumberInput';
 
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
-const DEFAULT_PRINTER = 'Bambu Lab P2S';
-const DEFAULT_PRINTERS = ['Bambu Lab P2S', 'Bambu Lab A1'];
+const DEFAULT_PRINTER = 'P2S';
+const DEFAULT_PRINTERS = ['P2S', 'A1 Combo'];
 
 const calcMinutes = (start, end) => {
   if (!start || !end) return '';
