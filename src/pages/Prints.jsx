@@ -7,7 +7,6 @@ import MaskedNumberInput from '../components/MaskedNumberInput';
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
 const DEFAULT_PRINTER = 'P2S';
 const DEFAULT_PRINTERS = ['P2S', 'A1 Combo'];
-const PRICE_SETTINGS_KEY = 'filamentflow_calc_settings';
 
 const Prints = () => {
   const [filaments, setFilaments] = useState([]);
@@ -64,32 +63,6 @@ const Prints = () => {
   const [viewMode, setViewMode] = useState('individual');
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [printerFilter, setPrinterFilter] = useState(null);
-
-  // Configurações de preço de venda
-  const [wattage, setWattage] = useState(200);
-  const [kwh, setKwh] = useState(0.145);
-  const [laborMinutes, setLaborMinutes] = useState(5);
-  const [hourlyRate, setHourlyRate] = useState(15);
-  const [pricingMargin, setPricingMargin] = useState(30);
-  const [showPriceSettings, setShowPriceSettings] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(PRICE_SETTINGS_KEY);
-    if (saved) {
-      try {
-        const s = JSON.parse(saved);
-        if (s.wattage != null) setWattage(s.wattage);
-        if (s.kwh != null) setKwh(s.kwh);
-        if (s.laborMinutes != null) setLaborMinutes(s.laborMinutes);
-        if (s.hourlyRate != null) setHourlyRate(s.hourlyRate);
-        if (s.margin != null) setPricingMargin(s.margin);
-      } catch (_) {}
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(PRICE_SETTINGS_KEY, JSON.stringify({ wattage, kwh, laborMinutes, hourlyRate, margin: pricingMargin }));
-  }, [wattage, kwh, laborMinutes, hourlyRate, pricingMargin]);
 
   useEffect(() => {
     const withStock = getAllFilamentsWithStock().filter(f => (f.currentStock || 0) > 0);
@@ -403,15 +376,6 @@ const Prints = () => {
   };
 
   const fmtEur = (v) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
-
-  const calcSellingPrice = (print) => {
-    const material = getPrintCost(print);
-    const electricity = (wattage / 1000) * ((Number(print.timeMinutes) || 0) / 60) * kwh;
-    const labor = (laborMinutes / 60) * hourlyRate;
-    const totalCost = material + electricity + labor;
-    const sellingPrice = totalCost * (1 + pricingMargin / 100);
-    return { material, electricity, labor, totalCost, sellingPrice };
-  };
 
   return (
     <div className="animate-fade-in">
@@ -739,20 +703,9 @@ const Prints = () => {
         </form>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', marginBottom: showPriceSettings ? '0.5rem' : '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', marginBottom: '1rem' }}>
         <h2 style={{ margin: 0 }}>Histórico de Impressões</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            onClick={() => setShowPriceSettings(p => !p)}
-            style={{
-              padding: '0.5rem 0.9rem', border: '1px solid var(--card-border)', borderRadius: '0.5rem',
-              background: showPriceSettings ? 'rgba(0,240,255,0.1)' : 'transparent',
-              color: showPriceSettings ? 'var(--primary)' : 'var(--text-muted)',
-              cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: '0.4rem', transition: 'all 0.15s',
-            }}>
-            ⚙️ Preço de venda
-          </button>
           <div style={{ display: 'flex', gap: '0', border: '1px solid var(--card-border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
             {[{ id: 'individual', label: '▦ Individual' }, { id: 'projeto', label: '⊞ Por Projeto' }].map(m => (
               <button key={m.id} onClick={() => setViewMode(m.id)} style={{
@@ -788,36 +741,6 @@ const Prints = () => {
         );
       })()}
 
-      {showPriceSettings && (
-        <div style={{ marginBottom: '1rem', background: 'rgba(0,240,255,0.04)', border: '1px solid rgba(0,240,255,0.15)', borderRadius: '12px', padding: '1rem 1.5rem' }}>
-          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            {[
-              { label: 'Potência (W)', value: wattage, setter: setWattage, step: '10' },
-              { label: '€/kWh', value: kwh, setter: setKwh, step: '0.001' },
-              { label: 'Mão de obra (min/impressão)', value: laborMinutes, setter: setLaborMinutes, step: '5' },
-              { label: '€/hora', value: hourlyRate, setter: setHourlyRate, step: '0.5' },
-              { label: 'Margem (%)', value: pricingMargin, setter: setPricingMargin, step: '5' },
-            ].map(({ label, value, setter, step }) => (
-              <div key={label}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px', fontWeight: 600 }}>{label}</div>
-                <input
-                  type="number" min="0" step={step} value={value}
-                  onChange={e => setter(parseFloat(e.target.value) || 0)}
-                  style={{
-                    width: '80px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--card-border)',
-                    borderRadius: '8px', padding: '0.5rem 0.6rem', color: 'var(--text-main)',
-                    fontFamily: 'var(--font-family)', fontSize: '0.9rem', outline: 'none', textAlign: 'center',
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0 }}>
-            Configurações guardadas automaticamente.
-          </p>
-        </div>
-      )}
-
       {/* ── Vista Individual ── */}
       {viewMode === 'individual' && (
         <div className="glass-panel" style={{ marginTop: '0' }}>
@@ -829,13 +752,12 @@ const Prints = () => {
                 <th>Cores</th>
                 <th>Peso Total</th>
                 <th>Tempo</th>
-                <th>Custo / Venda</th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
               {filteredPrints.length === 0 ? (
-                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{printerFilter ? `Nenhuma impressão com a impressora "${printerFilter}".` : 'Nenhuma impressão registrada.'}</td></tr>
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{printerFilter ? `Nenhuma impressão com a impressora "${printerFilter}".` : 'Nenhuma impressão registrada.'}</td></tr>
               ) : (
                 filteredPrints.map((print, index) => (
                   <React.Fragment key={index}>
@@ -849,23 +771,6 @@ const Prints = () => {
                       <td style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</td>
                       <td>{print.timeMinutes} min</td>
                       <td>
-                        {(() => {
-                          const p = calcSellingPrice(print);
-                          return (
-                            <div>
-                              {p.material > 0 && (
-                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                                  Matl: {fmtEur(p.material)}
-                                </div>
-                              )}
-                              <div style={{ fontWeight: 700, color: p.totalCost > 0 ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                {p.totalCost > 0 ? fmtEur(p.sellingPrice) : '—'}
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </td>
-                      <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: viewingPrintIdx === index ? 'rgba(0,240,255,0.2)' : 'rgba(0,240,255,0.1)', color: 'var(--primary)' }} onClick={() => setViewingPrintIdx(viewingPrintIdx === index ? null : index)}>{viewingPrintIdx === index ? 'Fechar' : 'Ver Detalhes'}</button>
                           <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => handleEdit(print)}>Editar</button>
@@ -875,7 +780,7 @@ const Prints = () => {
                     </tr>
                     {viewingPrintIdx === index && (
                       <tr>
-                        <td colSpan="7" style={{ padding: 0, background: 'rgba(59,130,246,0.05)' }}>
+                        <td colSpan="6" style={{ padding: 0, background: 'rgba(59,130,246,0.05)' }}>
                           <div style={{ padding: '1.5rem', borderTop: '1px solid rgba(59,130,246,0.3)', borderBottom: '1px solid rgba(59,130,246,0.3)' }}>
                             <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
                               <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Data</p><p style={{ fontWeight: 600 }}>{new Date((print.date.includes('T') ? print.date : print.date + 'T12:00:00')).toLocaleDateString()}</p></div>
@@ -886,43 +791,6 @@ const Prints = () => {
                               <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Peso Total da Peça</p><p style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '1.2rem' }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</p></div>
                               <div><p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Custo Material</p>{(() => { const c = getPrintCost(print); return c > 0 ? <p style={{ fontWeight: 700, color: 'var(--success)', fontSize: '1.2rem' }}>{fmtEur(c)}</p> : <p style={{ color: 'var(--text-muted)' }}>Sem preço cadastrado</p>; })()}</div>
                             </div>
-
-                            {/* Preço de venda */}
-                            {(() => {
-                              const p = calcSellingPrice(print);
-                              if (p.totalCost <= 0) return null;
-                              return (
-                                <div style={{ marginBottom: '1.5rem', background: 'rgba(0,240,255,0.04)', border: '1px solid rgba(0,240,255,0.15)', borderRadius: '12px', padding: '1rem 1.5rem' }}>
-                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, marginBottom: '0.85rem' }}>
-                                    Preço de Venda
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                                    {[
-                                      { label: '🧵 Material', value: p.material },
-                                      { label: '⚡ Eletricidade', value: p.electricity },
-                                      { label: '🤝 Mão de obra', value: p.labor },
-                                    ].map(({ label, value }) => (
-                                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.87rem' }}>
-                                        <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-                                        <span style={{ fontWeight: 600 }}>{fmtEur(value)}</span>
-                                      </div>
-                                    ))}
-                                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.45rem', marginTop: '0.1rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.87rem' }}>
-                                      <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
-                                      <span style={{ fontWeight: 600 }}>{fmtEur(p.totalCost)}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.87rem' }}>
-                                      <span style={{ color: '#10B981' }}>📈 Margem ({pricingMargin}%)</span>
-                                      <span style={{ fontWeight: 600, color: '#10B981' }}>+ {fmtEur(p.sellingPrice - p.totalCost)}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.45rem', borderTop: '1px solid rgba(0,240,255,0.2)', marginTop: '0.1rem' }}>
-                                      <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.95rem' }}>Preço de venda</span>
-                                      <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.1rem' }}>{fmtEur(p.sellingPrice)}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })()}
 
                             <h3 style={{ fontSize: '1rem', marginBottom: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '1.5rem' }}>Filamentos Consumidos</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -986,16 +854,6 @@ const Prints = () => {
                     <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', minWidth: '70px', textAlign: 'right' }}>
                       {formatDuration(group.totalTime)}
                     </span>
-                    {(() => {
-                      const elec = (wattage / 1000) * (group.totalTime / 60) * kwh;
-                      const lab = group.prints.length * (laborMinutes / 60) * hourlyRate;
-                      const sp = (group.totalCost + elec + lab) * (1 + pricingMargin / 100);
-                      return (
-                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: group.totalCost > 0 ? 'var(--primary)' : 'var(--text-muted)', minWidth: '80px', textAlign: 'right' }}>
-                          {group.totalCost > 0 ? fmtEur(sp) : '—'}
-                        </span>
-                      );
-                    })()}
                   </button>
 
                   {/* Partes expandidas */}
@@ -1016,14 +874,6 @@ const Prints = () => {
                             <span className="badge badge-outline" style={{ fontSize: '0.75rem' }}>{print.colors} cor{print.colors !== 1 ? 'es' : ''}</span>
                             <span style={{ fontSize: '0.85rem', fontWeight: 600, minWidth: '70px', textAlign: 'right' }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</span>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: '60px', textAlign: 'right' }}>{print.timeMinutes} min</span>
-                            {(() => {
-                              const p = calcSellingPrice(print);
-                              return (
-                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: p.totalCost > 0 ? 'var(--primary)' : 'var(--text-muted)', minWidth: '70px', textAlign: 'right' }}>
-                                  {p.totalCost > 0 ? fmtEur(p.sellingPrice) : '—'}
-                                </span>
-                              );
-                            })()}
                             <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
                               <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => handleEdit(print)}>Editar</button>
                               <button className="btn btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => handleDelete(print.id)}>Excluir</button>
