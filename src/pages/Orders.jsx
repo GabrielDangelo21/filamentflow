@@ -224,6 +224,8 @@ const Orders = () => {
     const validAccessories = accessoryItems.filter(i => i.name.trim());
     if (validFilaments.length + validAccessories.length === 0)
       return alert('Adicione pelo menos um filamento ou acessório');
+    if (!orderStore.trim())
+      return alert('O local onde foi comprado é obrigatório.');
 
     const validTotal = validFilaments.length + validAccessories.length;
     const extra = totalExtra / validTotal;
@@ -574,7 +576,7 @@ const Orders = () => {
           }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', alignItems: 'end' }}>
               <div>
-                <label className="form-label">Onde foi Comprado (Opcional)</label>
+                <label className="form-label">Onde foi Comprado *</label>
                 <div style={{ position: 'relative' }}>
                   <input type="text" className="form-input"
                     placeholder="Ex: Amazon, Aliexpress..."
