@@ -233,7 +233,7 @@ export default function Orcamento() {
                         </span>
 
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flexShrink: 0, minWidth: '38px', textAlign: 'right' }}>
-                          {gWeight.toFixed(0)}g
+                          {gWeight.toFixed(2).replace('.', ',')}g
                         </span>
 
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flexShrink: 0, minWidth: '50px', textAlign: 'right' }}>
@@ -288,7 +288,7 @@ export default function Orcamento() {
                                 {fmtDate(p.date)}
                               </span>
                               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', flexShrink: 0, minWidth: '36px', textAlign: 'right' }}>
-                                {Number(p.totalWeight || 0).toFixed(0)}g
+                                {Number(p.totalWeight || 0).toFixed(2).replace('.', ',')}g
                               </span>
                               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', flexShrink: 0, minWidth: '48px', textAlign: 'right' }}>
                                 {fmtDur(p.timeMinutes)}
@@ -329,7 +329,7 @@ export default function Orcamento() {
                 {/* Info geral */}
                 <div style={{ marginBottom: '1rem', padding: '0.6rem 0.85rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem' }}>
                   <span>{selected.size} placa{selected.size !== 1 ? 's' : ''}</span>
-                  <span>{totalWeight.toFixed(0)}g · {fmtDur(totalTime)}</span>
+                  <span>{totalWeight.toFixed(2).replace('.', ',')}g · {fmtDur(totalTime)}</span>
                 </div>
 
                 {/* Breakdown */}
