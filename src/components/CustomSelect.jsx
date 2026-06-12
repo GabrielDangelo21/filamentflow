@@ -87,7 +87,7 @@ const CustomSelect = ({ value, onChange, options, fullWidth = false }) => {
           background: 'var(--card-bg)',
           border: '1px solid var(--card-border)',
           borderRadius: '8px',
-          padding: '0.5rem 0.85rem',
+          padding: '0.75rem 0.85rem',
           color: 'var(--text)',
           fontSize: '0.85rem',
           fontFamily: 'var(--font-family)',

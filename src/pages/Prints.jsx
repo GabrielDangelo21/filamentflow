@@ -540,9 +540,9 @@ const Prints = () => {
                 }}
               />
             </div>
-            <div className="form-group" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" style={{ visibility: 'hidden' }}>-</label>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--primary)', fontWeight: 700, fontSize: '1.1rem' }}>→</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 0', color: 'var(--primary)', fontWeight: 700, fontSize: '1.1rem' }}>→</div>
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Data Final</label>
