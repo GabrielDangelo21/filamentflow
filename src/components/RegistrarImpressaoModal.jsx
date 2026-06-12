@@ -349,9 +349,11 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
             </div>
 
             <div>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.4rem' }}>
-                <span style={{ ...lbl, marginBottom:0 }}>Hora Inicial</span>
-                <span style={{ ...lbl, marginBottom:0 }}>Data Final · Hora Final</span>
+              <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', marginBottom:'0.4rem' }}>
+                <span style={{ ...lbl, flex:1, marginBottom:0 }}>Hora Inicial</span>
+                <span style={{ width:'22px', flexShrink:0 }} />
+                <span style={{ ...lbl, flex:'0 0 135px', marginBottom:0, textAlign:'center' }}>Data Final</span>
+                <span style={{ ...lbl, flex:1, marginBottom:0 }}>Hora Final</span>
               </div>
               <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
                 <input type="time" value={formData.startTime}

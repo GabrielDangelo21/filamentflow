@@ -526,10 +526,12 @@ const Prints = () => {
               />
             </div>
             <div className="form-group">
-              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Hora Inicial</span>
-                <span>Data Final · Hora Final</span>
-              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <span style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Hora Inicial</span>
+                <span style={{ width: '22px', flexShrink: 0 }} />
+                <span style={{ flex: '0 0 130px', fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, textAlign: 'center' }}>Data Final</span>
+                <span style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>Hora Final</span>
+              </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <input
                   type="time"
