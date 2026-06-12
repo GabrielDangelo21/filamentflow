@@ -11,13 +11,12 @@ const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
 const DEFAULT_PRINTER = 'P2S';
 const DEFAULT_PRINTERS = ['P2S', 'A1 Combo'];
 
-const calcMinutes = (start, end) => {
-  if (!start || !end) return '';
-  const [sh, sm] = start.split(':').map(Number);
-  const [eh, em] = end.split(':').map(Number);
-  let total = (eh * 60 + em) - (sh * 60 + sm);
-  if (total < 0) total += 24 * 60;
-  return total;
+const calcMinutes = (startDate, startTime, endDate, endTime) => {
+  if (!startDate || !startTime || !endDate || !endTime) return '';
+  const start = new Date(`${startDate}T${startTime}`);
+  const end   = new Date(`${endDate}T${endTime}`);
+  const diff  = Math.round((end - start) / 60000);
+  return diff > 0 ? diff : '';
 };
 
 const formatDuration = (mins) => {
@@ -61,6 +60,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
 
   const [formData, setFormData] = useState({
     date:        new Date().toISOString().split('T')[0],
+    endDate:     new Date().toISOString().split('T')[0],
     description: initialDescription || '',
     project:     initialProject     || '',
     startTime:   '',
@@ -180,13 +180,12 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
 
   // ── Time helpers ────────────────────────────────────────────────────────────
   const handleTimeChange = (field, value) => {
-    const updated = { ...formData, [field]: value };
-    const mins = calcMinutes(
-      field === 'startTime' ? value : formData.startTime,
-      field === 'endTime'   ? value : formData.endTime,
-    );
-    if (mins !== '') updated.timeMinutes = mins;
-    setFormData(updated);
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      const mins = calcMinutes(updated.date, updated.startTime, updated.endDate, updated.endTime);
+      if (mins !== '') updated.timeMinutes = mins;
+      return updated;
+    });
   };
 
   // ── Submit ──────────────────────────────────────────────────────────────────
@@ -338,19 +337,30 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
           {/* Linha 1: Data + Horas */}
           <div style={{ display: 'grid', gridTemplateColumns: '155px 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
             <div>
-              <label style={lbl}>Data</label>
-              <input type="date" value={formData.date} onChange={e => set('date', e.target.value)} style={inp} required />
+              <label style={lbl}>Data de Início</label>
+              <input type="date" value={formData.date} onChange={e => {
+                const newDate = e.target.value;
+                setFormData(prev => {
+                  const endDate = prev.endDate === prev.date ? newDate : prev.endDate;
+                  const mins = calcMinutes(newDate, prev.startTime, endDate, prev.endTime);
+                  return { ...prev, date: newDate, endDate, ...(mins !== '' ? { timeMinutes: mins } : {}) };
+                });
+              }} style={inp} required />
             </div>
 
             <div>
-              <label style={{ ...lbl, display:'flex', justifyContent:'space-between' }}>
-                <span>Hora Inicial</span><span>Hora Final</span>
-              </label>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.4rem' }}>
+                <span style={{ ...lbl, marginBottom:0 }}>Hora Inicial</span>
+                <span style={{ ...lbl, marginBottom:0 }}>Data Final · Hora Final</span>
+              </div>
               <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
                 <input type="time" value={formData.startTime}
                   onChange={e => handleTimeChange('startTime', e.target.value)}
                   style={{ ...inp, flex:1 }} />
                 <span style={{ color:'var(--primary)', fontWeight:700, flexShrink:0 }}>→</span>
+                <input type="date" value={formData.endDate}
+                  onChange={e => handleTimeChange('endDate', e.target.value)}
+                  style={{ ...inp, flex:'0 0 135px', fontSize:'0.82rem', padding:'0.6rem 0.5rem' }} />
                 <input type="time" value={formData.endTime}
                   onChange={e => handleTimeChange('endTime', e.target.value)}
                   style={{ ...inp, flex:1 }} />
