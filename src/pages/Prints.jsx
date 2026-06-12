@@ -507,7 +507,7 @@ const Prints = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr 0.6fr 1.4fr 1.5fr', gap: '1rem', marginBottom: formData.timeMinutes !== '' ? '0.5rem' : '2rem', alignItems: 'end' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr 0.6fr 1.4fr 1.5fr', gap: '1rem', marginBottom: formData.timeMinutes !== '' ? '0.5rem' : '2rem', alignItems: 'start' }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Data de Início</label>
               <input
@@ -540,7 +540,10 @@ const Prints = () => {
                 }}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', color: 'var(--primary)', fontWeight: 700, paddingBottom: '2px' }}>→</div>
+            <div className="form-group" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column' }}>
+              <label className="form-label" style={{ visibility: 'hidden' }}>-</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--primary)', fontWeight: 700, fontSize: '1.1rem' }}>→</div>
+            </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Data Final</label>
               <input
