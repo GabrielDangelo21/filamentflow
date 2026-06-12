@@ -593,7 +593,7 @@ const Prints = () => {
               )}
             </div>
             <div className="form-group">
-              <label className="form-label">Qtd. de Cores</label>
+              <label className="form-label">Cores</label>
               <input
                 type="number"
                 className="form-input"
