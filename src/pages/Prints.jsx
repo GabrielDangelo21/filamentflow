@@ -21,6 +21,7 @@ const Prints = () => {
 
   const initialFormState = {
     date: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
     description: '',
     project: '',
     startTime: '',
@@ -33,13 +34,12 @@ const Prints = () => {
     id: null
   };
 
-  const calcMinutes = (start, end) => {
-    if (!start || !end) return '';
-    const [sh, sm] = start.split(':').map(Number);
-    const [eh, em] = end.split(':').map(Number);
-    let total = (eh * 60 + em) - (sh * 60 + sm);
-    if (total < 0) total += 24 * 60;
-    return total;
+  const calcMinutes = (startDate, startTime, endDate, endTime) => {
+    if (!startDate || !startTime || !endDate || !endTime) return '';
+    const start = new Date(`${startDate}T${startTime}`);
+    const end   = new Date(`${endDate}T${endTime}`);
+    const diff  = Math.round((end - start) / 60000);
+    return diff > 0 ? diff : '';
   };
 
   const formatDuration = (mins) => {
@@ -344,9 +344,12 @@ const Prints = () => {
     setIsEditing(true);
     setFormData({
       id: print.id,
-      date: print.date,
+      date: (print.date || '').split('T')[0],
+      endDate: (print.date || '').split('T')[0],
       description: print.description || '',
       project: print.project || '',
+      startTime: '',
+      endTime: '',
       timeMinutes: print.timeMinutes,
       colors: print.colors,
       weightGrams: print.totalWeight,
@@ -506,19 +509,26 @@ const Prints = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1.5fr 1.5fr', gap: '1.5rem', marginBottom: '2rem' }}>
             <div className="form-group">
-              <label className="form-label">Data da Impressão</label>
+              <label className="form-label">Data de Início</label>
               <input
                 type="date"
                 className="form-input"
                 value={formData.date}
-                onChange={e => setFormData({ ...formData, date: e.target.value })}
+                onChange={e => {
+                  const newDate = e.target.value;
+                  setFormData(prev => {
+                    const endDate = prev.endDate === prev.date ? newDate : prev.endDate;
+                    const mins = calcMinutes(newDate, prev.startTime, endDate, prev.endTime);
+                    return { ...prev, date: newDate, endDate, ...(mins !== '' ? { timeMinutes: mins } : {}) };
+                  });
+                }}
                 required
               />
             </div>
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Hora Inicial</span>
-                <span>Hora Final</span>
+                <span>Data Final · Hora Final</span>
               </label>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <input
@@ -528,11 +538,26 @@ const Prints = () => {
                   value={formData.startTime}
                   onChange={e => {
                     const start = e.target.value;
-                    const mins = calcMinutes(start, formData.endTime);
-                    setFormData({ ...formData, startTime: start, timeMinutes: mins !== '' ? mins : formData.timeMinutes });
+                    setFormData(prev => {
+                      const mins = calcMinutes(prev.date, start, prev.endDate, prev.endTime);
+                      return { ...prev, startTime: start, ...(mins !== '' ? { timeMinutes: mins } : {}) };
+                    });
                   }}
                 />
                 <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>→</span>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.endDate}
+                  onChange={e => {
+                    const endDate = e.target.value;
+                    setFormData(prev => {
+                      const mins = calcMinutes(prev.date, prev.startTime, endDate, prev.endTime);
+                      return { ...prev, endDate, ...(mins !== '' ? { timeMinutes: mins } : {}) };
+                    });
+                  }}
+                  style={{ flex: '0 0 130px', fontSize: '0.82rem', padding: '0.55rem 0.4rem' }}
+                />
                 <input
                   type="time"
                   className="form-input"
@@ -540,8 +565,10 @@ const Prints = () => {
                   value={formData.endTime}
                   onChange={e => {
                     const end = e.target.value;
-                    const mins = calcMinutes(formData.startTime, end);
-                    setFormData({ ...formData, endTime: end, timeMinutes: mins !== '' ? mins : formData.timeMinutes });
+                    setFormData(prev => {
+                      const mins = calcMinutes(prev.date, prev.startTime, prev.endDate, end);
+                      return { ...prev, endTime: end, ...(mins !== '' ? { timeMinutes: mins } : {}) };
+                    });
                   }}
                 />
               </div>
