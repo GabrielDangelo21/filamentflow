@@ -51,12 +51,18 @@ const lbl = {
   marginBottom: '0.4rem',
 };
 
-export default function RegistrarImpressaoModal({ initialDescription, initialProject, initialTimeMinutes, onClose, onSaved, onDelete }) {
+export default function RegistrarImpressaoModal({ initialDescription, initialProject, initialTimeMinutes, initialCores, initialFilaments, onClose, onSaved, onDelete }) {
   const [filaments,    setFilaments]    = useState([]);
   const [allFilaments, setAllFilaments] = useState([]);
   const [placas,       setPlacas]       = useState([DEFAULT_PLACA]);
   const [printers,     setPrinters]     = useState(DEFAULT_PRINTERS);
   const [prints,       setPrints]       = useState([]);
+
+  const numCoresInit = Math.max(1, parseInt(initialCores) || 1);
+  const filsInit = (initialFilaments?.length
+    ? initialFilaments
+    : Array(numCoresInit).fill(null).map(() => ({ sku: '', weightGrams: '' }))
+  ).map(f => ({ sku: f.sku || '', weightGrams: f.weightGrams || '' }));
 
   const [formData, setFormData] = useState({
     date:        new Date().toISOString().split('T')[0],
@@ -66,15 +72,22 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     startTime:   '',
     endTime:     '',
     timeMinutes: initialTimeMinutes || '',
-    colors:      1,
+    colors:      numCoresInit,
     placa:       DEFAULT_PLACA,
     printer:     DEFAULT_PRINTER,
   });
 
-  const [usedFilaments,     setUsedFilaments]     = useState([{ sku: '', weightGrams: '' }]);
-  const [searchTerms,       setSearchTerms]       = useState(['']);
-  const [showSuggestions,   setShowSuggestions]   = useState([false]);
-  const [highlightedIdxs,   setHighlightedIdxs]   = useState([-1]);
+  const [usedFilaments,   setUsedFilaments]   = useState(filsInit);
+  const [searchTerms,     setSearchTerms]     = useState(() => {
+    const allFils = getFilaments();
+    return filsInit.map(f => {
+      if (!f.sku) return '';
+      const info = allFils.find(x => x.sku === f.sku);
+      return info ? `${info.marca} - ${info.cor} (${f.sku})` : f.sku;
+    });
+  });
+  const [showSuggestions, setShowSuggestions] = useState(filsInit.map(() => false));
+  const [highlightedIdxs, setHighlightedIdxs] = useState(filsInit.map(() => -1));
 
   const [showDescSug,       setShowDescSug]       = useState(false);
   const [descHighlight,     setDescHighlight]     = useState(-1);
