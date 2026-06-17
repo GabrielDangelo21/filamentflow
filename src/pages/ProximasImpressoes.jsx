@@ -5,6 +5,7 @@ import {
 } from '../services/storage';
 import OtimizadorModal from '../components/OtimizadorModal';
 import RegistrarImpressaoModal from '../components/RegistrarImpressaoModal';
+import MaskedNumberInput from '../components/MaskedNumberInput';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 
 const inputStyle = {
@@ -225,14 +226,10 @@ const PlacaRow = ({ placa, index, onChange, onSubmit, filaments, allFilaments })
                   </div>
                 )}
               </div>
-              <input
-                type="number"
-                placeholder="0"
+              <MaskedNumberInput
                 value={fil.weightGrams || ''}
-                onChange={e => updateWeight(i, e.target.value)}
+                onChange={v => updateWeight(i, v)}
                 style={{ ...timeNumStyle, width: '65px' }}
-                min="0"
-                step="0.1"
               />
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>g</span>
             </div>
