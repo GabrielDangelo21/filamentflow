@@ -202,7 +202,20 @@ const Dashboard = () => {
     maintainAspectRatio: false,
     cutout: '62%',
     plugins: {
-      legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 12, font: { size: 11 } } },
+      legend: {
+        position: 'right',
+        labels: { color: '#94A3B8', boxWidth: 12, font: { size: 11 } },
+        onHover: (evt, legendItem, legend) => {
+          const chart = legend.chart;
+          chart.tooltip.setActiveElements([{ datasetIndex: 0, index: legendItem.index }], { x: evt.x, y: evt.y });
+          chart.update();
+        },
+        onLeave: (evt, legendItem, legend) => {
+          const chart = legend.chart;
+          chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+          chart.update();
+        },
+      },
       tooltip: {
         backgroundColor: '#1f2937', titleColor: '#F8FAFC', bodyColor: '#F8FAFC',
         callbacks: { label: (ctx) => ` ${ctx.label}: ${(ctx.parsed / 1000).toFixed(2).replace('.', ',')}kg` },
