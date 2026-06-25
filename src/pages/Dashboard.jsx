@@ -1,6 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, getPrintCost } from '../services/storage';
 import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
+  LineElement, PointElement, ArcElement, Tooltip, Legend,
+} from 'chart.js';
+import { Chart, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Tooltip, Legend);
+
+const PALETTE = ['#00F0FF', '#8B5CF6', '#EAB308', '#F97316', '#10B981', '#EF4444', '#3B82F6', '#EC4899'];
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -15,12 +24,10 @@ const Dashboard = () => {
     totalTimeMinutes: 0,
   });
 
-  const [filaments, setFilaments] = useState([]);
-  const [recentPrints, setRecentPrints] = useState([]);
   const [topFilaments, setTopFilaments] = useState([]);
   const [lowStockFilaments, setLowStockFilaments] = useState([]);
-  const [expandedCategory, setExpandedCategory] = useState(null);
-  const [selectedPrintIdx, setSelectedPrintIdx] = useState(null);
+  const [monthlyPrints, setMonthlyPrints] = useState([]);
+  const [categoryBreakdown, setCategoryBreakdown] = useState([]);
   const [backupMsg, setBackupMsg] = useState('');
   const importInputRef = useRef(null);
 
@@ -83,12 +90,34 @@ const Dashboard = () => {
       totalTimeMinutes: totalTimeMinutes,
     });
 
-    setFilaments(allFilaments.sort((a, b) => {
-      if (a.marca.toLowerCase() < b.marca.toLowerCase()) return -1;
-      if (a.marca.toLowerCase() > b.marca.toLowerCase()) return 1;
-      return a.sku.toLowerCase().localeCompare(b.sku.toLowerCase());
-    }));
-    setRecentPrints(allPrints.slice(-4).reverse());
+    // Impressões por mês (últimos 6 meses com dados)
+    const monthMap = {};
+    allPrints.forEach(print => {
+      const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthMap[key]) monthMap[key] = { grams: 0, count: 0 };
+      monthMap[key].grams += Number(print.totalWeight) || 0;
+      monthMap[key].count += 1;
+    });
+    const monthlyChart = Object.keys(monthMap).sort().slice(-6).map(key => {
+      const [y, mo] = key.split('-');
+      const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' });
+      return { label, kg: monthMap[key].grams / 1000, count: monthMap[key].count };
+    });
+    setMonthlyPrints(monthlyChart);
+
+    // Consumo de filamento por categoria
+    const catMap = {};
+    allPrints.forEach(print => {
+      (print.filamentsUsed || []).forEach(f => {
+        const fil = allFilaments.find(x => x.sku === f.sku);
+        const cat = fil?.categoria || 'Outro';
+        catMap[cat] = (catMap[cat] || 0) + Number(f.weightGrams || 0);
+      });
+    });
+    setCategoryBreakdown(
+      Object.entries(catMap).sort((a, b) => b[1] - a[1]).map(([categoria, grams]) => ({ categoria, grams }))
+    );
 
     const filamentConsumption = {};
     allPrints.forEach(print => {
@@ -111,6 +140,72 @@ const Dashboard = () => {
       .sort((a, b) => (a.currentStock || 0) - (b.currentStock || 0));
     setLowStockFilaments(lowStock);
   }, []);
+
+  const monthlyChartData = {
+    labels: monthlyPrints.map(m => m.label),
+    datasets: [
+      {
+        type: 'bar',
+        label: 'Peso impresso (kg)',
+        data: monthlyPrints.map(m => Number(m.kg.toFixed(2))),
+        backgroundColor: 'rgba(0,240,255,0.55)',
+        hoverBackgroundColor: 'rgba(0,240,255,0.8)',
+        borderRadius: 6,
+        yAxisID: 'y',
+        order: 2,
+      },
+      {
+        type: 'line',
+        label: 'Nº de impressões',
+        data: monthlyPrints.map(m => m.count),
+        borderColor: '#8B5CF6',
+        backgroundColor: '#8B5CF6',
+        pointBackgroundColor: '#8B5CF6',
+        pointRadius: 4,
+        tension: 0.35,
+        yAxisID: 'y1',
+        order: 1,
+      },
+    ],
+  };
+
+  const monthlyChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: '#94A3B8', font: { size: 11 } } },
+      tooltip: { backgroundColor: '#1f2937', titleColor: '#F8FAFC', bodyColor: '#F8FAFC', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 },
+    },
+    scales: {
+      x: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: { position: 'left', ticks: { color: '#94A3B8' }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'kg', color: '#94A3B8' } },
+      y1: { position: 'right', ticks: { color: '#94A3B8', precision: 0 }, grid: { display: false }, title: { display: true, text: 'impressões', color: '#94A3B8' } },
+    },
+  };
+
+  const categoryChartData = {
+    labels: categoryBreakdown.map(c => c.categoria),
+    datasets: [{
+      data: categoryBreakdown.map(c => c.grams),
+      backgroundColor: categoryBreakdown.map((_, i) => PALETTE[i % PALETTE.length]),
+      borderColor: '#0B0F1A',
+      borderWidth: 2,
+    }],
+  };
+
+  const categoryChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 12, font: { size: 11 } } },
+      tooltip: {
+        backgroundColor: '#1f2937', titleColor: '#F8FAFC', bodyColor: '#F8FAFC',
+        callbacks: { label: (ctx) => ` ${ctx.label}: ${(ctx.parsed / 1000).toFixed(2).replace('.', ',')}kg` },
+      },
+    },
+  };
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
@@ -269,220 +364,35 @@ const Dashboard = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
-        {/* Inventário Visual */}
+        {/* Impressões por mês */}
         <section>
-          <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Estado do Inventário</h2>
+          <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Impressões por Mês</h2>
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            {(() => {
-              const allOrders = getUnifiedOrders();
-              const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
-              const purchasedFilaments = filaments.filter(f => purchasedSKUs.has(f.sku));
-
-              if (purchasedFilaments.length === 0) {
-                return (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    <p style={{ fontSize: '0.9rem' }}>Nenhum filamento foi comprado ainda</p>
-                  </div>
-                );
-              }
-
-              const categories = {};
-              purchasedFilaments.forEach(f => {
-                if (!categories[f.categoria]) {
-                  categories[f.categoria] = { count: 0, totalStock: 0, filaments: [] };
-                }
-                categories[f.categoria].count++;
-                categories[f.categoria].totalStock += f.currentStock;
-                categories[f.categoria].filaments.push(f);
-              });
-
-              Object.keys(categories).forEach(cat => {
-                categories[cat].filaments.sort((a, b) => a.cor.localeCompare(b.cor));
-              });
-
-              return Object.keys(categories).sort().map(categoria => (
-                <div key={categoria} style={{ marginBottom: '1rem' }}>
-                  <button
-                    onClick={() => setExpandedCategory(expandedCategory === categoria ? null : categoria)}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      width: '100%',
-                      padding: '1rem',
-                      marginBottom: expandedCategory === categoria ? '0.5rem' : 0,
-                      background: expandedCategory === categoria ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
-                      border: '2px solid var(--primary)',
-                      borderRadius: expandedCategory === categoria ? '0.5rem 0.5rem 0 0' : '0.5rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      color: 'inherit',
-                      fontSize: 'inherit',
-                      fontFamily: 'inherit'
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = expandedCategory === categoria ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)';
-                    }}
-                  >
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--primary)' }}>
-                        {categoria}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        {categories[categoria].count} filamento{categories[categoria].count !== 1 ? 's' : ''} • {(parseFloat(categories[categoria].totalStock) / 1000).toFixed(2).replace('.', ',')}kg
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '1.2rem', color: 'var(--primary)', transition: 'transform 0.2s', transform: expandedCategory === categoria ? 'rotate(180deg)' : 'rotate(0)' }}>▼</div>
-                  </button>
-
-                  {expandedCategory === categoria && (
-                    <div style={{
-                      background: 'rgba(59, 130, 246, 0.05)',
-                      border: '2px solid var(--primary)',
-                      borderTop: 'none',
-                      borderRadius: '0 0 0.5rem 0.5rem',
-                      padding: '1.5rem',
-                      paddingTop: '0.5rem'
-                    }}>
-                      {categories[categoria].filaments.map(f => {
-                        const perc = Math.min((f.currentStock / 1000) * 100, 100);
-                        const barColor = getColorFromName(f.cor);
-                        return (
-                          <div key={f.id} style={{ marginBottom: '1.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <ColorDot cor={f.cor} size={12} />
-                                <span style={{ fontWeight: 800, fontSize: '1.05rem', color: getColorFromName(f.cor), letterSpacing: '0.3px' }}>{f.cor}</span>
-                              </div>
-                              <span style={{ fontWeight: 700, fontSize: '0.95rem', color: perc < 20 ? 'var(--danger)' : 'var(--text-main)' }}>
-                                {(parseFloat(f.currentStock) / 1000).toFixed(2).replace('.', ',')}kg
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                              <span style={{ fontWeight: 600, fontSize: '0.85rem', color: getBrandColor(f.marca) }}>{f.marca}</span>
-                              <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>[{f.sku}]</span>
-                            </div>
-                            <div className="progress-container" style={{ height: '6px' }}>
-                              <div className="progress-bar" style={{ width: `${perc}%`, background: barColor }}></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ));
-            })()}
+            {monthlyPrints.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <p style={{ fontSize: '0.9rem' }}>Nenhuma impressão registada ainda</p>
+              </div>
+            ) : (
+              <div style={{ height: '320px' }}>
+                <Chart type="bar" data={monthlyChartData} options={monthlyChartOptions} />
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Logs de Atividade */}
+        {/* Consumo por categoria */}
         <section>
-          <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Log de Atividade</h2>
-          <div className="glass-panel" style={{ padding: '1rem' }}>
-            {recentPrints.map((print, index) => (
-              <div key={index} style={{ marginBottom: '1rem' }}>
-                <button
-                  onClick={() => setSelectedPrintIdx(selectedPrintIdx === index ? null : index)}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    width: '100%',
-                    padding: '1rem',
-                    background: selectedPrintIdx === index ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
-                    border: '2px solid var(--primary)',
-                    borderRadius: selectedPrintIdx === index ? '0.5rem 0.5rem 0 0' : '0.5rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    color: 'inherit',
-                    fontSize: 'inherit',
-                    fontFamily: 'inherit'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = selectedPrintIdx === index ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)'; }}
-                >
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--primary)' }}>
-                      {print.description || `Impressão de ${parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g`}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                      {(() => {
-                        const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
-                        return d.toLocaleDateString();
-                      })()} • {print.timeMinutes} min
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '1.2rem', color: 'var(--primary)', transition: 'transform 0.2s', transform: selectedPrintIdx === index ? 'rotate(180deg)' : 'rotate(0)' }}>▼</div>
-                </button>
-
-                {selectedPrintIdx === index && (
-                  <div style={{
-                    background: 'rgba(59, 130, 246, 0.05)',
-                    border: '2px solid var(--primary)',
-                    borderTop: 'none',
-                    borderRadius: '0 0 0.5rem 0.5rem',
-                    padding: '1.5rem',
-                    paddingTop: '1rem'
-                  }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                      <div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Data</div>
-                        <div style={{ fontWeight: 600 }}>
-                          {(() => {
-                            const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
-                            return d.toLocaleDateString();
-                          })()}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Descrição</div>
-                        <div style={{ fontWeight: 600 }}>{print.description || '-'}</div>
-                      </div>
-                      <div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Tempo Total</div>
-                        <div style={{ fontWeight: 600 }}>{print.timeMinutes} minutos</div>
-                      </div>
-                      <div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Cores Usadas</div>
-                        <div style={{ fontWeight: 600 }}>{print.colors}</div>
-                      </div>
-                      <div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Peso Total</div>
-                        <div style={{ fontWeight: 600 }}>{parseFloat(print.totalWeight).toFixed(2).replace('.', ',')}g</div>
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.75rem', textTransform: 'uppercase' }}>Filamentos Usados</div>
-                      {print.filamentsUsed.map((item, idx) => {
-                        const filament = filaments.find(f => f.sku === item.sku);
-                        return (
-                          <div key={idx} style={{
-                            fontSize: '0.85rem',
-                            padding: '0.5rem 0',
-                            borderBottom: '1px solid rgba(59, 130, 246, 0.1)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <ColorDot cor={filament?.cor} size={9} />
-                              <span style={{ color: getBrandColor(filament?.marca) }}><strong>{filament?.marca || 'N/A'}</strong></span>
-                              <span style={{ color: 'var(--text-muted)' }}>–</span>
-                              <span style={{ color: getColorFromName(filament?.cor) }}>{filament?.cor || 'N/A'}</span>
-                              <span style={{ color: 'var(--text-muted)' }}>({item.sku})</span>
-                            </div>
-                            <div style={{ color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                              {filament?.categoria || 'N/A'} • {parseFloat(item.weightGrams).toFixed(2).replace('.', ',')}g
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+          <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Consumo por Categoria</h2>
+          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+            {categoryBreakdown.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <p style={{ fontSize: '0.9rem' }}>Nenhum filamento usado ainda</p>
               </div>
-            ))}
+            ) : (
+              <div style={{ height: '320px' }}>
+                <Doughnut data={categoryChartData} options={categoryChartOptions} />
+              </div>
+            )}
           </div>
         </section>
       </div>
