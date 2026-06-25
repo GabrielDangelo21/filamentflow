@@ -23,9 +23,11 @@ const generateId = () => crypto.randomUUID();
 // --- FILAMENTS ---
 export const getFilaments = () => {
   const raw = getFromStorage(STORAGE_KEYS.FILAMENTS).map(f => ({ ...f, sku: String(f.sku) }));
+  let migrated = false;
+  raw.forEach(f => { if (!f.id) { f.id = generateId(); migrated = true; } });
   const seen = new Set();
   const deduped = raw.filter(f => { if (seen.has(f.sku)) return false; seen.add(f.sku); return true; });
-  if (deduped.length !== raw.length) saveToStorage(STORAGE_KEYS.FILAMENTS, deduped);
+  if (migrated || deduped.length !== raw.length) saveToStorage(STORAGE_KEYS.FILAMENTS, deduped);
   return deduped;
 };
 
@@ -45,7 +47,7 @@ export const saveFilament = (filament) => {
   if (existingIndex >= 0) {
     filaments[existingIndex] = { ...filaments[existingIndex], ...filament };
   } else {
-    filaments.push({ id: generateId(), ...filament, createdAt: new Date().toISOString() });
+    filaments.push({ ...filament, id: generateId(), createdAt: new Date().toISOString() });
   }
 
   saveToStorage(STORAGE_KEYS.FILAMENTS, filaments);

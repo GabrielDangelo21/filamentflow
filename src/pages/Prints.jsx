@@ -674,7 +674,7 @@ const Prints = () => {
                           }}>
                             {filtered.map((f, listIndex) => (
                               <div
-                                key={f.id}
+                                key={f.sku}
                                 id={`print-sug-${index}-${listIndex}`}
                                 onMouseDown={() => handleSelectFilamentForSlot(index, f)}
                                 style={{

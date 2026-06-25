@@ -450,7 +450,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
                         return (
                           <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:100, background:'#1f2937', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'0.5rem', marginTop:'0.25rem', maxHeight:'220px', overflowY:'auto', boxShadow:'0 10px 40px rgba(0,0,0,0.5)' }}>
                             {filtered.map((f, li) => (
-                              <div key={f.id} onMouseDown={() => selectFilament(i, f)}
+                              <div key={f.sku} onMouseDown={() => selectFilament(i, f)}
                                 style={{ padding:'0.65rem 0.85rem', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.04)', background: li===highlightedIdxs[i] ? 'rgba(59,130,246,0.25)':'transparent', transition:'background 0.12s' }}
                                 onMouseEnter={e => e.currentTarget.style.background='rgba(59,130,246,0.15)'}
                                 onMouseLeave={e => e.currentTarget.style.background = li===highlightedIdxs[i] ? 'rgba(59,130,246,0.25)':'transparent'}>

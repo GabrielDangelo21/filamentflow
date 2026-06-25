@@ -203,7 +203,7 @@ const PlacaRow = ({ placa, index, onChange, onSubmit, filaments, allFilaments })
                 {showSugs[i] && filtered.length > 0 && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, background: '#1a1f2e', border: '1px solid var(--card-border)', borderRadius: '8px', marginTop: '2px', maxHeight: '190px', overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
                     {filtered.map((f, li) => (
-                      <div key={f.id || f.sku} onMouseDown={() => selectFilament(i, f)}
+                      <div key={f.sku} onMouseDown={() => selectFilament(i, f)}
                         onMouseEnter={() => setHighlighted(prev => prev.map((_, j) => j === i ? li : _))}
                         style={{ padding: '0.5rem 0.8rem', cursor: 'pointer', fontSize: '0.82rem', background: li === highlighted[i] ? 'rgba(0,240,255,0.12)' : 'transparent', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         <span style={{ fontSize: '0.68rem', background: 'rgba(0,240,255,0.1)', color: 'var(--primary)', padding: '0.1rem 0.35rem', borderRadius: '4px', flexShrink: 0 }}>{f.sku}</span>

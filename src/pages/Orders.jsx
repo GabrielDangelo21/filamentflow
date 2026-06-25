@@ -414,7 +414,7 @@ const Orders = () => {
                         overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
                       }}>
                         {filtered.map((f, fi) => (
-                          <div key={f.id} id={`fsug-${index}-${fi}`}
+                          <div key={f.sku} id={`fsug-${index}-${fi}`}
                             onMouseDown={() => handleSelectFilament(index, f)}
                             style={{
                               padding: '0.65rem 1rem', cursor: 'pointer',
