@@ -2,12 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, getPrintCost } from '../services/storage';
 import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
 import {
-  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
-  LineElement, PointElement, ArcElement, Tooltip, Legend,
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement, BarController,
+  LineElement, LineController, PointElement, ArcElement, DoughnutController, Tooltip, Legend,
 } from 'chart.js';
 import { Chart, Doughnut } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale, LinearScale, BarElement, BarController,
+  LineElement, LineController, PointElement, ArcElement, DoughnutController, Tooltip, Legend
+);
 
 const PALETTE = ['#00F0FF', '#8B5CF6', '#EAB308', '#F97316', '#10B981', '#EF4444', '#3B82F6', '#EC4899'];
 
