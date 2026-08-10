@@ -8,8 +8,8 @@ import CustomSelect from './CustomSelect';
 import MaskedNumberInput from './MaskedNumberInput';
 
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
-const DEFAULT_PRINTER = 'P2S';
-const DEFAULT_PRINTERS = ['P2S', 'A1 Combo'];
+const DEFAULT_PRINTER = 'P2S-1';
+const DEFAULT_PRINTERS = ['P2S-1', 'P2S-2'];
 
 const calcMinutes = (startDate, startTime, endDate, endTime) => {
   if (!startDate || !startTime || !endDate || !endTime) return '';
@@ -107,7 +107,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     setPrints(getPrints());
     const accPlacas = getAccessoriesByCategory('Placas de impressão');
     setPlacas([DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)]);
-    const accPrinters = getAccessoriesByCategory('Impressora');
+    const accPrinters = getAccessoriesByCategory('Impressora').filter(p => p !== 'A1 Combo');
     const printerList = accPrinters.length ? accPrinters : DEFAULT_PRINTERS;
     setPrinters(printerList);
     const defaultPrinter = printerList.find(p => p.includes('P2S')) || printerList[0];

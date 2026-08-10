@@ -63,13 +63,21 @@ export const deleteFilament = (id) => {
 //         OR { type: 'accessory', name, category, quantity, price }
 
 export const getUnifiedOrders = () => {
+  let migrated = false;
   const raw = getFromStorage(STORAGE_KEYS.UNIFIED_ORDERS).map(o => ({
     ...o,
-    items: (o.items || []).map(i => i.type === 'filament' ? { ...i, sku: String(i.sku) } : i)
+    items: (o.items || []).map(i => {
+      if (i.type === 'filament') return { ...i, sku: String(i.sku) };
+      if (i.type === 'accessory' && i.category === 'Impressora') {
+        if (i.name === 'P2S')      { migrated = true; return { ...i, name: 'P2S-1' }; }
+        if (i.name === 'A1 Combo') { migrated = true; return { ...i, category: 'Impressora (devolvida)' }; }
+      }
+      return i;
+    })
   }));
   const seen = new Set();
   const deduped = raw.filter(o => { if (seen.has(o.id)) return false; seen.add(o.id); return true; });
-  if (deduped.length !== raw.length) saveToStorage(STORAGE_KEYS.UNIFIED_ORDERS, deduped);
+  if (migrated || deduped.length !== raw.length) saveToStorage(STORAGE_KEYS.UNIFIED_ORDERS, deduped);
   return deduped;
 };
 
@@ -100,7 +108,7 @@ export const getPrints = () => {
   let migrated = false;
   prints.forEach(p => {
     if (!p.id) { p.id = generateId(); migrated = true; }
-    if (!p.printer || p.printer === 'Bambu Lab P2S') { p.printer = 'P2S'; migrated = true; }
+    if (!p.printer || p.printer === 'Bambu Lab P2S' || p.printer === 'P2S') { p.printer = 'P2S-1'; migrated = true; }
     if (p.filamentsUsed) {
       p.filamentsUsed = p.filamentsUsed.map(f => ({ ...f, sku: String(f.sku) }));
     }
