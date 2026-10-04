@@ -3,7 +3,21 @@
     "allow": [
       "Bash(git reset *)",
       "Bash(git commit -m ' *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(chromium-cli --help)",
+      "Bash(timeout 90 npm install --no-save playwright-core)",
+      "Bash(node _verify_dashboard.cjs)",
+      "Bash(node _crop.cjs)",
+      "Bash(npm install *)",
+      "Bash(node _check_live.cjs)",
+      "Bash(rm -f _check_live.cjs _live_screenshot.png _live_dom.html)",
+      "Bash(npm uninstall *)",
+      "Bash(node _verify_prod.cjs)",
+      "Bash(node _verify_hover.cjs)",
+      "Bash(node -e ' *)",
+      "Bash(python3 -c ' *)"
     ]
   }
 }

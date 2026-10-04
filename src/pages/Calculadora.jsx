@@ -98,7 +98,10 @@ export default function Calculadora() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ wattage, kwh, hourlyRate }));
+    // Junta com o que já está guardado, para não apagar as configurações do Orçamento
+    let prev = {};
+    try { prev = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch { /* configuração inválida: ignora */ }
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...prev, wattage, kwh, hourlyRate }));
   }, [wattage, kwh, hourlyRate]);
 
   const storagePpg = selectedSku ? getFilamentPricePerGram(selectedSku) : 0;
