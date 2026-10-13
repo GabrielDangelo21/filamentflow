@@ -218,6 +218,9 @@ export const getFilamentPricePerGram = (sku) => {
   return totalGrams > 0 ? totalCost / totalGrams : 0;
 };
 
+// Sem compra registada nos Pedidos o preço por grama é 0 e o material entra como €0
+export const temCompraRegistada = (sku) => getFilamentPricePerGram(sku) > 0;
+
 export const getPrintCost = (print) => {
   return print.filamentsUsed.reduce((acc, f) => {
     return acc + getFilamentPricePerGram(f.sku) * Number(f.weightGrams);

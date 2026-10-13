@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   getAllFilamentsWithStock, savePrint, getFilaments,
-  getAccessoriesByCategory, getPrints,
+  getAccessoriesByCategory, getPrints, temCompraRegistada,
 } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 import CustomSelect from './CustomSelect';
@@ -100,9 +100,10 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
   const descRef = useRef(null);
 
   useEffect(() => {
-    const withStock = getAllFilamentsWithStock().filter(f => (f.currentStock || 0) > 0);
-    withStock.sort((a, b) => a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
-    setFilaments(withStock);
+    // Estoque é só informativo (o cálculo nem sempre é real); filamentos sem compra vão para o fim
+    const list = getAllFilamentsWithStock().map(f => ({ ...f, temCompra: temCompraRegistada(f.sku) }));
+    list.sort((a, b) => (b.temCompra - a.temCompra) || a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
+    setFilaments(list);
     setAllFilaments(getFilaments());
     setPrints(getPrints());
     const accPlacas = getAccessoriesByCategory('Placas de impressão');
@@ -207,6 +208,14 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     if (!formData.timeMinutes) { setError('Informe a Hora Inicial e a Hora Final (ou o tempo direto).'); return; }
     if (usedFilaments.some(f => !f.sku || !f.weightGrams)) {
       setError('Preencha o filamento e o peso para todas as cores.'); return;
+    }
+    const semCompra = [...new Set(usedFilaments.map(f => f.sku))].filter(sku => !temCompraRegistada(sku));
+    if (semCompra.length > 0) {
+      const nomes = semCompra.map(sku => {
+        const info = allFilaments.find(f => f.sku === sku);
+        return `• ${info ? `${info.marca} - ${info.cor} ` : ''}(${sku})`;
+      }).join('\n');
+      if (!confirm(`Os seguintes filamentos não têm compra registada nos Pedidos:\n\n${nomes}\n\nO custo do material vai entrar como €0. Registar mesmo assim?`)) return;
     }
     setSaving(true);
     const totalWeight = usedFilaments.reduce((acc, f) => acc + Number(f.weightGrams), 0);
@@ -456,15 +465,18 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
                                 onMouseLeave={e => e.currentTarget.style.background = li===highlightedIdxs[i] ? 'rgba(59,130,246,0.25)':'transparent'}>
                                 <div style={{ display:'flex', alignItems:'center', gap:'0.6rem' }}>
                                   <span style={{ fontSize:'0.72rem', background:'rgba(0,240,255,0.1)', color:'var(--primary)', padding:'0.1rem 0.4rem', borderRadius:'4px', flexShrink:0 }}>{f.sku}</span>
-                                  <div>
+                                  <div style={{ flex:1 }}>
                                     <div style={{ fontWeight:600, fontSize:'0.85rem', display:'flex', alignItems:'center', gap:'0.35rem' }}>
                                       <ColorDot cor={f.cor} size={8} />
                                       <span style={{ color:getBrandColor(f.marca) }}>{f.marca}</span>
                                       <span style={{ color:'#64748B', fontWeight:400 }}>–</span>
                                       <span style={{ color:getColorFromName(f.cor) }}>{f.cor}</span>
                                     </div>
-                                    <div style={{ fontSize:'0.72rem', color:'#64748B' }}>{f.categoria}</div>
+                                    <div style={{ fontSize:'0.72rem', color:'#64748B' }}>{f.categoria} · Estoque: {Math.round(f.currentStock || 0)}g</div>
                                   </div>
+                                  {!f.temCompra && (
+                                    <span style={{ fontSize:'0.68rem', fontWeight:600, whiteSpace:'nowrap', flexShrink:0, background:'rgba(245,158,11,0.1)', color:'#F59E0B', border:'1px solid rgba(245,158,11,0.35)', borderRadius:'4px', padding:'0.1rem 0.35rem' }}>⚠ sem compra</span>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -472,6 +484,11 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
                         );
                       })()}
                     </div>
+                    {item.sku && !temCompraRegistada(item.sku) && (
+                      <div style={{ marginTop:'0.4rem', padding:'0.45rem 0.65rem', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'6px', fontSize:'0.78rem', color:'#F59E0B' }}>
+                        ⚠️ Este filamento não tem compra registada nos Pedidos. O custo do material vai entrar como €0.
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label style={lbl}>Peso Gasto (Gramas)</label>

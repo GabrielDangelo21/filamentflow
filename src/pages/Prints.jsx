@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram, getAccessoriesByCategory } from '../services/storage';
+import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram, getAccessoriesByCategory, temCompraRegistada } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 import CustomSelect from '../components/CustomSelect';
 import MaskedNumberInput from '../components/MaskedNumberInput';
@@ -64,10 +64,15 @@ const Prints = () => {
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [printerFilter, setPrinterFilter] = useState(null);
 
+  // Estoque é só informativo (o cálculo nem sempre é real); filamentos sem compra vão para o fim
+  const loadFilaments = () => {
+    const list = getAllFilamentsWithStock().map(f => ({ ...f, temCompra: temCompraRegistada(f.sku) }));
+    list.sort((a, b) => (b.temCompra - a.temCompra) || a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
+    setFilaments(list);
+  };
+
   useEffect(() => {
-    const withStock = getAllFilamentsWithStock().filter(f => (f.currentStock || 0) > 0);
-    withStock.sort((a, b) => a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
-    setFilaments(withStock);
+    loadFilaments();
     setAllFilaments(getFilaments());
     setPrints(getPrints().reverse());
     const accPlacas = getAccessoriesByCategory('Placas de impressão');
@@ -299,6 +304,15 @@ const Prints = () => {
       return;
     }
 
+    const semCompra = [...new Set(usedFilaments.map(f => f.sku))].filter(sku => !temCompraRegistada(sku));
+    if (semCompra.length > 0) {
+      const nomes = semCompra.map(sku => {
+        const info = getFilamentInfo(sku);
+        return `• ${info.marca} - ${info.cor} (${sku})`;
+      }).join('\n');
+      if (!confirm(`Os seguintes filamentos não têm compra registada nos Pedidos:\n\n${nomes}\n\nO custo do material vai entrar como €0. Registar mesmo assim?`)) return;
+    }
+
     const totalWeight = usedFilaments.reduce((acc, f) => acc + Number(f.weightGrams), 0);
 
     savePrint({
@@ -338,6 +352,7 @@ const Prints = () => {
 
   const loadData = () => {
     setPrints(getPrints().reverse());
+    loadFilaments();
   };
 
   const handleEdit = (print) => {
@@ -695,8 +710,17 @@ const Prints = () => {
                                       <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>–</span>
                                       <span style={{ color: getColorFromName(f.cor) }}>{f.cor}</span>
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{f.categoria}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                                      {f.categoria} · Estoque: {Math.round(f.currentStock || 0)}g
+                                    </div>
                                   </div>
+                                  {!f.temCompra && (
+                                    <span style={{
+                                      fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
+                                      background: 'rgba(245,158,11,0.1)', color: '#F59E0B',
+                                      border: '1px solid rgba(245,158,11,0.35)', borderRadius: '4px', padding: '0.1rem 0.4rem'
+                                    }}>⚠ sem compra</span>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -704,6 +728,11 @@ const Prints = () => {
                         );
                       })()}
                     </div>
+                    {item.sku && !temCompraRegistada(item.sku) && (
+                      <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', fontSize: '0.8rem', color: '#F59E0B' }}>
+                        ⚠️ Este filamento não tem compra registada nos Pedidos. O custo do material vai entrar como €0.
+                      </div>
+                    )}
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Peso Gasto (Gramas)</label>

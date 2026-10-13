@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getPrints, getPrintCost } from '../services/storage';
+import { getPrints, getPrintCost, temCompraRegistada } from '../services/storage';
 
 const PRICE_SETTINGS_KEY = 'filamentflow_calc_settings';
 
@@ -131,6 +131,7 @@ export default function Orcamento() {
   const totalMaterial    = selectedPrints.reduce((s, p) => s + getPrintCost(p), 0);
   const totalTime        = selectedPrints.reduce((s, p) => s + (Number(p.timeMinutes) || 0), 0);
   const totalWeight      = selectedPrints.reduce((s, p) => s + (Number(p.totalWeight) || 0), 0);
+  const placasSemPreco   = selectedPrints.filter(p => p.filamentsUsed.some(f => !temCompraRegistada(f.sku))).length;
   const totalElectricity = (wattage / 1000) * (totalTime / 60) * kwh;
   const totalLabor       = selectedPrints.length * (laborMinutes / 60) * hourlyRate;
   const totalWaste       = totalMaterial * wastePct / 100;
@@ -361,6 +362,12 @@ export default function Orcamento() {
                   <span>{selected.size} placa{selected.size !== 1 ? 's' : ''}</span>
                   <span>{totalWeight.toFixed(2).replace('.', ',')}g · {fmtDur(totalTime)}</span>
                 </div>
+
+                {placasSemPreco > 0 && (
+                  <div style={{ marginBottom: '1rem', padding: '0.6rem 0.85rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', fontSize: '0.8rem', color: '#F59E0B' }}>
+                    ⚠️ {placasSemPreco} placa{placasSemPreco !== 1 ? 's' : ''} com material sem compra registada nos Pedidos — o custo desse material entra como €0.
+                  </div>
+                )}
 
                 {/* Breakdown */}
                 {[
