@@ -49,8 +49,20 @@ export default function Estimativa() {
   }, []);
 
   // PLA Basic vem escolhido por defeito; '' = média de todas as compras
-  const [tipo, setTipo] = useState(() =>
-    precos.porCategoria.some(c => c.categoria === TIPO_PADRAO) ? TIPO_PADRAO : '');
+  const tipoInicial = precos.porCategoria.some(c => c.categoria === TIPO_PADRAO) ? TIPO_PADRAO : '';
+  const [tipo, setTipo] = useState(tipoInicial);
+
+  const limpar = () => {
+    setPlacas('1');
+    setDias('');
+    setHoras('');
+    setMinutos('');
+    setGramas(0);
+    setTipo(tipoInicial);
+    setPrecoKg('');
+  };
+  const temDados = placas !== '1' || dias !== '' || horas !== '' || minutos !== '' ||
+    Number(gramas) !== 0 || tipo !== tipoInicial || precoKg !== '';
 
   const ppgPedidos = tipo
     ? (precos.porCategoria.find(c => c.categoria === tipo)?.ppg || 0)
@@ -82,6 +94,16 @@ export default function Estimativa() {
             Calcule o preço de uma impressão que ainda não fez — só placas, tempo e filamento
           </p>
         </div>
+        {temDados && (
+          <button onClick={limpar} style={{
+            padding: '0.5rem 1rem', background: 'transparent',
+            border: '1px solid rgba(248,113,113,0.4)', borderRadius: '8px',
+            color: '#F87171', fontSize: '0.83rem', cursor: 'pointer',
+            fontFamily: 'inherit', fontWeight: 600,
+          }}>
+            Limpar campos
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 310px', gap: '1.5rem', alignItems: 'start' }}>
