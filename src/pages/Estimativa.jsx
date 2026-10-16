@@ -3,6 +3,9 @@ import { getCategories, getAveragePricePerGram } from '../services/storage';
 import { usePriceSettings, calcularPreco } from '../utils/pricing';
 import ResumoPreco from '../components/ResumoPreco';
 import CustomSelect from '../components/CustomSelect';
+import MaskedNumberInput from '../components/MaskedNumberInput';
+
+const TIPO_PADRAO = 'PLA Basic';
 
 const fmtPpk = (ppg) => `${(ppg * 1000).toFixed(2).replace('.', ',')} €/kg`;
 
@@ -31,10 +34,10 @@ export default function Estimativa() {
   const [settings, setSetting] = usePriceSettings();
 
   const [placas,    setPlacas]    = useState('1');
+  const [dias,      setDias]      = useState('');
   const [horas,     setHoras]     = useState('');
   const [minutos,   setMinutos]   = useState('');
-  const [gramas,    setGramas]    = useState('');
-  const [tipo,      setTipo]      = useState('');   // '' = média de todas as compras
+  const [gramas,    setGramas]    = useState(0);
   const [precoKg,   setPrecoKg]   = useState('');   // vazio = usar o preço dos Pedidos
 
   // Preço médio por grama dos Pedidos: geral e por categoria (só categorias com compras)
@@ -45,13 +48,17 @@ export default function Estimativa() {
     return { geral: getAveragePricePerGram(), porCategoria };
   }, []);
 
+  // PLA Basic vem escolhido por defeito; '' = média de todas as compras
+  const [tipo, setTipo] = useState(() =>
+    precos.porCategoria.some(c => c.categoria === TIPO_PADRAO) ? TIPO_PADRAO : '');
+
   const ppgPedidos = tipo
     ? (precos.porCategoria.find(c => c.categoria === tipo)?.ppg || 0)
     : precos.geral;
   const ppg = precoKg !== '' ? toNum(precoKg) / 1000 : ppgPedidos;
 
   const numPlacas = Math.max(0, Math.floor(toNum(placas)));
-  const totalTime = Math.floor(toNum(horas)) * 60 + Math.floor(toNum(minutos));
+  const totalTime = Math.floor(toNum(dias)) * 24 * 60 + Math.floor(toNum(horas)) * 60 + Math.floor(toNum(minutos));
   const totalWeight = toNum(gramas);
 
   const calc = calcularPreco({ materialCost: totalWeight * ppg, totalTime, placas: numPlacas }, settings);
@@ -93,21 +100,23 @@ export default function Estimativa() {
               <label className="form-label">Tempo total de impressão</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input type="number" min="0" step="1" className="form-input" placeholder="0"
+                  value={dias} onChange={e => setDias(e.target.value)} />
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>d</span>
+                <input type="number" min="0" step="1" className="form-input" placeholder="0"
                   value={horas} onChange={e => setHoras(e.target.value)} />
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>h</span>
                 <input type="number" min="0" max="59" step="1" className="form-input" placeholder="0"
                   value={minutos} onChange={e => setMinutos(e.target.value)} />
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>min</span>
               </div>
-              <div style={hint}>Soma de todas as placas.</div>
+              <div style={hint}>Soma de todas as placas. 1 dia = 24 h.</div>
             </div>
           </div>
 
           <div className="grid-2">
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Filamento total (gramas)</label>
-              <input type="number" min="0" step="0.01" className="form-input" placeholder="0"
-                value={gramas} onChange={e => setGramas(e.target.value)} />
+              <MaskedNumberInput className="form-input" value={gramas} onChange={setGramas} />
               <div style={hint}>Soma de todas as cores e placas.</div>
             </div>
 
