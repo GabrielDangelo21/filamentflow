@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getPrints, getPrintCost, temCompraRegistada } from '../services/storage';
-
-const PRICE_SETTINGS_KEY = 'filamentflow_calc_settings';
+import { usePriceSettings, calcularPreco } from '../utils/pricing';
+import ResumoPreco from '../components/ResumoPreco';
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -44,44 +44,11 @@ export default function Orcamento() {
   const [prints, setPrints]           = useState([]);
   const [selected, setSelected]       = useState(new Set());
   const [expanded, setExpanded]       = useState(new Set());
-  const [showSettings, setShowSettings] = useState(false);
-
-  const [wattage,      setWattage]      = useState(200);
-  const [kwh,          setKwh]          = useState(0.145);
-  const [laborMinutes, setLaborMinutes] = useState(5);
-  const [hourlyRate,   setHourlyRate]   = useState(15);
-  const [margin,       setMargin]       = useState(30);
-  const [marginMode,   setMarginMode]   = useState('custo'); // 'custo' = acréscimo sobre o custo | 'preco' = margem sobre o preço
-  const [wearPerHour,  setWearPerHour]  = useState(0.10);
-  const [packaging,    setPackaging]    = useState(0.50);
-  const [wastePct,     setWastePct]     = useState(10);
-  const [vat,          setVat]          = useState(21);
+  const [settings, setSetting] = usePriceSettings();
 
   useEffect(() => {
     setPrints(getPrints().reverse());
-    try {
-      const s = JSON.parse(localStorage.getItem(PRICE_SETTINGS_KEY) || '{}');
-      if (s.wattage      != null) setWattage(s.wattage);
-      if (s.kwh          != null) setKwh(s.kwh);
-      if (s.laborMinutes != null) setLaborMinutes(s.laborMinutes);
-      if (s.hourlyRate   != null) setHourlyRate(s.hourlyRate);
-      if (s.margin       != null) setMargin(s.margin);
-      if (s.marginMode   != null) setMarginMode(s.marginMode);
-      if (s.wearPerHour  != null) setWearPerHour(s.wearPerHour);
-      if (s.packaging    != null) setPackaging(s.packaging);
-      if (s.wastePct     != null) setWastePct(s.wastePct);
-      if (s.vat          != null) setVat(s.vat);
-    } catch (_) {}
   }, []);
-
-  useEffect(() => {
-    // Junta com o que já está guardado, para não apagar campos de outras abas
-    let prev = {};
-    try { prev = JSON.parse(localStorage.getItem(PRICE_SETTINGS_KEY) || '{}'); } catch { /* configuração inválida: ignora */ }
-    localStorage.setItem(PRICE_SETTINGS_KEY,
-      JSON.stringify({ ...prev, wattage, kwh, laborMinutes, hourlyRate, margin,
-        marginMode, wearPerHour, packaging, wastePct, vat }));
-  }, [wattage, kwh, laborMinutes, hourlyRate, margin, marginMode, wearPerHour, packaging, wastePct, vat]);
 
   // ── Groups ──────────────────────────────────────────────────────────────────
   const groups = useMemo(() => {
@@ -128,39 +95,14 @@ export default function Orcamento() {
 
   // ── Totals ──────────────────────────────────────────────────────────────────
   const selectedPrints   = prints.filter(p => selected.has(p.id));
-  const totalMaterial    = selectedPrints.reduce((s, p) => s + getPrintCost(p), 0);
   const totalTime        = selectedPrints.reduce((s, p) => s + (Number(p.timeMinutes) || 0), 0);
   const totalWeight      = selectedPrints.reduce((s, p) => s + (Number(p.totalWeight) || 0), 0);
   const placasSemPreco   = selectedPrints.filter(p => p.filamentsUsed.some(f => !temCompraRegistada(f.sku))).length;
-  const totalElectricity = (wattage / 1000) * (totalTime / 60) * kwh;
-  const totalLabor       = selectedPrints.length * (laborMinutes / 60) * hourlyRate;
-  const totalWaste       = totalMaterial * wastePct / 100;
-  const totalWear        = (totalTime / 60) * wearPerHour;
-  const totalPackaging   = selectedPrints.length > 0 ? packaging : 0; // orçamento de uma peça
-  const totalCost        = totalMaterial + totalWaste + totalElectricity + totalWear + totalLabor + totalPackaging;
-  // 'custo': preço = custo × (1 + %).  'preco': a % é a parte do preço que fica como lucro.
-  const priceExVat       = marginMode === 'preco'
-    ? (margin < 100 ? totalCost / (1 - margin / 100) : totalCost)
-    : totalCost * (1 + margin / 100);
-  const marginAmt        = priceExVat - totalCost;
-  const markupPct        = totalCost  > 0 ? (marginAmt / totalCost)  * 100 : 0;
-  const realMarginPct    = priceExVat > 0 ? (marginAmt / priceExVat) * 100 : 0;
-  const vatAmt           = priceExVat * vat / 100;
-  const sellingPrice     = priceExVat + vatAmt;
-  const fmtPct = (v) => v.toFixed(1).replace('.', ',') + '%';
-
-  const settingsFields = [
-    { label: 'Potência (W)',                value: wattage,      setter: setWattage,      step: '10'    },
-    { label: '€/kWh',                      value: kwh,          setter: setKwh,          step: '0.001' },
-    { label: 'Mão de obra (min/impressão)', value: laborMinutes, setter: setLaborMinutes, step: '5'     },
-    { label: '€/hora',                     value: hourlyRate,   setter: setHourlyRate,   step: '0.5'   },
-    { label: 'Desgaste da máquina (€/hora)', value: wearPerHour, setter: setWearPerHour, step: '0.05'  },
-    { label: 'Embalagem (€/peça)',          value: packaging,    setter: setPackaging,    step: '0.1'   },
-    { label: 'Falhas / desperdício (%)',    value: wastePct,     setter: setWastePct,     step: '1'     },
-    { label: marginMode === 'preco' ? 'Margem sobre o preço (%)' : 'Acréscimo sobre o custo (%)',
-                                           value: margin,       setter: setMargin,       step: '5'     },
-    { label: 'IVA (%)',                    value: vat,          setter: setVat,          step: '1'     },
-  ];
+  const calc = calcularPreco({
+    materialCost: selectedPrints.reduce((s, p) => s + getPrintCost(p), 0),
+    totalTime,
+    placas: selectedPrints.length,
+  }, settings);
 
   return (
     <div>
@@ -340,130 +282,24 @@ export default function Orcamento() {
         </div>
 
         {/* ── Resumo (sticky) ── */}
-        <div style={{ position: 'sticky', top: '2rem' }}>
-          <div style={{
-            background: 'var(--card-bg)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '14px', padding: '1.5rem',
-          }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: 700, marginBottom: '1.25rem' }}>
-              Resumo
+        <ResumoPreco
+          calc={calc}
+          settings={settings}
+          setSetting={setSetting}
+          vazio={selected.size === 0}
+          emptyContent={
+            <div style={{ textAlign: 'center', padding: '1.75rem 0', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>☑️</div>
+              <div style={{ fontSize: '0.83rem' }}>Selecione placas à esquerda</div>
             </div>
-
-            {selected.size === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1.75rem 0', color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>☑️</div>
-                <div style={{ fontSize: '0.83rem' }}>Selecione placas à esquerda</div>
-              </div>
-            ) : (
-              <>
-                {/* Info geral */}
-                <div style={{ marginBottom: '1rem', padding: '0.6rem 0.85rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem' }}>
-                  <span>{selected.size} placa{selected.size !== 1 ? 's' : ''}</span>
-                  <span>{totalWeight.toFixed(2).replace('.', ',')}g · {fmtDur(totalTime)}</span>
-                </div>
-
-                {placasSemPreco > 0 && (
-                  <div style={{ marginBottom: '1rem', padding: '0.6rem 0.85rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', fontSize: '0.8rem', color: '#F59E0B' }}>
-                    ⚠️ {placasSemPreco} placa{placasSemPreco !== 1 ? 's' : ''} com material sem compra registada nos Pedidos — o custo desse material entra como €0.
-                  </div>
-                )}
-
-                {/* Breakdown */}
-                {[
-                  { label: '🧵 Material',    value: totalMaterial    },
-                  { label: `♻️ Falhas (${wastePct}%)`, value: totalWaste },
-                  { label: '⚡ Eletricidade', value: totalElectricity },
-                  { label: '🔧 Desgaste',    value: totalWear        },
-                  { label: '🤝 Mão de obra', value: totalLabor       },
-                  { label: '📦 Embalagem',   value: totalPackaging   },
-                ].map(({ label, value }) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.55rem' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.87rem' }}>{label}</span>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{fmtEur(value)}</span>
-                  </div>
-                ))}
-
-                <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '0.55rem', marginTop: '0.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.87rem' }}>Custo total</span>
-                    <span style={{ fontWeight: 700 }}>{fmtEur(totalCost)}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                    <span style={{ color: '#10B981', fontSize: '0.87rem' }}>📈 Lucro</span>
-                    <span style={{ fontWeight: 600, color: '#10B981' }}>+ {fmtEur(marginAmt)}</span>
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
-                    {fmtPct(realMarginPct)} do preço · {fmtPct(markupPct)} sobre o custo
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.87rem' }}>Preço sem IVA</span>
-                    <span style={{ fontWeight: 700 }}>{fmtEur(priceExVat)}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.87rem' }}>🧾 IVA ({vat}%)</span>
-                    <span style={{ fontWeight: 600 }}>+ {fmtEur(vatAmt)}</span>
-                  </div>
-                </div>
-
-                {/* Preço de venda */}
-                <div style={{
-                  background: 'rgba(0,240,255,0.07)', border: '1px solid rgba(0,240,255,0.22)',
-                  borderRadius: '12px', padding: '1.1rem', textAlign: 'center', marginBottom: '0.75rem',
-                }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.35rem' }}>
-                    Preço de venda (com IVA)
-                  </div>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                    {fmtEur(sellingPrice)}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Configurações */}
-            <button
-              onClick={() => setShowSettings(p => !p)}
-              style={{
-                width: '100%', padding: '0.5rem', background: 'transparent',
-                border: '1px solid var(--card-border)', borderRadius: '8px',
-                color: showSettings ? 'var(--primary)' : 'var(--text-muted)',
-                fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit',
-                transition: 'color 0.15s',
-              }}>
-              ⚙️ {showSettings ? 'Fechar configurações' : 'Configurações'}
-            </button>
-
-            {showSettings && (
-              <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                {settingsFields.map(({ label, value, setter, step }) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', flex: 1 }}>{label}</span>
-                    <input
-                      type="number" min="0" step={step} value={value}
-                      onChange={e => setter(parseFloat(e.target.value) || 0)}
-                      style={{ width: '70px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '0.4rem 0.5rem', color: 'var(--text-main)', fontFamily: 'var(--font-family)', fontSize: '0.85rem', outline: 'none', textAlign: 'center' }}
-                    />
-                  </div>
-                ))}
-                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.25rem' }}>
-                  {[['custo', 'Acréscimo sobre o custo'], ['preco', 'Margem sobre o preço']].map(([mode, label]) => (
-                    <button key={mode} onClick={() => setMarginMode(mode)} style={{
-                      flex: 1, padding: '0.4rem 0.3rem', borderRadius: '6px', cursor: 'pointer',
-                      fontFamily: 'inherit', fontSize: '0.72rem',
-                      background: marginMode === mode ? 'rgba(0,240,255,0.12)' : 'rgba(255,255,255,0.04)',
-                      border: marginMode === mode ? '1px solid rgba(0,240,255,0.3)' : '1px solid var(--card-border)',
-                      color: marginMode === mode ? 'var(--primary)' : 'var(--text-muted)',
-                    }}>{label}</button>
-                  ))}
-                </div>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: 0 }}>
-                  Partilhado com a aba Impressões.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+          }
+          info={<>
+            <span>{selected.size} placa{selected.size !== 1 ? 's' : ''}</span>
+            <span>{totalWeight.toFixed(2).replace('.', ',')}g · {fmtDur(totalTime)}</span>
+          </>}
+          aviso={placasSemPreco > 0 &&
+            `⚠️ ${placasSemPreco} placa${placasSemPreco !== 1 ? 's' : ''} com material sem compra registada nos Pedidos — o custo desse material entra como €0.`}
+        />
 
       </div>
     </div>

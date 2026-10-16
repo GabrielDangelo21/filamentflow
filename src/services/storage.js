@@ -221,6 +221,23 @@ export const getFilamentPricePerGram = (sku) => {
 // Sem compra registada nos Pedidos o preço por grama é 0 e o material entra como €0
 export const temCompraRegistada = (sku) => getFilamentPricePerGram(sku) > 0;
 
+// Preço médio por grama de todas as compras de filamento (opcionalmente só de uma categoria)
+export const getAveragePricePerGram = (categoria = null) => {
+  const categoriaPorSku = new Map(getFilaments().map(f => [f.sku, f.categoria]));
+  let totalCost = 0;
+  let totalGrams = 0;
+  getUnifiedOrders().forEach(order => {
+    order.items
+      .filter(i => i.type === 'filament' && Number(i.price) > 0)
+      .filter(i => !categoria || categoriaPorSku.get(i.sku) === categoria)
+      .forEach(i => {
+        totalCost += Number(i.price);
+        totalGrams += Number(i.weightGrams);
+      });
+  });
+  return totalGrams > 0 ? totalCost / totalGrams : 0;
+};
+
 export const getPrintCost = (print) => {
   return print.filamentsUsed.reduce((acc, f) => {
     return acc + getFilamentPricePerGram(f.sku) * Number(f.weightGrams);

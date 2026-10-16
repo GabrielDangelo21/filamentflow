@@ -11,6 +11,7 @@ const Layout = ({ children, activeTab, onTabChange }) => {
     { id: 'accessories', label: 'Acessórios', icon: '🔧' },
     { id: 'proximas', label: 'Próximas impressões', icon: '📋' },
     { id: 'orcamento', label: 'Orçamento de venda', icon: '💰' },
+    { id: 'estimativa', label: 'Estimativa de custo', icon: '🧮' },
   ];
 
   return (

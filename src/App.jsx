@@ -9,6 +9,7 @@ import Accessories from './pages/Accessories';
 import ProximasImpressoes from './pages/ProximasImpressoes';
 import Calculadora from './pages/Calculadora';
 import Orcamento from './pages/Orcamento';
+import Estimativa from './pages/Estimativa';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -24,6 +25,7 @@ function App() {
       case 'proximas': return <ProximasImpressoes />;
       case 'calculadora': return <Calculadora />;
       case 'orcamento': return <Orcamento />;
+      case 'estimativa': return <Estimativa />;
       default: return <Estoque />;
     }
   };
