@@ -33,7 +33,7 @@ const hint = { fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35
 export default function Estimativa() {
   const [settings, setSetting] = usePriceSettings();
 
-  const [placas,    setPlacas]    = useState('1');
+  const [placas,    setPlacas]    = useState('');   // vazio = 1 placa
   const [dias,      setDias]      = useState('');
   const [horas,     setHoras]     = useState('');
   const [minutos,   setMinutos]   = useState('');
@@ -53,7 +53,7 @@ export default function Estimativa() {
   const [tipo, setTipo] = useState(tipoInicial);
 
   const limpar = () => {
-    setPlacas('1');
+    setPlacas('');
     setDias('');
     setHoras('');
     setMinutos('');
@@ -67,7 +67,7 @@ export default function Estimativa() {
     : precos.geral;
   const ppg = precoKg !== '' ? toNum(precoKg) / 1000 : ppgPedidos;
 
-  const numPlacas = Math.max(0, Math.floor(toNum(placas)));
+  const numPlacas = placas === '' ? 1 : Math.max(0, Math.floor(toNum(placas)));
   const totalTime = Math.floor(toNum(dias)) * 24 * 60 + Math.floor(toNum(horas)) * 60 + Math.floor(toNum(minutos));
   const totalWeight = toNum(gramas);
 
@@ -109,7 +109,7 @@ export default function Estimativa() {
           <div className="grid-2" style={{ marginBottom: '1.5rem' }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Nº de placas</label>
-              <input type="number" min="1" step="1" className="form-input"
+              <input type="number" min="1" step="1" className="form-input" placeholder="1"
                 value={placas} onChange={e => setPlacas(e.target.value)} />
               <div style={hint}>A mão de obra é contada por placa.</div>
             </div>
