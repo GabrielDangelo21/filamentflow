@@ -6,10 +6,18 @@ const fmtEur = (v) =>
 const fmtPct = (v) => v.toFixed(1).replace('.', ',') + '%';
 
 // Painel "Resumo" com o detalhe do custo, preço de venda e configurações de preço.
-// vazio: mostra emptyContent em vez dos valores; info/aviso: blocos opcionais no topo.
-export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso }) {
+// vazio: mostra emptyContent em vez dos valores; info/aviso: blocos opcionais no topo;
+// subtotalMaterial: mostra a linha "Total material" (material + falhas + eletricidade + desgaste).
+export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso, subtotalMaterial }) {
   const [showSettings, setShowSettings] = useState(false);
   const { wastePct, vat, marginMode } = settings;
+
+  const linha = ({ label, value }) => (
+    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.55rem' }}>
+      <span style={{ color: 'var(--text-muted)', fontSize: '0.87rem' }}>{label}</span>
+      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{fmtEur(value)}</span>
+    </div>
+  );
 
   const settingsFields = [
     { key: 'wattage',      label: 'Potência (W)',                  step: '10'    },
@@ -54,14 +62,21 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
               { label: `♻️ Falhas (${wastePct}%)`, value: calc.totalWaste },
               { label: '⚡ Eletricidade', value: calc.totalElectricity },
               { label: '🔧 Desgaste',    value: calc.totalWear        },
+            ].map(linha)}
+
+            {subtotalMaterial && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--card-border)', paddingTop: '0.55rem', marginBottom: '0.55rem' }}>
+                <span style={{ fontSize: '0.87rem', fontWeight: 600 }}>Total material</span>
+                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                  {fmtEur(calc.totalMaterial + calc.totalWaste + calc.totalElectricity + calc.totalWear)}
+                </span>
+              </div>
+            )}
+
+            {[
               { label: '🤝 Mão de obra', value: calc.totalLabor       },
               { label: '📦 Embalagem',   value: calc.totalPackaging   },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.55rem' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.87rem' }}>{label}</span>
-                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{fmtEur(value)}</span>
-              </div>
-            ))}
+            ].map(linha)}
 
             <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '0.55rem', marginTop: '0.25rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
