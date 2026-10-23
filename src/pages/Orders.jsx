@@ -33,6 +33,7 @@ const Orders = () => {
   const [orderStore, setOrderStore] = useState('');
   const [shipping, setShipping] = useState('');
   const [otherCosts, setOtherCosts] = useState('');
+  const [discount, setDiscount] = useState('');
   const [filamentItems, setFilamentItems] = useState([createEmptyFilamentItem()]);
   const [accessoryItems, setAccessoryItems] = useState([]);
 
@@ -216,6 +217,9 @@ const Orders = () => {
   const totalExtra = (Number(shipping) || 0) + (Number(otherCosts) || 0);
   const totalItemCount = filamentItems.length + accessoryItems.length;
   const extraPerItem = totalItemCount > 0 ? totalExtra / totalItemCount : 0;
+  const totalDiscount = Number(discount) || 0;
+  // O desconto é repartido proporcionalmente ao preço de cada item (itens sem preço não recebem desconto)
+  const discountShare = (base, sumBase) => (sumBase > 0 ? totalDiscount * base / sumBase : 0);
 
   // --- Submit ---
   const handleSubmit = (e) => {
@@ -229,25 +233,31 @@ const Orders = () => {
 
     const validTotal = validFilaments.length + validAccessories.length;
     const extra = totalExtra / validTotal;
+    const sumBase = [...validFilaments, ...validAccessories].reduce((acc, i) => acc + (Number(i.price) || 0), 0);
+    if (totalDiscount > sumBase)
+      return alert('O desconto não pode ser maior que a soma dos preços dos itens.');
 
     const orderData = {
       date: orderDate,
       store: orderStore,
       shipping: Number(shipping) || 0,
       otherCosts: Number(otherCosts) || 0,
+      discount: totalDiscount,
       items: [
         ...validFilaments.map(item => ({
           type: 'filament',
           sku: item.sku,
           weightGrams: Number(item.weightGrams) || 1000,
-          price: (Number(item.price) || 0) + extra
+          price: (Number(item.price) || 0) - discountShare(Number(item.price) || 0, sumBase) + extra
         })),
         ...validAccessories.map(item => ({
           type: 'accessory',
           name: item.name,
           category: item.category,
           quantity: Number(item.quantity) || 1,
-          price: item.price !== '' ? (Number(item.price) || 0) + extra : (extra > 0 ? extra : null)
+          price: item.price !== ''
+            ? (Number(item.price) || 0) - discountShare(Number(item.price) || 0, sumBase) + extra
+            : (extra > 0 ? extra : null)
         }))
       ]
     };
@@ -272,12 +282,18 @@ const Orders = () => {
     setOrderStore('');
     setShipping('');
     setOtherCosts('');
+    setDiscount('');
     setFilamentItems([createEmptyFilamentItem()]);
     setAccessoryItems([]);
   };
 
   const handleEdit = (order) => {
     const extra = ((order.shipping || 0) + (order.otherCosts || 0)) / Math.max(order.items.length, 1);
+    // Desfaz o desconto proporcional: preço guardado = base × (1 − desconto / soma das bases) + extra
+    const orderDiscount = order.discount || 0;
+    const sumBase = order.items.reduce((acc, i) => acc + (i.price != null ? Number(i.price) - extra : 0), 0) + orderDiscount;
+    const factor = sumBase > 0 ? 1 - orderDiscount / sumBase : 1;
+    const basePrice = (price) => Math.round(((price - extra) / factor) * 100) / 100;
     const fItems = order.items.filter(i => i.type === 'filament');
     const aItems = order.items.filter(i => i.type === 'accessory');
 
@@ -287,6 +303,7 @@ const Orders = () => {
     setOrderStore(order.store || '');
     setShipping(order.shipping ? String(order.shipping) : '');
     setOtherCosts(order.otherCosts ? String(order.otherCosts) : '');
+    setDiscount(orderDiscount ? String(orderDiscount) : '');
 
     setFilamentItems(fItems.length > 0 ? fItems.map(item => {
       const filament = filaments.find(f => f.sku === item.sku);
@@ -296,7 +313,7 @@ const Orders = () => {
         selectedFilament: filament || null,
         sku: item.sku,
         weightGrams: item.weightGrams,
-        price: String(Math.round((item.price - extra) * 100) / 100 || ''),
+        price: String(basePrice(item.price) || ''),
         showSuggestions: false,
         highlightedIndex: -1
       };
@@ -307,7 +324,7 @@ const Orders = () => {
       name: item.name,
       category: item.category,
       quantity: item.quantity,
-      price: item.price != null ? String(Math.round((item.price - extra) * 100) / 100) : '',
+      price: item.price != null ? String(basePrice(item.price)) : '',
       showNameSuggestions: false,
       nameHighlightedIndex: -1
     })));
@@ -346,6 +363,7 @@ const Orders = () => {
       isFilament: false
     }))
   ];
+  const previewSumBase = previewItems.reduce((acc, i) => acc + (Number(i.price) || 0), 0);
 
   return (
     <div className="animate-fade-in">
@@ -574,7 +592,7 @@ const Orders = () => {
             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1.5rem'
           }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', alignItems: 'end' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', alignItems: 'end' }}>
               <div>
                 <label className="form-label">Onde foi Comprado *</label>
                 <div style={{ position: 'relative' }}>
@@ -618,11 +636,15 @@ const Orders = () => {
                 <label className="form-label">Outros Gastos</label>
                 <MaskedNumberInput value={otherCosts} onChange={v => setOtherCosts(v)} prefix="€" className="form-input" />
               </div>
+              <div>
+                <label className="form-label">Desconto Aplicado</label>
+                <MaskedNumberInput value={discount} onChange={v => setDiscount(v)} prefix="€" className="form-input" />
+              </div>
             </div>
 
-            {totalExtra > 0 && (
+            {(totalExtra > 0 || totalDiscount > 0) && (
               <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                <div style={{
+                {totalExtra > 0 && <div style={{
                   padding: '0.75rem 1rem', background: 'rgba(0,240,255,0.07)',
                   borderRadius: '0.5rem', border: '1px solid rgba(0,240,255,0.2)', flexShrink: 0
                 }}>
@@ -633,6 +655,36 @@ const Orders = () => {
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                     {formatCurrency(totalExtra)} ÷ {totalItemCount} item{totalItemCount !== 1 ? 's' : ''}
                   </div>
+                </div>}
+
+                {totalDiscount > 0 && (
+                  <div style={{
+                    padding: '0.75rem 1rem', background: 'rgba(16,185,129,0.07)',
+                    borderRadius: '0.5rem', border: '1px solid rgba(16,185,129,0.25)', flexShrink: 0
+                  }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Desconto</div>
+                    <div style={{ fontWeight: 700, color: 'var(--success)', fontSize: '1.05rem' }}>
+                      −{formatCurrency(totalDiscount)}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                      proporcional ao preço de cada item
+                    </div>
+                  </div>
+                )}
+
+                <div style={{
+                  padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.04)',
+                  borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0
+                }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Total do pedido</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
+                    {formatCurrency(previewSumBase + totalExtra - totalDiscount)}
+                  </div>
+                  {totalDiscount > previewSumBase && (
+                    <div style={{ fontSize: '0.7rem', color: '#F59E0B', marginTop: '0.2rem' }}>
+                      ⚠️ Desconto maior que a soma dos itens
+                    </div>
+                  )}
                 </div>
 
                 {previewItems.length > 0 && (
@@ -641,7 +693,7 @@ const Orders = () => {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                       {previewItems.map(item => {
                         const base = Number(item.price) || 0;
-                        const final = base + extraPerItem;
+                        const final = base - discountShare(base, previewSumBase) + extraPerItem;
                         return (
                           <div key={item._id} style={{
                             background: item.isFilament ? 'rgba(0,240,255,0.06)' : 'rgba(139,92,246,0.08)',
@@ -651,7 +703,7 @@ const Orders = () => {
                           }}>
                             {item.cor && <ColorDot cor={item.cor} size={8} />}
                             <span style={{ color: 'var(--text-muted)' }}>{item.label}:</span>
-                            {base > 0 && extraPerItem > 0 && (
+                            {base > 0 && final !== base && (
                               <span style={{ color: 'var(--text-muted)', textDecoration: 'line-through', fontSize: '0.75rem' }}>
                                 {formatCurrency(base)}
                               </span>
@@ -703,7 +755,7 @@ const Orders = () => {
               </tr>
             ) : (
               orders.map(order => {
-                const hasExtras = (order.shipping || 0) > 0 || (order.otherCosts || 0) > 0;
+                const hasExtras = (order.shipping || 0) > 0 || (order.otherCosts || 0) > 0 || (order.discount || 0) > 0;
                 const itemCount = order.items.length;
                 const orderTotal = order.items.reduce((acc, i) => acc + (i.price != null ? Number(i.price) : 0), 0);
                 const hasAnyPrice = order.items.some(i => i.price != null);
@@ -729,6 +781,7 @@ const Orders = () => {
                                   <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                                     {(order.shipping || 0) > 0 && <div>Envio: {formatCurrency(order.shipping)}</div>}
                                     {(order.otherCosts || 0) > 0 && <div>Outros: {formatCurrency(order.otherCosts)}</div>}
+                                    {(order.discount || 0) > 0 && <div>Desconto: −{formatCurrency(order.discount)}</div>}
                                   </div>
                                 )}
                               </>
