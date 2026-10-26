@@ -358,6 +358,7 @@ export default function Estoque() {
     const matchCat = filterCategory === 'all' || f.categoria === filterCategory;
     const matchBrand = filterBrand === 'all' || f.marca === filterBrand;
     const matchStatus = filterStatus === 'all'
+      || (filterStatus === 'instock' && f.currentStock > 0)
       || (filterStatus === 'ok' && f.currentStock >= MEDIUM_STOCK)
       || (filterStatus === 'low' && f.currentStock > 0 && f.currentStock < MEDIUM_STOCK)
       || (filterStatus === 'empty' && f.currentStock <= 0);
@@ -416,26 +417,36 @@ export default function Estoque() {
         marginBottom: '2rem',
         flexWrap: 'wrap',
       }}>
+        {/* Cada contador filtra a prateleira; clicar no ativo volta a mostrar tudo */}
         {[
-          { label: 'Total', value: totalFilaments, color: 'var(--primary)' },
-          { label: 'Em estoque', value: inStock, color: '#34D399' },
-          { label: 'Estoque baixo', value: lowStock, color: '#FCD34D' },
-          { label: 'Vazios', value: empty, color: '#F87171' },
-          { label: 'Total em estoque', value: `${(totalGrams / 1000).toFixed(2).replace('.', ',')}kg`, color: 'var(--text-muted)' },
-        ].map(stat => (
-          <div key={stat.label} style={{
-            background: 'var(--card-bg)',
-            border: '1px solid var(--card-border)',
+          { label: 'Total', value: totalFilaments, color: 'var(--primary)', status: 'all' },
+          { label: 'Em estoque', value: inStock, color: '#34D399', status: 'instock' },
+          { label: 'Estoque baixo', value: lowStock, color: '#FCD34D', status: 'low' },
+          { label: 'Vazios', value: empty, color: '#F87171', status: 'empty' },
+          { label: 'Total em estoque', value: `${(totalGrams / 1000).toFixed(2).replace('.', ',')}kg`, color: 'var(--text-muted)', status: 'instock' },
+        ].map(stat => {
+          const ativo = filterStatus === stat.status;
+          return (
+          <div key={stat.label}
+            role="button"
+            title={stat.status === 'all' ? 'Mostrar todos' : `Mostrar só: ${stat.label.toLowerCase()}`}
+            onClick={() => setFilterStatus(ativo && stat.status !== 'all' ? 'all' : stat.status)}
+            style={{
+            background: ativo ? 'rgba(0,240,255,0.06)' : 'var(--card-bg)',
+            border: `1px solid ${ativo ? 'rgba(0,240,255,0.45)' : 'var(--card-border)'}`,
             borderRadius: '10px',
             padding: '0.75rem 1.25rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '2px',
+            cursor: 'pointer',
+            transition: 'border-color 0.15s, background 0.15s',
           }}>
             <span style={{ fontSize: '1.3rem', fontWeight: '800', color: stat.color }}>{stat.value}</span>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{stat.label}</span>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Filters */}
@@ -471,6 +482,7 @@ export default function Estoque() {
           onChange={setFilterStatus}
           options={[
             { value: 'all', label: 'Todos os status' },
+            { value: 'instock', label: 'Em estoque (> 0g)' },
             { value: 'ok', label: `OK (≥ ${MEDIUM_STOCK}g)` },
             { value: 'low', label: `Baixo (< ${MEDIUM_STOCK}g)` },
             { value: 'empty', label: 'Vazio (0g)' },
