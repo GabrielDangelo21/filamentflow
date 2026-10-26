@@ -5,7 +5,8 @@ const STORAGE_KEYS = {
   CATEGORIES: 'filamentflow_categories',
   BRANDS: 'filamentflow_brands',
   ACC_CATEGORIES: 'filamentflow_acc_categories',
-  PROXIMAS: 'filamentflow_proximas'
+  PROXIMAS: 'filamentflow_proximas',
+  STOCK_ADJUSTMENTS: 'filamentflow_stock_adjustments'
 };
 
 // --- GENERIC HELPERS ---
@@ -156,7 +157,26 @@ export const getFilamentStock = (sku) => {
     if (item) totalOut += Number(item.weightGrams) || 0;
   });
 
-  return totalIn - totalOut;
+  const totalAdjust = getStockAdjustments()
+    .filter(a => a.sku === sku)
+    .reduce((acc, a) => acc + (Number(a.deltaGrams) || 0), 0);
+
+  return totalIn - totalOut + totalAdjust;
+};
+
+// --- STOCK ADJUSTMENTS ---
+// Correções manuais do estoque (ex.: pesar o carretel). Guardam só a diferença em gramas,
+// por isso não mexem em pedidos, impressões nem no preço por grama.
+// Each adjustment: { id, sku, date, deltaGrams, previousGrams, realGrams }
+export const getStockAdjustments = () => getFromStorage(STORAGE_KEYS.STOCK_ADJUSTMENTS);
+
+export const adjustFilamentStock = (sku, realGrams) => {
+  const previousGrams = getFilamentStock(sku);
+  const deltaGrams = Number(realGrams) - previousGrams;
+  if (deltaGrams === 0) return null;
+  const adjustment = { id: generateId(), sku, date: new Date().toISOString(), deltaGrams, previousGrams, realGrams: Number(realGrams) };
+  saveToStorage(STORAGE_KEYS.STOCK_ADJUSTMENTS, [...getStockAdjustments(), adjustment]);
+  return adjustment;
 };
 
 export const getAllFilamentsWithStock = () => {
@@ -306,7 +326,8 @@ export const exportBackup = () => ({
   prints: getPrints(),
   categories: getCategories(),
   brands: getBrands(),
-  accCategories: getAccCategories()
+  accCategories: getAccCategories(),
+  stockAdjustments: getStockAdjustments()
 });
 
 export const importBackup = (backup) => {
@@ -317,4 +338,5 @@ export const importBackup = (backup) => {
   if (backup.categories) saveToStorage(STORAGE_KEYS.CATEGORIES, backup.categories);
   if (backup.brands) saveToStorage(STORAGE_KEYS.BRANDS, backup.brands);
   if (backup.accCategories) saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, backup.accCategories);
+  if (backup.stockAdjustments) saveToStorage(STORAGE_KEYS.STOCK_ADJUSTMENTS, backup.stockAdjustments);
 };

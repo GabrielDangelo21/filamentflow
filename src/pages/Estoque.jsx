@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAllFilamentsWithStock, getCategories, getBrands } from '../services/storage';
+import { getAllFilamentsWithStock, getCategories, getBrands, adjustFilamentStock } from '../services/storage';
 import { getColorFromName } from '../utils/colorUtils';
 import CustomSelect from '../components/CustomSelect';
 
@@ -16,7 +16,71 @@ const getStockStatus = (stock) => {
   return { label: 'OK', color: '#059669', textColor: '#34D399', badge: '#047857' };
 };
 
-const SpoolCard = ({ filament }) => {
+// Modal para corrigir o estoque com o peso real do carretel
+const AjusteModal = ({ filament, onClose, onSaved }) => {
+  const [real, setReal] = useState('');
+  const atual = Math.round(filament.currentStock);
+  const realNum = real === '' ? null : Math.max(0, Math.round(Number(real) || 0));
+  const diff = realNum == null ? 0 : realNum - atual;
+
+  const guardar = (valor) => {
+    adjustFilamentStock(filament.sku, valor);
+    onSaved();
+  };
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 2000,
+        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+      }}
+    >
+      <div style={{
+        background: '#151B2D', border: '1px solid var(--card-border)', borderRadius: '14px',
+        padding: '1.5rem', width: '100%', maxWidth: '440px', boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+      }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Ajustar estoque</h3>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: '1.25rem' }}>
+          <span style={{ color: getColorFromName(filament.cor), fontWeight: 600 }}>{filament.cor}</span>
+          {' · '}{filament.marca} · SKU {filament.sku}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '1rem', padding: '0.6rem 0.85rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+          <span style={{ color: 'var(--text-muted)' }}>Estoque no app</span>
+          <span style={{ fontWeight: 700 }}>{atual}g</span>
+        </div>
+
+        <label className="form-label">Peso real (g)</label>
+        <input
+          type="number" min="0" step="1" className="form-input" autoFocus
+          placeholder={String(Math.max(0, atual))}
+          value={real} onChange={e => setReal(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && realNum != null && diff !== 0) guardar(realNum); if (e.key === 'Escape') onClose(); }}
+        />
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem', minHeight: '1.1em' }}>
+          {realNum != null && diff !== 0 && `Ajuste de ${diff > 0 ? '+' : ''}${diff}g. Não altera pedidos, impressões nem custos.`}
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.25rem', justifyContent: 'space-between' }}>
+          <button type="button" className="btn btn-secondary" onClick={() => guardar(0)} disabled={atual === 0}
+            style={{ color: '#F87171', borderColor: 'rgba(248,113,113,0.4)', whiteSpace: 'nowrap' }}>
+            Acabou (0g)
+          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+            <button type="button" className="btn btn-primary" onClick={() => guardar(realNum)} disabled={realNum == null || diff === 0}>
+              Guardar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SpoolCard = ({ filament, onAjustar }) => {
   const color = getColorFromName(filament.cor);
   const status = getStockStatus(filament.currentStock);
   const fillPercent = Math.min(100, Math.max(0, (filament.currentStock / FULL_SPOOL) * 100));
@@ -24,7 +88,8 @@ const SpoolCard = ({ filament }) => {
 
   return (
     <div
-      title={`${filament.marca} · ${filament.cor}\nSKU: ${filament.sku}\nCategoria: ${filament.categoria}\nEstoque: ${filament.currentStock}g`}
+      title={`${filament.marca} · ${filament.cor}\nSKU: ${filament.sku}\nCategoria: ${filament.categoria}\nEstoque: ${filament.currentStock}g\nClique para ajustar o estoque`}
+      onClick={() => onAjustar(filament)}
       onMouseEnter={e => {
         e.currentTarget.style.transform = 'translateY(-6px)';
         e.currentTarget.style.boxShadow = `0 12px 32px ${color}44`;
@@ -43,7 +108,7 @@ const SpoolCard = ({ filament }) => {
         width: '130px',
         flexShrink: 0,
         transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-        cursor: 'default',
+        cursor: 'pointer',
         position: 'relative',
       }}
     >
@@ -155,7 +220,7 @@ const SpoolCard = ({ filament }) => {
   );
 };
 
-const Shelf = ({ category, filaments }) => {
+const Shelf = ({ category, filaments, onAjustar }) => {
   if (filaments.length === 0) return null;
 
   const totalStock = filaments.reduce((s, f) => s + Math.max(0, f.currentStock), 0);
@@ -245,7 +310,7 @@ const Shelf = ({ category, filaments }) => {
         flexWrap: 'wrap',
       }}>
         {filaments.map(f => (
-          <SpoolCard key={f.id} filament={f} />
+          <SpoolCard key={f.id} filament={f} onAjustar={onAjustar} />
         ))}
       </div>
 
@@ -268,6 +333,7 @@ export default function Estoque() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterBrand, setFilterBrand] = useState('all');
+  const [ajustando, setAjustando] = useState(null);
 
   useEffect(() => {
     setFilaments(getAllFilamentsWithStock());
@@ -317,6 +383,14 @@ export default function Estoque() {
 
   return (
     <div>
+      {ajustando && (
+        <AjusteModal
+          filament={ajustando}
+          onClose={() => setAjustando(null)}
+          onSaved={() => { setAjustando(null); setFilaments(getAllFilamentsWithStock()); }}
+        />
+      )}
+
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--text)', marginBottom: '0.3rem' }}>
@@ -432,7 +506,7 @@ export default function Estoque() {
       ) : (
         <div>
           {grouped.map(({ cat, items }) => (
-            <Shelf key={cat} category={cat} filaments={items} />
+            <Shelf key={cat} category={cat} filaments={items} onAjustar={setAjustando} />
           ))}
         </div>
       )}
