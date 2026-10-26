@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAllFilamentsWithStock, getCategories, getBrands, adjustFilamentStock } from '../services/storage';
+import { getAllFilamentsWithStock, getCategories, getBrands, adjustFilamentStock, getUnifiedOrders } from '../services/storage';
 import { getColorFromName } from '../utils/colorUtils';
 import CustomSelect from '../components/CustomSelect';
 
@@ -10,7 +10,7 @@ const MEDIUM_STOCK = 500;
 const FULL_SPOOL = 1000;
 
 const getStockStatus = (stock) => {
-  if (stock <= 0) return { label: 'Vazio', color: '#374151', textColor: '#6B7280', badge: '#374151' };
+  if (stock <= 0) return { label: 'Vazio', color: '#7F1D1D', textColor: '#F87171', badge: '#7F1D1D' };
   if (stock < LOW_STOCK) return { label: 'Crítico', color: '#DC2626', textColor: '#F87171', badge: '#B91C1C' };
   if (stock < MEDIUM_STOCK) return { label: 'Baixo', color: '#D97706', textColor: '#FCD34D', badge: '#B45309' };
   return { label: 'OK', color: '#059669', textColor: '#34D399', badge: '#047857' };
@@ -115,7 +115,9 @@ const SpoolCard = ({ filament, onAjustar }) => {
       {/* Color top */}
       <div style={{
         height: '86px',
-        background: `linear-gradient(150deg, ${color}DD 0%, ${color}99 60%, ${color}44 100%)`,
+        background: filament.currentStock <= 0
+          ? `linear-gradient(150deg, ${color}44 0%, ${color}22 60%, ${color}11 100%)`
+          : `linear-gradient(150deg, ${color}DD 0%, ${color}99 60%, ${color}44 100%)`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -197,7 +199,7 @@ const SpoolCard = ({ filament, onAjustar }) => {
           color: status.textColor,
           marginBottom: '7px',
         }}>
-          {filament.currentStock > 0 ? `${filament.currentStock.toFixed(0)}g` : '—'}
+          {`${Math.max(0, filament.currentStock).toFixed(0)}g`}
         </div>
 
         {/* Fill bar */}
@@ -335,24 +337,30 @@ export default function Estoque() {
   const [filterBrand, setFilterBrand] = useState('all');
   const [ajustando, setAjustando] = useState(null);
 
+  // Filamentos já comprados aparecem mesmo a 0g (para lembrar de voltar a pedir);
+  // os que nunca foram comprados ficam escondidos.
+  const loadFilaments = () => {
+    const comprados = new Set(getUnifiedOrders().flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
+    setFilaments(getAllFilamentsWithStock().filter(f => f.currentStock > 0 || comprados.has(f.sku)));
+  };
+
   useEffect(() => {
-    setFilaments(getAllFilamentsWithStock());
+    loadFilaments();
     setCategories(getCategories());
   }, []);
 
-  const inStockFilaments = filaments.filter(f => f.currentStock > 0);
-  const availableCategories = categories.filter(c => inStockFilaments.some(f => f.categoria === c));
-  const brands = [...new Set(inStockFilaments.map(f => f.marca))].sort();
+  const availableCategories = categories.filter(c => filaments.some(f => f.categoria === c));
+  const brands = [...new Set(filaments.map(f => f.marca))].sort();
 
   const filtered = filaments.filter(f => {
-    if (f.currentStock <= 0) return false;
     const q = search.toLowerCase();
     const matchSearch = !q || f.cor.toLowerCase().includes(q) || f.marca.toLowerCase().includes(q) || f.sku.toLowerCase().includes(q) || f.categoria.toLowerCase().includes(q);
     const matchCat = filterCategory === 'all' || f.categoria === filterCategory;
     const matchBrand = filterBrand === 'all' || f.marca === filterBrand;
     const matchStatus = filterStatus === 'all'
       || (filterStatus === 'ok' && f.currentStock >= MEDIUM_STOCK)
-      || (filterStatus === 'low' && f.currentStock < MEDIUM_STOCK);
+      || (filterStatus === 'low' && f.currentStock > 0 && f.currentStock < MEDIUM_STOCK)
+      || (filterStatus === 'empty' && f.currentStock <= 0);
     return matchSearch && matchCat && matchBrand && matchStatus;
   });
 
@@ -387,7 +395,7 @@ export default function Estoque() {
         <AjusteModal
           filament={ajustando}
           onClose={() => setAjustando(null)}
-          onSaved={() => { setAjustando(null); setFilaments(getAllFilamentsWithStock()); }}
+          onSaved={() => { setAjustando(null); loadFilaments(); }}
         />
       )}
 
@@ -412,6 +420,7 @@ export default function Estoque() {
           { label: 'Total', value: totalFilaments, color: 'var(--primary)' },
           { label: 'Em estoque', value: inStock, color: '#34D399' },
           { label: 'Estoque baixo', value: lowStock, color: '#FCD34D' },
+          { label: 'Vazios', value: empty, color: '#F87171' },
           { label: 'Total em estoque', value: `${(totalGrams / 1000).toFixed(2).replace('.', ',')}kg`, color: 'var(--text-muted)' },
         ].map(stat => (
           <div key={stat.label} style={{
@@ -464,6 +473,7 @@ export default function Estoque() {
             { value: 'all', label: 'Todos os status' },
             { value: 'ok', label: `OK (≥ ${MEDIUM_STOCK}g)` },
             { value: 'low', label: `Baixo (< ${MEDIUM_STOCK}g)` },
+            { value: 'empty', label: 'Vazio (0g)' },
           ]}
         />
 
