@@ -103,7 +103,7 @@ const Dashboard = () => {
       totalTimeMinutes: totalTimeMinutes,
       totalSales: allSales.length,
       totalRevenue: allSales.reduce((acc, s) => acc + (Number(s.finalPrice) || 0), 0),
-      totalProfit: allSales.reduce((acc, s) => acc + getSaleProfit(s), 0),
+      totalProfit: allSales.reduce((acc, s) => acc + (getSaleProfit(s) ?? 0), 0),
     });
 
     // Impressões por mês (últimos 6 meses com dados)
@@ -287,11 +287,11 @@ const Dashboard = () => {
           <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#3B82F6' }}>{stats.totalSales}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #00F0FF' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>FATURADO (COM IVA)</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>FATURADO</p>
           <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#00F0FF' }}>€ {stats.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${stats.totalProfit >= 0 ? '#10B981' : '#F87171'}` }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>LUCRO NAS VENDAS</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>LUCRO NAS VENDAS (COM CUSTO)</p>
           <p style={{ fontSize: '1.6rem', fontWeight: 700, color: stats.totalProfit >= 0 ? '#10B981' : '#F87171' }}>€ {stats.totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
       </div>

@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   PROXIMAS: 'filamentflow_proximas',
   STOCK_ADJUSTMENTS: 'filamentflow_stock_adjustments',
   SALES: 'filamentflow_sales',
+  POPZU_SYNC: 'filamentflow_popzu_sync',
   PRICE_SETTINGS: 'filamentflow_calc_settings'
 };
 
@@ -381,10 +382,88 @@ export const deleteSale = (id) => {
   saveToStorage(STORAGE_KEYS.SALES, getSales().filter(s => s.id !== id));
 };
 
-// Lucro de uma venda: preço final sem IVA menos o custo total gravado na venda
+// Lucro de uma venda: preço final sem IVA menos o custo total gravado na venda.
+// Vendas sem custo (ex.: importadas da Popzu) devolvem null e ficam fora do lucro.
+export const temCusto = (sale) => sale.costTotal !== null && sale.costTotal !== undefined;
+
 export const getSaleProfit = (sale) => {
+  if (!temCusto(sale)) return null;
   const semIva = (Number(sale.finalPrice) || 0) / (1 + (Number(sale.vatPct) || 0) / 100);
   return semIva - (Number(sale.costTotal) || 0);
+};
+
+// --- SINCRONIZAÇÃO POPZU (planilha Vendas_Popzu via Apps Script) ---
+export const getPopzuConfig = () => {
+  try { return { url: '', token: '', lastSync: null, ...JSON.parse(localStorage.getItem(STORAGE_KEYS.POPZU_SYNC) || '{}') }; }
+  catch { return { url: '', token: '', lastSync: null }; }
+};
+
+export const savePopzuConfig = (cfg) => {
+  localStorage.setItem(STORAGE_KEYS.POPZU_SYNC, JSON.stringify({ ...getPopzuConfig(), ...cfg }));
+};
+
+const TAMANHOS_OCULTOS = ['', 'Normal', 'Único'];
+
+// Linha da aba Vendas da planilha → venda do app
+const popzuParaVenda = (r) => ({
+  id:          `popzu-${r.id}`,
+  source:      'popzu',
+  externalId:  r.id,
+  date:        r.data || '',
+  origem:      r.origem || '',
+  description: r.produto + (TAMANHOS_OCULTOS.includes(r.tamanho || '') ? '' : ` · ${r.tamanho}`),
+  quantity:    Number(r.qtd) || 1,
+  unitPrice:   r.preco,
+  finalPrice:  Number(r.total) || 0,
+  semPreco:    r.total === null || r.total === undefined,
+  vatPct:      0,
+  costTotal:   null,
+  client:      r.cliente || '',
+  notes:       [r.pagamento, r.entrega, r.obs].filter(Boolean).join(' · '),
+  pronta:      r.pronta || '',
+  printIds:    [],
+});
+
+// A planilha é a fonte das vendas Popzu: substitui todas as vendas Popzu do app pelas da planilha
+export const aplicarVendasPopzu = (linhas) => {
+  const atuais = getSales();
+  const antigas = new Map(atuais.filter(s => s.source === 'popzu').map(s => [s.externalId, s]));
+  const novas = linhas.map(popzuParaVenda);
+  let adicionadas = 0, alteradas = 0;
+  novas.forEach(n => {
+    const a = antigas.get(n.externalId);
+    if (!a) { adicionadas++; return; }
+    n.createdAt = a.createdAt;
+    const semData = (o) => JSON.stringify({ ...o, createdAt: null });
+    if (semData(a) !== semData(n)) alteradas++;
+  });
+  const idsNovos = new Set(novas.map(n => n.externalId));
+  const removidas = [...antigas.keys()].filter(id => !idsNovos.has(id)).length;
+  const agora = new Date().toISOString();
+  saveToStorage(STORAGE_KEYS.SALES, [
+    ...atuais.filter(s => s.source !== 'popzu'),
+    ...novas.map(n => ({ ...n, createdAt: n.createdAt || agora })),
+  ]);
+  savePopzuConfig({ lastSync: agora });
+  return { total: novas.length, adicionadas, alteradas, removidas };
+};
+
+// Busca as vendas na planilha (URL do app da Web do Apps Script + senha)
+export const buscarVendasPopzu = async () => {
+  const { url, token } = getPopzuConfig();
+  if (!url || !token) throw new Error('Configure o endereço e a senha da planilha (⚙️ Popzu).');
+  let resp;
+  try {
+    resp = await fetch(`${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`);
+  } catch {
+    throw new Error('Não foi possível acessar a planilha. Verifique a internet e o endereço.');
+  }
+  let dados;
+  try { dados = await resp.json(); } catch {
+    throw new Error('A planilha não respondeu como esperado. Confira se o endereço termina em /exec e se o acesso está como "Qualquer pessoa".');
+  }
+  if (!dados.ok) throw new Error(dados.error || 'Erro na planilha.');
+  return aplicarVendasPopzu(dados.vendas || []);
 };
 
 // --- BACKUP ---
@@ -404,7 +483,8 @@ export const exportBackup = () => ({
   stockAdjustments: getStockAdjustments(),
   proximas: getProximas(),
   sales: getSales(),
-  priceSettings: getPriceSettingsRaw()
+  priceSettings: getPriceSettingsRaw(),
+  popzuSync: getPopzuConfig()
 });
 
 export const importBackup = (backup) => {
@@ -418,5 +498,6 @@ export const importBackup = (backup) => {
   if (backup.stockAdjustments) saveToStorage(STORAGE_KEYS.STOCK_ADJUSTMENTS, backup.stockAdjustments);
   if (backup.proximas) saveToStorage(STORAGE_KEYS.PROXIMAS, backup.proximas);
   if (backup.sales) saveToStorage(STORAGE_KEYS.SALES, backup.sales);
+  if (backup.popzuSync) localStorage.setItem(STORAGE_KEYS.POPZU_SYNC, JSON.stringify(backup.popzuSync));
   if (backup.priceSettings) localStorage.setItem(STORAGE_KEYS.PRICE_SETTINGS, JSON.stringify(backup.priceSettings));
 };
