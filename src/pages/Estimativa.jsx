@@ -48,7 +48,7 @@ export default function Estimativa() {
     return { geral: getAveragePricePerGram(), porCategoria };
   }, []);
 
-  // PLA Basic vem escolhido por defeito; '' = média de todas as compras
+  // PLA Basic vem escolhido por padrão; '' = média de todas as compras
   const tipoInicial = precos.porCategoria.some(c => c.categoria === TIPO_PADRAO) ? TIPO_PADRAO : '';
   const [tipo, setTipo] = useState(tipoInicial);
 
@@ -147,13 +147,13 @@ export default function Estimativa() {
                   value={precoKg} onChange={e => setPrecoKg(e.target.value)} />
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>€/kg</span>
               </div>
-              <div style={hint}>Vem dos Pedidos. Escreva um valor para usar outro preço.</div>
+              <div style={hint}>Vem dos Pedidos. Digite um valor para usar outro preço.</div>
             </div>
           </div>
 
           {ppg === 0 && totalWeight > 0 && (
             <div style={{ marginTop: '1.25rem', padding: '0.6rem 0.9rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', fontSize: '0.82rem', color: '#F59E0B' }}>
-              ⚠️ Não há compras de filamento registadas nos Pedidos para este tipo. Insira o preço por kg manualmente, senão o material entra como €0.
+              ⚠️ Não há compras de filamento registradas nos Pedidos para este tipo. Insira o preço por kg manualmente, senão o material entra como €0.
             </div>
           )}
         </div>

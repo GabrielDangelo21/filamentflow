@@ -6,7 +6,9 @@ const STORAGE_KEYS = {
   BRANDS: 'filamentflow_brands',
   ACC_CATEGORIES: 'filamentflow_acc_categories',
   PROXIMAS: 'filamentflow_proximas',
-  STOCK_ADJUSTMENTS: 'filamentflow_stock_adjustments'
+  STOCK_ADJUSTMENTS: 'filamentflow_stock_adjustments',
+  SALES: 'filamentflow_sales',
+  PRICE_SETTINGS: 'filamentflow_calc_settings'
 };
 
 // --- GENERIC HELPERS ---
@@ -69,6 +71,7 @@ export const getUnifiedOrders = () => {
     ...o,
     items: (o.items || []).map(i => {
       if (i.type === 'filament') return { ...i, sku: String(i.sku) };
+      if (i.type === 'accessory' && i.category === 'Electrónica') { migrated = true; return { ...i, category: 'Eletrônica' }; }
       if (i.type === 'accessory' && i.category === 'Impressora') {
         if (i.name === 'P2S')      { migrated = true; return { ...i, name: 'P2S-1' }; }
         if (i.name === 'A1 Combo') { migrated = true; return { ...i, category: 'Impressora (devolvida)' }; }
@@ -111,7 +114,15 @@ export const getPrints = () => {
     if (!p.id) { p.id = generateId(); migrated = true; }
     if (!p.printer || p.printer === 'Bambu Lab P2S' || p.printer === 'P2S') { p.printer = 'P2S-1'; migrated = true; }
     if (p.filamentsUsed) {
-      p.filamentsUsed = p.filamentsUsed.map(f => ({ ...f, sku: String(f.sku) }));
+      p.filamentsUsed = p.filamentsUsed.map(f => {
+        const item = { ...f, sku: String(f.sku) };
+        // Impressões antigas sem preço gravado: grava o preço médio atual (se houver compra)
+        if (!(Number(item.pricePerGram) > 0)) {
+          const ppg = getFilamentPricePerGram(item.sku);
+          if (ppg > 0) { item.pricePerGram = ppg; migrated = true; }
+        }
+        return item;
+      });
     }
   });
   const seen = new Set();
@@ -120,17 +131,28 @@ export const getPrints = () => {
   return deduped;
 };
 
+// Grava o preço por grama de cada filamento no momento do registro, para o custo
+// da impressão não mudar quando houver compras novas com outro preço.
+// Na edição, mantém o preço já gravado dos filamentos que continuam na impressão.
+const comPrecoGravado = (filamentsUsed = [], anteriores = []) =>
+  filamentsUsed.map(f => {
+    const antigo = anteriores.find(a => a.sku === String(f.sku) && Number(a.pricePerGram) > 0);
+    const ppg = antigo ? Number(antigo.pricePerGram) : getFilamentPricePerGram(String(f.sku));
+    return ppg > 0 ? { ...f, pricePerGram: ppg } : { ...f };
+  });
+
 export const savePrint = (print) => {
   const prints = getPrints();
   if (print.id) {
     const index = prints.findIndex(p => p.id === print.id);
     if (index >= 0) {
-      prints[index] = { ...prints[index], ...print };
+      const filamentsUsed = comPrecoGravado(print.filamentsUsed || prints[index].filamentsUsed, prints[index].filamentsUsed);
+      prints[index] = { ...prints[index], ...print, filamentsUsed };
       saveToStorage(STORAGE_KEYS.PRINTS, prints);
       return prints[index];
     }
   }
-  const newPrint = { ...print, id: generateId(), date: print.date || new Date().toISOString() };
+  const newPrint = { ...print, filamentsUsed: comPrecoGravado(print.filamentsUsed), id: generateId(), date: print.date || new Date().toISOString() };
   prints.push(newPrint);
   saveToStorage(STORAGE_KEYS.PRINTS, prints);
   return newPrint;
@@ -224,22 +246,35 @@ export const deleteBrand = (brand) => {
 export const saveAllBrands = (brands) => saveToStorage(STORAGE_KEYS.BRANDS, brands);
 
 // --- COST CALCULATION ---
-export const getFilamentPricePerGram = (sku) => {
-  const orders = getUnifiedOrders();
-  let totalCost = 0;
-  let totalGrams = 0;
-  orders.forEach(order => {
-    const item = order.items.filter(i => i.type === 'filament').find(i => i.sku === sku);
-    if (item && Number(item.price) > 0) {
-      totalCost += Number(item.price);
-      totalGrams += Number(item.weightGrams);
-    }
+// Preço médio por grama de cada SKU, somando TODOS os itens com preço de todos os pedidos
+// (inclusive vários carretéis do mesmo SKU no mesmo pedido).
+// Fica em cache enquanto os pedidos guardados não mudarem, para não reler tudo a cada cálculo.
+let priceCache = { raw: null, map: new Map() };
+
+const getPriceMap = () => {
+  const raw = localStorage.getItem(STORAGE_KEYS.UNIFIED_ORDERS);
+  if (raw === priceCache.raw) return priceCache.map;
+  const totals = new Map();
+  getUnifiedOrders().forEach(order => {
+    (order.items || [])
+      .filter(i => i.type === 'filament' && Number(i.price) > 0)
+      .forEach(i => {
+        const t = totals.get(i.sku) || { cost: 0, grams: 0 };
+        t.cost += Number(i.price);
+        t.grams += Number(i.weightGrams) || 0;
+        totals.set(i.sku, t);
+      });
   });
-  return totalGrams > 0 ? totalCost / totalGrams : 0;
+  const map = new Map();
+  totals.forEach((t, sku) => { if (t.grams > 0) map.set(sku, t.cost / t.grams); });
+  priceCache = { raw: localStorage.getItem(STORAGE_KEYS.UNIFIED_ORDERS), map };
+  return map;
 };
 
-// Sem compra registada nos Pedidos o preço por grama é 0 e o material entra como €0
-export const temCompraRegistada = (sku) => getFilamentPricePerGram(sku) > 0;
+export const getFilamentPricePerGram = (sku) => getPriceMap().get(String(sku)) || 0;
+
+// Sem compra registrada nos Pedidos o preço por grama é 0 e o material entra como €0
+export const temCompraRegistrada = (sku) => getFilamentPricePerGram(sku) > 0;
 
 // Preço médio por grama de todas as compras de filamento (opcionalmente só de uma categoria)
 export const getAveragePricePerGram = (categoria = null) => {
@@ -258,9 +293,11 @@ export const getAveragePricePerGram = (categoria = null) => {
   return totalGrams > 0 ? totalCost / totalGrams : 0;
 };
 
+// Usa o preço gravado no registro da impressão; sem preço gravado, usa a média atual dos Pedidos
 export const getPrintCost = (print) => {
-  return print.filamentsUsed.reduce((acc, f) => {
-    return acc + getFilamentPricePerGram(f.sku) * Number(f.weightGrams);
+  return (print.filamentsUsed || []).reduce((acc, f) => {
+    const ppg = Number(f.pricePerGram) > 0 ? Number(f.pricePerGram) : getFilamentPricePerGram(f.sku);
+    return acc + ppg * (Number(f.weightGrams) || 0);
   }, 0);
 };
 
@@ -277,12 +314,19 @@ export const getAccessoriesByCategory = (category) => {
 };
 
 // --- ACCESSORY CATEGORIES ---
-const DEFAULT_ACC_CATEGORIES = ['Ferramentas', 'Consumíveis', 'Adesivos', 'Superfície de Impressão', 'Armazenamento', 'Limpeza', 'Electrónica', 'Outros'];
+const DEFAULT_ACC_CATEGORIES = ['Ferramentas', 'Consumíveis', 'Adesivos', 'Superfície de Impressão', 'Armazenamento', 'Limpeza', 'Eletrônica', 'Outros'];
 
 export const getAccCategories = () => {
   const cats = localStorage.getItem(STORAGE_KEYS.ACC_CATEGORIES);
   if (!cats) { saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, DEFAULT_ACC_CATEGORIES); return DEFAULT_ACC_CATEGORIES; }
-  return JSON.parse(cats);
+  const parsed = JSON.parse(cats);
+  // Migração para português do Brasil
+  if (parsed.includes('Electrónica')) {
+    const fixed = [...new Set(parsed.map(c => (c === 'Electrónica' ? 'Eletrônica' : c)))];
+    saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, fixed);
+    return fixed;
+  }
+  return parsed;
 };
 
 export const saveAccCategory = (cat) => {
@@ -317,9 +361,39 @@ export const deleteProxima = (id) => {
 
 export const reorderProximas = (list) => saveToStorage(STORAGE_KEYS.PROXIMAS, list);
 
+// --- VENDAS ---
+// Each sale: { id, date, client, description, printIds, materialCost, costTotal,
+//              suggestedPrice, finalPrice (com IVA), vatPct, notes, createdAt }
+export const getSales = () => getFromStorage(STORAGE_KEYS.SALES);
+
+export const saveSale = (sale) => {
+  const list = getSales();
+  const idx = sale.id ? list.findIndex(s => s.id === sale.id) : -1;
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...sale };
+  } else {
+    list.push({ ...sale, id: generateId(), createdAt: new Date().toISOString() });
+  }
+  saveToStorage(STORAGE_KEYS.SALES, list);
+};
+
+export const deleteSale = (id) => {
+  saveToStorage(STORAGE_KEYS.SALES, getSales().filter(s => s.id !== id));
+};
+
+// Lucro de uma venda: preço final sem IVA menos o custo total gravado na venda
+export const getSaleProfit = (sale) => {
+  const semIva = (Number(sale.finalPrice) || 0) / (1 + (Number(sale.vatPct) || 0) / 100);
+  return semIva - (Number(sale.costTotal) || 0);
+};
+
 // --- BACKUP ---
+const getPriceSettingsRaw = () => {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.PRICE_SETTINGS) || 'null'); } catch { return null; }
+};
+
 export const exportBackup = () => ({
-  version: 2,
+  version: 3,
   exportedAt: new Date().toISOString(),
   filaments: getFilaments(),
   unifiedOrders: getUnifiedOrders(),
@@ -327,11 +401,14 @@ export const exportBackup = () => ({
   categories: getCategories(),
   brands: getBrands(),
   accCategories: getAccCategories(),
-  stockAdjustments: getStockAdjustments()
+  stockAdjustments: getStockAdjustments(),
+  proximas: getProximas(),
+  sales: getSales(),
+  priceSettings: getPriceSettingsRaw()
 });
 
 export const importBackup = (backup) => {
-  if (!backup || (backup.version !== 1 && backup.version !== 2)) throw new Error('Arquivo de backup inválido.');
+  if (!backup || ![1, 2, 3].includes(backup.version)) throw new Error('Arquivo de backup inválido.');
   if (backup.filaments) saveToStorage(STORAGE_KEYS.FILAMENTS, backup.filaments);
   if (backup.unifiedOrders) saveToStorage(STORAGE_KEYS.UNIFIED_ORDERS, backup.unifiedOrders);
   if (backup.prints) saveToStorage(STORAGE_KEYS.PRINTS, backup.prints);
@@ -339,4 +416,7 @@ export const importBackup = (backup) => {
   if (backup.brands) saveToStorage(STORAGE_KEYS.BRANDS, backup.brands);
   if (backup.accCategories) saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, backup.accCategories);
   if (backup.stockAdjustments) saveToStorage(STORAGE_KEYS.STOCK_ADJUSTMENTS, backup.stockAdjustments);
+  if (backup.proximas) saveToStorage(STORAGE_KEYS.PROXIMAS, backup.proximas);
+  if (backup.sales) saveToStorage(STORAGE_KEYS.SALES, backup.sales);
+  if (backup.priceSettings) localStorage.setItem(STORAGE_KEYS.PRICE_SETTINGS, JSON.stringify(backup.priceSettings));
 };

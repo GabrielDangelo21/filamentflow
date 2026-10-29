@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   getAllFilamentsWithStock, savePrint, getFilaments,
-  getAccessoriesByCategory, getPrints, temCompraRegistada,
+  getAccessoriesByCategory, getPrints, temCompraRegistrada,
 } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 import CustomSelect from './CustomSelect';
@@ -101,7 +101,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
 
   useEffect(() => {
     // Estoque é só informativo (o cálculo nem sempre é real); filamentos sem compra vão para o fim
-    const list = getAllFilamentsWithStock().map(f => ({ ...f, temCompra: temCompraRegistada(f.sku) }));
+    const list = getAllFilamentsWithStock().map(f => ({ ...f, temCompra: temCompraRegistrada(f.sku) }));
     list.sort((a, b) => (b.temCompra - a.temCompra) || a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
     setFilaments(list);
     setAllFilaments(getFilaments());
@@ -209,13 +209,13 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     if (usedFilaments.some(f => !f.sku || !f.weightGrams)) {
       setError('Preencha o filamento e o peso para todas as cores.'); return;
     }
-    const semCompra = [...new Set(usedFilaments.map(f => f.sku))].filter(sku => !temCompraRegistada(sku));
+    const semCompra = [...new Set(usedFilaments.map(f => f.sku))].filter(sku => !temCompraRegistrada(sku));
     if (semCompra.length > 0) {
       const nomes = semCompra.map(sku => {
         const info = allFilaments.find(f => f.sku === sku);
         return `• ${info ? `${info.marca} - ${info.cor} ` : ''}(${sku})`;
       }).join('\n');
-      if (!confirm(`Os seguintes filamentos não têm compra registada nos Pedidos:\n\n${nomes}\n\nO custo do material vai entrar como €0. Registar mesmo assim?`)) return;
+      if (!confirm(`Os seguintes filamentos não têm compra registrada nos Pedidos:\n\n${nomes}\n\nO custo do material vai entrar como €0. Registrar mesmo assim?`)) return;
     }
     setSaving(true);
     const totalWeight = usedFilaments.reduce((acc, f) => acc + Number(f.weightGrams), 0);
@@ -484,9 +484,9 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
                         );
                       })()}
                     </div>
-                    {item.sku && !temCompraRegistada(item.sku) && (
+                    {item.sku && !temCompraRegistrada(item.sku) && (
                       <div style={{ marginTop:'0.4rem', padding:'0.45rem 0.65rem', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'6px', fontSize:'0.78rem', color:'#F59E0B' }}>
-                        ⚠️ Este filamento não tem compra registada nos Pedidos. O custo do material vai entrar como €0.
+                        ⚠️ Este filamento não tem compra registrada nos Pedidos. O custo do material vai entrar como €0.
                       </div>
                     )}
                   </div>

@@ -267,7 +267,7 @@ const Orders = () => {
       setSuccessMessage('✓ Pedido atualizado!');
     } else {
       saveUnifiedOrder(orderData);
-      setSuccessMessage('✓ Pedido registado!');
+      setSuccessMessage('✓ Pedido registrado!');
     }
 
     resetForm();
@@ -629,7 +629,7 @@ const Orders = () => {
                 </div>
               </div>
               <div>
-                <label className="form-label">Gastos de Envio</label>
+                <label className="form-label">Frete</label>
                 <MaskedNumberInput value={shipping} onChange={v => setShipping(v)} prefix="€" className="form-input" />
               </div>
               <div>
@@ -726,7 +726,7 @@ const Orders = () => {
               </button>
             )}
             <button type="submit" className="btn btn-primary" style={{ minWidth: '200px' }}>
-              {isEditing ? 'Salvar Alterações' : 'Registar Pedido'}
+              {isEditing ? 'Salvar Alterações' : 'Registrar Pedido'}
             </button>
           </div>
         </form>
@@ -750,7 +750,7 @@ const Orders = () => {
             {orders.length === 0 ? (
               <tr>
                 <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                  Nenhum pedido registado.
+                  Nenhum pedido registrado.
                 </td>
               </tr>
             ) : (
@@ -779,7 +779,7 @@ const Orders = () => {
                                 )}
                                 {hasExtras && (
                                   <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                                    {(order.shipping || 0) > 0 && <div>Envio: {formatCurrency(order.shipping)}</div>}
+                                    {(order.shipping || 0) > 0 && <div>Frete: {formatCurrency(order.shipping)}</div>}
                                     {(order.otherCosts || 0) > 0 && <div>Outros: {formatCurrency(order.otherCosts)}</div>}
                                     {(order.discount || 0) > 0 && <div>Desconto: −{formatCurrency(order.discount)}</div>}
                                   </div>

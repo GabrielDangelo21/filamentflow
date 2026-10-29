@@ -8,7 +8,7 @@ const fmtPct = (v) => v.toFixed(1).replace('.', ',') + '%';
 // Painel "Resumo" com o detalhe do custo, preço de venda e configurações de preço.
 // vazio: mostra emptyContent em vez dos valores; info/aviso: blocos opcionais no topo;
 // subtotalMaterial: mostra a linha "Total material" (material + falhas + eletricidade + desgaste).
-export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso, subtotalMaterial }) {
+export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso, subtotalMaterial, acoes }) {
   const [showSettings, setShowSettings] = useState(false);
   const { wastePct, vat, marginMode } = settings;
 
@@ -22,7 +22,7 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
   const settingsFields = [
     { key: 'wattage',      label: 'Potência (W)',                  step: '10'    },
     { key: 'kwh',          label: '€/kWh',                         step: '0.001' },
-    { key: 'laborMinutes', label: 'Mão de obra (min/impressão)',   step: '5'     },
+    { key: 'laborMinutes', label: 'Mão de obra (min/placa)',   step: '5'     },
     { key: 'hourlyRate',   label: '€/hora',                        step: '0.5'   },
     { key: 'wearPerHour',  label: 'Desgaste da máquina (€/hora)',  step: '0.05'  },
     { key: 'packaging',    label: 'Embalagem (€/peça)',            step: '0.1'   },
@@ -112,6 +112,7 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
                 {fmtEur(calc.sellingPrice)}
               </div>
             </div>
+            {acoes}
           </>
         )}
 
@@ -152,7 +153,7 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
               ))}
             </div>
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: 0 }}>
-              Partilhado entre o Orçamento de venda e a Estimativa de custo.
+              Compartilhado entre o Orçamento de venda e a Estimativa de custo.
             </p>
           </div>
         )}

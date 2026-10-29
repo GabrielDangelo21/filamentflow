@@ -213,7 +213,7 @@ const PlacaRow = ({ placa, index, onChange, onSubmit, filaments, allFilaments })
                         <span style={{ color: getColorFromName(f.cor) }}>{f.cor}</span>
                         {f.currentStock != null && (
                           <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: f.currentStock > 0 ? 'var(--text-muted)' : '#F87171', flexShrink: 0 }}>
-                            {f.currentStock > 0 ? `${f.currentStock.toFixed(0)}g stock` : 'sem stock'}
+                            {f.currentStock > 0 ? `${f.currentStock.toFixed(0)}g stock` : 'sem estoque'}
                           </span>
                         )}
                       </div>
@@ -516,7 +516,7 @@ export default function ProximasImpressoes() {
             Próximas impressões
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Planeie o que vai imprimir e os filamentos necessários
+            Planeje o que vai imprimir e os filamentos necessários
           </p>
         </div>
         <button
@@ -550,7 +550,7 @@ export default function ProximasImpressoes() {
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
           <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.4rem' }}>Nenhum modelo na lista</div>
-          <div style={{ fontSize: '0.85rem' }}>Adicione modelos que pretende imprimir em breve.</div>
+          <div style={{ fontSize: '0.85rem' }}>Adicione modelos que deseja imprimir em breve.</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -674,7 +674,7 @@ export default function ProximasImpressoes() {
                                   style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.85rem', padding: '0 0.1rem', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s' }}
                                   onMouseEnter={e => e.currentTarget.style.color = '#F87171'}
                                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
-                                  title="Registar impressão e remover da fila">✕
+                                  title="Registrar impressão e remover da fila">✕
                                 </button>
                               </div>
 

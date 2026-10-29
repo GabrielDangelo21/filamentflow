@@ -130,7 +130,7 @@ const Accessories = () => {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>ITENS REGISTADOS</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>ITENS REGISTRADOS</p>
           <p style={{ fontSize: '2rem', fontWeight: 700 }}>{totalItemCount}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid #10B981' }}>
@@ -179,7 +179,7 @@ const Accessories = () => {
             border: '1px solid rgba(139,92,246,0.3)', borderRadius: '0.5rem',
             padding: '0.45rem 1rem', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600
           }}>
-          Gerir Categorias
+          Gerenciar Categorias
         </button>
       </div>
 
@@ -189,7 +189,7 @@ const Accessories = () => {
         borderRadius: '0.5rem', padding: '0.65rem 1rem', marginBottom: '1.5rem',
         fontSize: '0.82rem', color: 'var(--text-muted)'
       }}>
-        Para registar ou editar compras de acessórios, use a página <strong style={{ color: 'var(--primary)' }}>Pedidos</strong>.
+        Para registrar ou editar compras de acessórios, use a página <strong style={{ color: 'var(--primary)' }}>Pedidos</strong>.
       </div>
 
       {/* History table */}
@@ -211,7 +211,7 @@ const Accessories = () => {
               <tr>
                 <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                   {allAccEntries.length === 0
-                    ? 'Nenhum acessório registado. Crie um pedido na página Pedidos.'
+                    ? 'Nenhum acessório registrado. Crie um pedido na página Pedidos.'
                     : 'Nenhum acessório nesta categoria.'}
                 </td>
               </tr>

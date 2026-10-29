@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-// Configurações de preço partilhadas entre Orçamento de Venda, Estimativa de Custo e Calculadora
+// Configurações de preço compartilhadas entre Orçamento de Venda e Estimativa de Custo
 export const PRICE_SETTINGS_KEY = 'filamentflow_calc_settings';
 
 const DEFAULT_SETTINGS = {

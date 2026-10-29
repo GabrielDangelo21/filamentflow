@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getPrints, getPrintCost, temCompraRegistada } from '../services/storage';
+import { getPrints, getPrintCost, temCompraRegistrada, getSales } from '../services/storage';
 import { usePriceSettings, calcularPreco } from '../utils/pricing';
 import ResumoPreco from '../components/ResumoPreco';
+import VendaModal from '../components/VendaModal';
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -18,7 +19,7 @@ const fmtDur = (mins) => {
 const fmtDate = (dateStr) => {
   try {
     const d = dateStr.includes('T') ? new Date(dateStr) : new Date(dateStr + 'T12:00:00');
-    return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   } catch { return '—'; }
 };
 
@@ -45,9 +46,15 @@ export default function Orcamento() {
   const [selected, setSelected]       = useState(new Set());
   const [expanded, setExpanded]       = useState(new Set());
   const [settings, setSetting] = usePriceSettings();
+  const [vendidas, setVendidas]       = useState(new Set());
+  const [novaVenda, setNovaVenda]     = useState(null);
+  const [mensagem, setMensagem]       = useState('');
+
+  const carregarVendidas = () => setVendidas(new Set(getSales().flatMap(s => s.printIds || [])));
 
   useEffect(() => {
     setPrints(getPrints().reverse());
+    carregarVendidas();
   }, []);
 
   // ── Groups ──────────────────────────────────────────────────────────────────
@@ -97,12 +104,32 @@ export default function Orcamento() {
   const selectedPrints   = prints.filter(p => selected.has(p.id));
   const totalTime        = selectedPrints.reduce((s, p) => s + (Number(p.timeMinutes) || 0), 0);
   const totalWeight      = selectedPrints.reduce((s, p) => s + (Number(p.totalWeight) || 0), 0);
-  const placasSemPreco   = selectedPrints.filter(p => p.filamentsUsed.some(f => !temCompraRegistada(f.sku))).length;
+  const placasSemPreco   = selectedPrints.filter(p => p.filamentsUsed.some(f => !temCompraRegistrada(f.sku))).length;
   const calc = calcularPreco({
     materialCost: selectedPrints.reduce((s, p) => s + getPrintCost(p), 0),
     totalTime,
     placas: selectedPrints.length,
   }, settings);
+
+  const abrirVenda = () => {
+    const nomes = [...new Set(selectedPrints.map(p => p.project || p.description).filter(Boolean))];
+    setNovaVenda({
+      description:    nomes.join(' + '),
+      printIds:       selectedPrints.map(p => p.id),
+      materialCost:   calc.totalMaterial,
+      costTotal:      calc.totalCost,
+      suggestedPrice: calc.sellingPrice,
+      vatPct:         settings.vat,
+    });
+  };
+
+  const vendaSalva = () => {
+    setNovaVenda(null);
+    setSelected(new Set());
+    carregarVendidas();
+    setMensagem('✓ Venda registrada! Veja na aba Vendas.');
+    setTimeout(() => setMensagem(''), 3000);
+  };
 
   return (
     <div>
@@ -141,7 +168,7 @@ export default function Orcamento() {
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🖨️</div>
               <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.4rem' }}>Nenhuma impressão registrada</div>
               <div style={{ fontSize: '0.85rem' }}>
-                Registe impressões na aba <strong>Impressões</strong> para poder criar orçamentos.
+                Registre impressões na aba <strong>Impressões</strong> para poder criar orçamentos.
               </div>
             </div>
           ) : (
@@ -257,6 +284,11 @@ export default function Orcamento() {
                                 )}
                               </div>
 
+                              {vendidas.has(p.id) && (
+                                <span title="Esta placa já faz parte de uma venda" style={{ fontSize: '0.7rem', color: '#10B981', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', padding: '0.1rem 0.45rem', borderRadius: '999px', flexShrink: 0 }}>
+                                  vendida
+                                </span>
+                              )}
                               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>
                                 {fmtDate(p.date)}
                               </span>
@@ -297,11 +329,26 @@ export default function Orcamento() {
             <span>{selected.size} placa{selected.size !== 1 ? 's' : ''}</span>
             <span>{totalWeight.toFixed(2).replace('.', ',')}g · {fmtDur(totalTime)}</span>
           </>}
+          acoes={
+            <button className="btn btn-primary" onClick={abrirVenda} style={{ width: '100%', marginBottom: '0.75rem' }}>
+              🧾 Registrar venda
+            </button>
+          }
           aviso={placasSemPreco > 0 &&
-            `⚠️ ${placasSemPreco} placa${placasSemPreco !== 1 ? 's' : ''} com material sem compra registada nos Pedidos — o custo desse material entra como €0.`}
+            `⚠️ ${placasSemPreco} placa${placasSemPreco !== 1 ? 's' : ''} com material sem compra registrada nos Pedidos — o custo desse material entra como €0.`}
         />
 
       </div>
+
+      {novaVenda && (
+        <VendaModal venda={novaVenda} onClose={() => setNovaVenda(null)} onSaved={vendaSalva} />
+      )}
+
+      {mensagem && (
+        <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000, background: 'var(--primary)', color: '#000', padding: '1rem 1.5rem', borderRadius: '0.5rem', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+          {mensagem}
+        </div>
+      )}
     </div>
   );
 }

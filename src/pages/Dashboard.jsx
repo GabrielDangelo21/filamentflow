@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, getPrintCost } from '../services/storage';
+import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, getPrintCost, getSales, getSaleProfit } from '../services/storage';
 import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, BarController,
@@ -25,6 +25,9 @@ const Dashboard = () => {
     totalPurchasedGrams: 0,
     totalUsedGrams: 0,
     totalTimeMinutes: 0,
+    totalSales: 0,
+    totalRevenue: 0,
+    totalProfit: 0,
   });
 
   const [topFilaments, setTopFilaments] = useState([]);
@@ -34,16 +37,20 @@ const Dashboard = () => {
   const [backupMsg, setBackupMsg] = useState('');
   const importInputRef = useRef(null);
 
-  const handleExport = () => {
+  const downloadBackup = (nome) => {
     const data = exportBackup();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const date = new Date().toISOString().split('T')[0];
     a.href = url;
-    a.download = `filamentflow_backup_${date}.json`;
+    a.download = `${nome}_${date}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExport = () => {
+    downloadBackup('filamentflow_backup');
     setBackupMsg('✓ Backup exportado!');
     setTimeout(() => setBackupMsg(''), 3000);
   };
@@ -55,6 +62,8 @@ const Dashboard = () => {
     reader.onload = (ev) => {
       try {
         const backup = JSON.parse(ev.target.result);
+        if (!confirm('Importar este backup vai substituir todos os dados atuais.\n\nAntes disso, uma cópia dos dados atuais será baixada automaticamente. Continuar?')) return;
+        downloadBackup('filamentflow_antes_da_importacao');
         importBackup(backup);
         setBackupMsg('✓ Backup importado! Recarregando...');
         setTimeout(() => window.location.reload(), 1000);
@@ -80,6 +89,7 @@ const Dashboard = () => {
       acc + o.items.filter(i => i.type === 'filament').reduce((s, i) => s + Number(i.weightGrams || 0), 0), 0);
     const totalUsedGrams = allPrints.reduce((acc, p) => acc + (p.totalWeight || 0), 0);
     const totalTimeMinutes = allPrints.reduce((acc, p) => acc + (Number(p.timeMinutes) || 0), 0);
+    const allSales = getSales();
 
     setStats({
       totalFilaments: allFilaments.length,
@@ -91,6 +101,9 @@ const Dashboard = () => {
       totalPurchasedGrams: totalPurchasedGrams,
       totalUsedGrams: totalUsedGrams,
       totalTimeMinutes: totalTimeMinutes,
+      totalSales: allSales.length,
+      totalRevenue: allSales.reduce((acc, s) => acc + (Number(s.finalPrice) || 0), 0),
+      totalProfit: allSales.reduce((acc, s) => acc + getSaleProfit(s), 0),
     });
 
     // Impressões por mês (últimos 6 meses com dados)
@@ -104,7 +117,7 @@ const Dashboard = () => {
     });
     const monthlyChart = Object.keys(monthMap).sort().slice(-6).map(key => {
       const [y, mo] = key.split('-');
-      const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' });
+      const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
       return { label, kg: monthMap[key].grams / 1000, count: monthMap[key].count };
     });
     setMonthlyPrints(monthlyChart);
@@ -240,7 +253,7 @@ const Dashboard = () => {
       <input ref={importInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>Analytics de Impressão</h1>
+        <h1>Visão Geral das Impressões</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
@@ -268,6 +281,21 @@ const Dashboard = () => {
       </div>
 
       {/* Cards Superiores */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3B82F6' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>VENDAS REGISTRADAS</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#3B82F6' }}>{stats.totalSales}</p>
+        </div>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #00F0FF' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>FATURADO (COM IVA)</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#00F0FF' }}>€ {stats.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${stats.totalProfit >= 0 ? '#10B981' : '#F87171'}` }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>LUCRO NAS VENDAS</p>
+          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: stats.totalProfit >= 0 ? '#10B981' : '#F87171' }}>€ {stats.totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EF4444' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>INVESTIMENTO TOTAL</p>
@@ -386,7 +414,7 @@ const Dashboard = () => {
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             {monthlyPrints.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                <p style={{ fontSize: '0.9rem' }}>Nenhuma impressão registada ainda</p>
+                <p style={{ fontSize: '0.9rem' }}>Nenhuma impressão registrada ainda</p>
               </div>
             ) : (
               <div style={{ height: '320px' }}>

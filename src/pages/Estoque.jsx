@@ -71,7 +71,7 @@ const AjusteModal = ({ filament, onClose, onSaved }) => {
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
             <button type="button" className="btn btn-primary" onClick={() => guardar(realNum)} disabled={realNum == null || diff === 0}>
-              Guardar
+              Salvar
             </button>
           </div>
         </div>
