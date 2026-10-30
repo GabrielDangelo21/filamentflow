@@ -405,6 +405,8 @@ export const savePopzuConfig = (cfg) => {
 const TAMANHOS_OCULTOS = ['', 'Normal', 'Único'];
 
 // Linha da aba Vendas da planilha → venda do app
+const temNumero = (v) => v !== null && v !== undefined && v !== '' && !isNaN(Number(v));
+
 const popzuParaVenda = (r) => ({
   id:          `popzu-${r.id}`,
   source:      'popzu',
@@ -417,7 +419,9 @@ const popzuParaVenda = (r) => ({
   finalPrice:  Number(r.total) || 0,
   semPreco:    r.total === null || r.total === undefined,
   vatPct:      0,
-  costTotal:   null,
+  // Custo por peça gravado na planilha (coluna O da aba Vendas); sem custo = fora do lucro
+  unitCost:    temNumero(r.custoUnit) ? Number(r.custoUnit) : null,
+  costTotal:   temNumero(r.custoUnit) ? Math.round(Number(r.custoUnit) * (Number(r.qtd) || 1) * 100) / 100 : null,
   client:      r.cliente || '',
   notes:       [r.pagamento, r.entrega, r.obs].filter(Boolean).join(' · '),
   pronta:      r.pronta || '',
