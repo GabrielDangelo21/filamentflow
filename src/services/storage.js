@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   STOCK_ADJUSTMENTS: 'filamentflow_stock_adjustments',
   SALES: 'filamentflow_sales',
   POPZU_SYNC: 'filamentflow_popzu_sync',
+  POPZU_CUSTOS: 'filamentflow_popzu_custos',
   PRICE_SETTINGS: 'filamentflow_calc_settings'
 };
 
@@ -429,10 +430,39 @@ const popzuParaVenda = (r) => ({
 });
 
 // A planilha é a fonte das vendas Popzu: substitui todas as vendas Popzu do app pelas da planilha
+// Custos definidos no app para vendas Popzu (peças avulsas/personalizadas).
+// { [externalId]: { costTotal, printIds, metodo: 'impressoes' | 'manual', updatedAt } }
+// Têm prioridade sobre o custo da planilha e sobrevivem às sincronizações.
+export const getPopzuCustos = () => {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.POPZU_CUSTOS) || '{}'); } catch { return {}; }
+};
+
+const comCustoDoApp = (venda, custos) => {
+  const c = custos[venda.externalId];
+  if (!c) return { ...venda, costSource: temNumero(venda.costTotal) ? 'planilha' : null };
+  return { ...venda, costTotal: Number(c.costTotal) || 0, printIds: c.printIds || [], costSource: c.metodo === 'impressoes' ? 'impressoes' : 'manual' };
+};
+
+// custo = null remove o custo do app (volta a usar o da planilha, se houver)
+export const setPopzuCusto = (externalId, custo) => {
+  const custos = getPopzuCustos();
+  if (custo === null) delete custos[externalId];
+  else custos[externalId] = { ...custo, updatedAt: new Date().toISOString() };
+  localStorage.setItem(STORAGE_KEYS.POPZU_CUSTOS, JSON.stringify(custos));
+  // Atualiza já a venda guardada, sem esperar a próxima sincronização
+  const vendas = getSales().map(v => {
+    if (v.source !== 'popzu' || v.externalId !== externalId) return v;
+    const base = { ...v, costTotal: temNumero(v.unitCost) ? Math.round(v.unitCost * (Number(v.quantity) || 1) * 100) / 100 : null, printIds: [] };
+    return comCustoDoApp(base, custos);
+  });
+  saveToStorage(STORAGE_KEYS.SALES, vendas);
+};
+
 export const aplicarVendasPopzu = (linhas) => {
   const atuais = getSales();
   const antigas = new Map(atuais.filter(s => s.source === 'popzu').map(s => [s.externalId, s]));
-  const novas = linhas.map(popzuParaVenda);
+  const custos = getPopzuCustos();
+  const novas = linhas.map(popzuParaVenda).map(v => comCustoDoApp(v, custos));
   let adicionadas = 0, alteradas = 0;
   novas.forEach(n => {
     const a = antigas.get(n.externalId);
@@ -488,7 +518,8 @@ export const exportBackup = () => ({
   proximas: getProximas(),
   sales: getSales(),
   priceSettings: getPriceSettingsRaw(),
-  popzuSync: getPopzuConfig()
+  popzuSync: getPopzuConfig(),
+  popzuCustos: getPopzuCustos()
 });
 
 export const importBackup = (backup) => {
@@ -502,6 +533,7 @@ export const importBackup = (backup) => {
   if (backup.stockAdjustments) saveToStorage(STORAGE_KEYS.STOCK_ADJUSTMENTS, backup.stockAdjustments);
   if (backup.proximas) saveToStorage(STORAGE_KEYS.PROXIMAS, backup.proximas);
   if (backup.sales) saveToStorage(STORAGE_KEYS.SALES, backup.sales);
+  if (backup.popzuCustos) localStorage.setItem(STORAGE_KEYS.POPZU_CUSTOS, JSON.stringify(backup.popzuCustos));
   if (backup.popzuSync) localStorage.setItem(STORAGE_KEYS.POPZU_SYNC, JSON.stringify(backup.popzuSync));
   if (backup.priceSettings) localStorage.setItem(STORAGE_KEYS.PRICE_SETTINGS, JSON.stringify(backup.priceSettings));
 };

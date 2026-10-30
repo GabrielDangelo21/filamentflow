@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getSales, deleteSale, getSaleProfit, temCusto, getPopzuConfig, savePopzuConfig, buscarVendasPopzu } from '../services/storage';
 import VendaModal from '../components/VendaModal';
+import CustoPopzuModal from '../components/CustoPopzuModal';
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -83,6 +84,7 @@ export default function Vendas() {
   const [fonte, setFonte] = useState('');         // '' = todas; 'app'; 'popzu'
   const [config, setConfig] = useState(getPopzuConfig);
   const [mostrarConfig, setMostrarConfig] = useState(false);
+  const [custoDe, setCustoDe] = useState(null);   // venda Popzu cujo custo está sendo definido
   const [sincronizando, setSincronizando] = useState(false);
   const [aviso, setAviso] = useState(null);       // { tipo: 'ok' | 'erro', texto }
 
@@ -231,7 +233,14 @@ export default function Vendas() {
                   </td>
                   <td>{v.client || '—'}</td>
                   <td>{popzu ? v.quantity : ((v.printIds || []).length ? `${v.printIds.length} placa${v.printIds.length !== 1 ? 's' : ''}` : '—')}</td>
-                  <td>{temCusto(v) ? fmtEur(v.costTotal) : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
+                  <td>
+                    {temCusto(v) ? fmtEur(v.costTotal) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                    {popzu && v.costSource && (
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                        {{ planilha: 'da planilha', impressoes: 'das impressões', manual: 'digitado' }[v.costSource]}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ fontWeight: 700 }}>
                     {v.semPreco ? <span style={{ color: '#F59E0B' }}>sem preço</span> : fmtEur(v.finalPrice)}
                   </td>
@@ -240,9 +249,15 @@ export default function Vendas() {
                   </td>
                   <td>
                     {popzu ? (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }} title="Vendas Popzu vêm da planilha: edite ou apague lá e sincronize">
-                        editar na planilha
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <button className="btn btn-secondary" style={btnPeq} onClick={() => setCustoDe(v)}
+                          title="Definir o custo escolhendo impressões ou digitando o valor">
+                          {temCusto(v) ? 'Custo' : '+ Custo'}
+                        </button>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }} title="Data, produto, preço e cliente vêm da planilha: edite lá e sincronize">
+                          resto na planilha
+                        </span>
+                      </div>
                     ) : (
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button className="btn btn-secondary" style={btnPeq} onClick={() => setEditando(v)}>Editar</button>
@@ -262,6 +277,14 @@ export default function Vendas() {
           venda={editando}
           onClose={() => setEditando(null)}
           onSaved={() => { setEditando(null); carregar(); }}
+        />
+      )}
+
+      {custoDe && (
+        <CustoPopzuModal
+          venda={custoDe}
+          onClose={() => setCustoDe(null)}
+          onSaved={() => { setCustoDe(null); carregar(); }}
         />
       )}
 
