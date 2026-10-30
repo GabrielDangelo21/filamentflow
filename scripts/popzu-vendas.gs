@@ -609,7 +609,7 @@ var CUSTOS_INICIAIS = {
   "Spider-Man (Super-heróis)": [7.65, 18.75],
   "Superman (Super-heróis)": [11.29, null],
   "Venom (Super-heróis)": [12.44, null],
-  "Wolverine (Super-heróis)": [35.49, null],
+  "Wolverine (Super-heróis)": [10.85, null],
   "Cell (Dragon Ball)": [10.25, null],
   "Majin Buu (Dragon Ball)": [12.3, null],
   "Freeza (Dragon Ball)": [7.64, null],
