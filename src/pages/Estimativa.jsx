@@ -164,7 +164,6 @@ export default function Estimativa() {
           settings={settings}
           setSetting={setSetting}
           vazio={vazio}
-          subtotalMaterial
           emptyContent={
             <div style={{ textAlign: 'center', padding: '1.75rem 0', color: 'var(--text-muted)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🧮</div>

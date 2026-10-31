@@ -6,9 +6,8 @@ const fmtEur = (v) =>
 const fmtPct = (v) => v.toFixed(1).replace('.', ',') + '%';
 
 // Painel "Resumo" com o detalhe do custo, preço de venda e configurações de preço.
-// vazio: mostra emptyContent em vez dos valores; info/aviso: blocos opcionais no topo;
-// subtotalMaterial: mostra a linha "Total material" (material + falhas + eletricidade + desgaste).
-export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso, subtotalMaterial, acoes }) {
+// vazio: mostra emptyContent em vez dos valores; info/aviso: blocos opcionais no topo.
+export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso, acoes }) {
   const [showSettings, setShowSettings] = useState(false);
   const { wastePct, vat, marginMode } = settings;
 
@@ -64,14 +63,12 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
               { label: '🔧 Desgaste',    value: calc.totalWear        },
             ].map(linha)}
 
-            {subtotalMaterial && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--card-border)', paddingTop: '0.55rem', marginBottom: '0.55rem' }}>
-                <span style={{ fontSize: '0.87rem', fontWeight: 600 }}>Total material</span>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                  {fmtEur(calc.totalMaterial + calc.totalWaste + calc.totalElectricity + calc.totalWear)}
-                </span>
-              </div>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--card-border)', paddingTop: '0.55rem', marginBottom: '0.55rem' }}>
+              <span style={{ fontSize: '0.87rem', fontWeight: 600 }}>Total material</span>
+              <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                {fmtEur(calc.totalMaterial + calc.totalWaste + calc.totalElectricity + calc.totalWear)}
+              </span>
+            </div>
 
             {[
               { label: '🤝 Mão de obra', value: calc.totalLabor       },
