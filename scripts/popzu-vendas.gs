@@ -748,6 +748,8 @@ var CUSTOS_INICIAIS = {
   "Notenkraker": [2.19, null],
   "Rendier": [0.88, null],
   "Noords kerstboompje": [1.28, null],
+  "Noords kerstboompje klein": [1.28, null],
+  "Noords kerstboompje groot": [1.75, null],
   "Kerstman": [1.47, null],
   "Sneeuwman": [1.96, null],
   "Kerstkabouter": [1.78, null]
