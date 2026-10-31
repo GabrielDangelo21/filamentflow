@@ -542,7 +542,7 @@ function doGet(e) {
   }
 }
 
-// Custos calculados em 30/10/2026 (fatiamento no Bambu Studio + fórmula da Estimativa de custo do FilamentFlow).
+// Custos calculados em 30-31/10/2026 (fatiamento no Bambu Studio + fórmula da Estimativa de custo do FilamentFlow).
 // Usados só pelo menu "Importar custos dos personagens"; depois disso a fonte é a aba Produtos.
 var CUSTOS_INICIAIS = {
   "Ash Ketchum (Pokémon)": [14.67, null],
@@ -687,5 +687,49 @@ var CUSTOS_INICIAIS = {
   "Bluey (Bluey)": [9.01, null],
   "Snoopy (Snoopy)": [8.09, null],
   "Smurf (Smurfs)": [7.63, null],
-  "Chase (Patrulha Canina)": [14.6, null]
+  "Chase (Patrulha Canina)": [14.6, null],
+  // Originais do Whale (Site Popzu): [Pequeno = 50%, Grande = 100%]
+  "Baby T-Rex": [6.53, 15.77],
+  "Baby Triceratops": [5.68, 18.49],
+  "Baby Spinosaurus": [7.31, 21.77],
+  "Baby Brachiosaurus": [5.65, 18.73],
+  "Baby Ankylosaurus": [5.67, 19.09],
+  "Baby Carnotaurus": [5.71, 19.08],
+  "Cute Corgi": [5.24, 16.32],
+  "Cute Husky": [5.21, 20.25],
+  "Cute Bulldog": [5.23, 16.57],
+  "Dachshund Dog": [4.36, 10.46],
+  "Yorkshire Dog": [5.55, 18.94],
+  "Rottweiler Dog": [6.71, 24.61],
+  "Fat Capybara": [5.16, 14.45],
+  "Derp Capybara": [5.16, 14.8],
+  "Hamster": [2.69, 8.7],
+  "Hamster Flexi": [3.98, 7.49],
+  "Derp Monkey": [5.23, 16.01],
+  "Snowy Owl": [4.12, 16.64],
+  "Mochi Octopus": [6.96, 22.46],
+  "Derp Octopus": [7.22, 23.91],
+  "Mochi Seal": [3.29, 11.52],
+  "Derp Seal": [4.9, 14.65],
+  "Cute Dolphin": [4.7, 12.65],
+  "Clownfish": [5.48, 15.78],
+  "Blue Tang Fish": [8.24, 28.74],
+  "Baby Mermaid": [7.81, 20.43],
+  "Pumpkin Killer": [7.52, 30.0],
+  "Baby Vampire": [7.82, 26.3],
+  "Baby Reaper": [6.04, 19.63],
+  "Pumpboo": [6.51, 23.66],
+  "Pumpkinaut": [7.01, 20.21],
+  "Derp Pumpkin": [5.89, 18.45],
+  "The Mummy": [3.37, 12.18],
+  "Derp Werewolf": [4.95, 14.68],
+  "Baby Werewolf": [6.55, 23.55],
+  "Alien": [2.56, 7.95],
+  "Alien Baby": [4.6, 12.08],
+  "Alien Women": [2.76, 7.74],
+  "Astronaut Boy": [6.1, 15.11],
+  "Super Nova": [4.89, 14.41],
+  "Luna": [4.82, 14.0],
+  "Derp Dragon": [5.23, 17.12],
+  "The Elemental Dragon": [null, 9.0]
 };
