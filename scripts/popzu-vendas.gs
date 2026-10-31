@@ -20,6 +20,7 @@ var MAX = 5;
 var ORIGENS = ['Personagens', 'Site Popzu', 'Natal', 'Outro', 'Cartões Pokémon'];
 // Cartões Pokémon (kit cards): 1 por 3 €, 2 por 5 € (preço vazio = preço de pacote calculado na venda toda)
 var CARTAO_ORIGEM = 'Cartões Pokémon', CARTAO_SUFIXO = ' (Cartão Pokémon)', CARTAO_UM = 3, CARTAO_DOIS = 5;
+var CARTAO_CUSTO = 1;   // custo por cartão (catálogo, aba Cartões Pokemon)
 var CARTOES = ['Bulbasaur', 'Charmander', 'Charmeleon', 'Charizard', 'Squirtle', 'Caterpie', 'Butterfree', 'Rattata', 'Pikachu', 'Raichu', 'Clefairy', 'Jigglypuff', 'Wigglytuff', 'Oddish', 'Venonat', 'Diglett', 'Meowth', 'Psyduck', 'Mankey', 'Growlithe', 'Poliwrath', 'Abra', 'Tentacool', 'Geodude', 'Slowpoke', 'Gengar', 'Krabby', 'Cubone', 'Horsea', 'Scyther', 'Pinsir', 'Magikarp', 'Lapras', 'Eevee', 'Snorlax', 'Mewtwo', 'Mew', 'Cyndaquil', 'Totodile', 'Hoothoot', 'Pichu', 'Togepi', 'Mareep', 'Ampharos', 'Marill', 'Wooper', 'Espeon', 'Umbreon', 'Scizor', 'Shuckle', 'Heracross', 'Teddiursa', 'Phanpy', 'Elekid', 'Larvitar', 'Lugia', 'Torchic', 'Mudkip', 'Bonsly', 'Lucario', 'Leafeon', 'Sylveon', 'Phantump', 'Scorbunny'];
 
 // Aba Vendas: colunas (1 = A). A coluna N guarda o ID de cada linha, usado pelo app para não duplicar vendas.
@@ -402,11 +403,11 @@ function importarCustos() {
   var sh = ss.getSheetByName('Produtos');
   if (sh.getMaxColumns() < PROD_CUSTO_GRANDE) sh.insertColumnsAfter(sh.getMaxColumns(), PROD_CUSTO_GRANDE - sh.getMaxColumns());
   sh.getRange(1, PROD_CUSTO, 1, 2).setValues([['Custo normal / pequeno (€)', 'Custo grande / 150% (€)']]).setFontWeight('bold');
-  var nomes = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+  var nomes = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
   var atuais = sh.getRange(2, PROD_CUSTO, nomes.length, 2).getValues();
   var n = 0;
   var novos = nomes.map(function (r, i) {
-    var c = CUSTOS_INICIAIS[String(r[0])];
+    var c = CUSTOS_INICIAIS[String(r[0])] || (r[1] === CARTAO_ORIGEM ? [CARTAO_CUSTO, null] : null);
     if (!c) return atuais[i];
     n++;
     return [c[0], c[1] === null ? atuais[i][1] : c[1]];
@@ -738,5 +739,16 @@ var CUSTOS_INICIAIS = {
   "Super Nova": [2.39, 9.41],
   "Luna": [2.32, 9.0],
   "Derp Dragon": [2.73, 10.87],
-  "The Elemental Dragon": [null, 5.25]
+  "The Elemental Dragon": [null, 5.25],
+  // Sabre Design (Natal) — preço único
+  "Kerstboomhanger": [0.74, null],
+  "Kerstklokje": [1.15, null],
+  "Japandi-kerstbal": [1.64, null],
+  "Druppelhanger": [1.02, null],
+  "Notenkraker": [2.19, null],
+  "Rendier": [0.88, null],
+  "Noords kerstboompje": [1.28, null],
+  "Kerstman": [1.47, null],
+  "Sneeuwman": [1.96, null],
+  "Kerstkabouter": [1.78, null]
 };
