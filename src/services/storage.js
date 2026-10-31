@@ -500,6 +500,36 @@ export const buscarVendasPopzu = async () => {
   return aplicarVendasPopzu(dados.vendas || []);
 };
 
+// --- MIGRAÇÕES ---
+// 31/10/2026: o custo das vendas passou a NÃO incluir a mão de obra (ela fica no lucro).
+// Tira a mão de obra (placas × minutos × €/h) das vendas cujo custo foi calculado a partir de impressões.
+const MIG_CUSTO_SEM_MO = 'filamentflow_mig_custo_sem_mao_de_obra';
+
+export const executarMigracoes = () => {
+  if (localStorage.getItem(MIG_CUSTO_SEM_MO)) return;
+  const cfg = { laborMinutes: 5, hourlyRate: 15, ...(getPriceSettingsRaw() || {}) };
+  const moPorPlaca = (Number(cfg.laborMinutes) || 0) / 60 * (Number(cfg.hourlyRate) || 0);
+  const tirar = (custo, placas) => Math.max(0, Math.round((Number(custo) - placas * moPorPlaca) * 100) / 100);
+
+  const custos = getPopzuCustos();
+  Object.values(custos).forEach(c => {
+    if (c.metodo === 'impressoes' && (c.printIds || []).length) c.costTotal = tirar(c.costTotal, c.printIds.length);
+  });
+  localStorage.setItem(STORAGE_KEYS.POPZU_CUSTOS, JSON.stringify(custos));
+
+  const vendas = getSales().map(v => {
+    if (v.source === 'popzu') {
+      const c = custos[v.externalId];
+      return c ? { ...v, costTotal: Number(c.costTotal) || 0 } : v;
+    }
+    const n = (v.printIds || []).length;
+    if (!n || !temCusto(v)) return v;
+    return { ...v, costTotal: tirar(v.costTotal, n), laborCost: Math.round(n * moPorPlaca * 100) / 100 };
+  });
+  saveToStorage(STORAGE_KEYS.SALES, vendas);
+  localStorage.setItem(MIG_CUSTO_SEM_MO, new Date().toISOString());
+};
+
 // --- BACKUP ---
 const getPriceSettingsRaw = () => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.PRICE_SETTINGS) || 'null'); } catch { return null; }

@@ -77,10 +77,10 @@ export default function VendaModal({ venda, onClose, onSaved }) {
 
           <div className="grid-2" style={{ gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Custo total</label>
+              <label className="form-label">Custo (sem mão de obra)</label>
               <MaskedNumberInput className="form-input" prefix="€" value={form.costTotal} onChange={v => set('costTotal', v)} />
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                {temImpressoes ? 'Calculado no Orçamento. Pode ajustar.' : 'Material, energia, mão de obra etc.'}
+                {temImpressoes ? 'Calculado no Orçamento, sem a mão de obra. Pode ajustar.' : 'Material, falhas, energia, desgaste e embalagem.'}
               </div>
             </div>
             <div className="form-group">

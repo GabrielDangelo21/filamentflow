@@ -60,7 +60,9 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
     placas: escolhidas.length,
   }, settings);
 
-  const custo = modo === 'impressoes' ? Math.round(calc.totalCost * 100) / 100 : Number(valor) || 0;
+  // Custo da venda = tudo menos a mão de obra (a mão de obra fica no lucro)
+  const custoImpressoes = calc.totalCost - calc.totalLabor;
+  const custo = modo === 'impressoes' ? Math.round(custoImpressoes * 100) / 100 : Number(valor) || 0;
   const podeSalvar = modo === 'impressoes' ? escolhidas.length > 0 : custo > 0;
   const lucro = (Number(venda.finalPrice) || 0) / (1 + (Number(venda.vatPct) || 0) / 100) - custo;
 
@@ -148,22 +150,24 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
               </div>
               {linhaResumo('Material + falhas', calc.totalMaterial + calc.totalWaste)}
               {linhaResumo('Energia + desgaste', calc.totalElectricity + calc.totalWear)}
-              {linhaResumo('Mão de obra', calc.totalLabor)}
               {linhaResumo('Embalagem', calc.totalPackaging)}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--card-border)', paddingTop: '0.5rem', marginTop: '0.4rem', fontWeight: 700 }}>
-                <span>Custo total</span><span>{fmtEur(calc.totalCost)}</span>
+                <span>Custo</span><span>{fmtEur(custoImpressoes)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                <span>Mão de obra (fica no lucro)</span><span>{fmtEur(calc.totalLabor)}</span>
               </div>
               <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.6rem', marginBottom: 0 }}>
-                Mesmo cálculo do Orçamento de venda, com as suas configurações de preço.
+                Mesmo cálculo do Orçamento de venda, sem a mão de obra.
               </p>
             </div>
           </div>
         ) : (
           <div className="form-group">
-            <label className="form-label">Custo total da venda</label>
+            <label className="form-label">Custo da venda (sem mão de obra)</label>
             <MaskedNumberInput className="form-input" prefix="€" value={valor} onChange={setValor} />
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-              Dica: para uma peça que ainda não imprimiu, calcule na Estimativa de custo e digite aqui o “Custo total”.
+              Dica: para uma peça que ainda não imprimiu, use a Estimativa de custo e digite aqui o “Total material” + a “Embalagem”.
             </div>
           </div>
         )}

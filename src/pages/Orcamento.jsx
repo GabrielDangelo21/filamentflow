@@ -117,7 +117,9 @@ export default function Orcamento() {
       description:    nomes.join(' + '),
       printIds:       selectedPrints.map(p => p.id),
       materialCost:   calc.totalMaterial,
-      costTotal:      calc.totalCost,
+      // Custo da venda = tudo menos a mão de obra (a mão de obra fica no lucro)
+      costTotal:      calc.totalCost - calc.totalLabor,
+      laborCost:      calc.totalLabor,
       suggestedPrice: calc.sellingPrice,
       vatPct:         settings.vat,
     });

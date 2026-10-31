@@ -152,7 +152,7 @@ export default function Vendas() {
         <div>
           <h1 style={{ marginBottom: '0.3rem' }}>Vendas</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-            Vendas do Orçamento de venda, manuais e as da planilha Popzu
+            Vendas do Orçamento de venda, manuais e as da planilha Popzu · custo = material, falhas, energia, desgaste e embalagem (a mão de obra fica no lucro)
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
