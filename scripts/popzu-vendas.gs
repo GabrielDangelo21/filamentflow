@@ -562,6 +562,13 @@ var CUSTOS_INICIAIS = {
   "Bulbasaur (Pokémon)": [9.72, null],
   "Bulbasaur sem chicote (Pokémon)": [9.72, null],
   "Bulbasaur com chicote (Pokémon)": [9.96, null],
+  "Zoro (cicatriz) (One Piece)": [6.61, null],
+  "Zoro (espada) (One Piece)": [7.7, null],
+  "Gaara (Naruto)": [8.56, null],
+  "Rock Lee (Naruto)": [6.35, null],
+  "Lindinha (Meninas Superpoderosas)": [10.59, null],
+  "Jason Voorhees (Sexta-Feira 13)": [12.57, null],
+  "Sung Jin-Woo (Solo Leveling)": [8.09, null],
   "Charizard (Pokémon)": [14.43, null],
   "Charmander (Pokémon)": [8.55, null],
   "Charmeleon (Pokémon)": [8.65, null],
@@ -771,6 +778,39 @@ var NOVIDADES = [
   ] }
 ];
 
+// Produtos novos (aparecem no site e passam a aparecer no formulário). Cada um entra logo depois de "depois",
+// com uma linha também no Estoque (0 impressas). Se já existir, é pulado.
+var NOVOS_PRODUTOS = [
+  { nome: 'Zoro (cicatriz) (One Piece)', depois: 'Roronoa Zoro (One Piece)', preco: 17, custo: 6.61, codigo: 'one-piece-zoro-cicatriz' },
+  { nome: 'Zoro (espada) (One Piece)', depois: 'Zoro (cicatriz) (One Piece)', preco: 18, custo: 7.7, codigo: 'one-piece-zoro-espada' },
+  { nome: 'Gaara (Naruto)', depois: 'Sasuke Uchiha (Naruto)', preco: 19, custo: 8.56, codigo: 'naruto-gaara' },
+  { nome: 'Rock Lee (Naruto)', depois: 'Gaara (Naruto)', preco: 15, custo: 6.35, codigo: 'naruto-rock-lee' },
+  { nome: 'Lindinha (Meninas Superpoderosas)', depois: 'Chase (Patrulha Canina)', preco: 24, custo: 10.59, codigo: 'meninas-superpoderosas-lindinha' },
+  { nome: 'Jason Voorhees (Sexta-Feira 13)', depois: 'Lindinha (Meninas Superpoderosas)', preco: 28, custo: 12.57, codigo: 'sexta-feira-13-jason-voorhees' },
+  { nome: 'Sung Jin-Woo (Solo Leveling)', depois: 'Jason Voorhees (Sexta-Feira 13)', preco: 20, custo: 8.09, codigo: 'solo-leveling-sung-jin-woo' }
+];
+
+function adicionarProdutos_(prod, est) {
+  var feitos = [];
+  NOVOS_PRODUTOS.forEach(function (np) {
+    if (linhaDe_(prod, 1, np.nome) < 0) {
+      var r = linhaDe_(prod, 1, np.depois);
+      if (r < 0) r = prod.getLastRow();
+      prod.insertRowAfter(r);
+      prod.getRange(r + 1, 1, 1, PROD_CUSTO_GRANDE).setValues([[np.nome, 'Personagens', np.preco, '', np.custo, '']]);
+      feitos.push(np.nome);
+    }
+    if (est && linhaDe_(est, 2, np.nome) < 0) {
+      var e = linhaDe_(est, 2, np.depois);
+      if (e < 0) e = est.getLastRow();
+      est.insertRowAfter(e);
+      est.getRange(e + 1, 1, 1, 4).setValues([[np.codigo, np.nome, 'Normal', 0]]);
+      est.getRange(e, 5, 1, 2).copyTo(est.getRange(e + 1, 5, 1, 2));   // fórmulas Vendidas/Disponível
+    }
+  });
+  return feitos;
+}
+
 function linhaDe_(sh, col, valor) {
   if (sh.getLastRow() < 2) return -1;
   var v = sh.getRange(2, col, sh.getLastRow() - 1, 1).getValues();
@@ -811,6 +851,7 @@ function aplicarNovidades() {
       }
     }
   });
+  feitos = feitos.concat(adicionarProdutos_(prod, est));
   SpreadsheetApp.flush();
   atualizarFormulario();
   ss.toast(feitos.length ? 'Aplicado: ' + feitos.join(', ') : 'Nada novo para aplicar.', 'Popzu', 8);
