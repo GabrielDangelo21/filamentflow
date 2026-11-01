@@ -56,6 +56,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Popzu')
     .addItem('Abrir formulário de venda', 'mostrarLink')
     .addItem('Atualizar lista do formulário', 'atualizarFormulario')
+    .addItem('Aplicar novidades do catálogo', 'aplicarNovidades')
     .addItem('Adicionar Cartões Pokémon', 'adicionarCartoes')
     .addSeparator()
     .addItem('Configurar sincronização com o app', 'configurarSincronizacao')
@@ -559,6 +560,8 @@ var CUSTOS_INICIAIS = {
   "Brock (Pokémon)": [5.63, null],
   "Browt (Pokémon)": [12.87, null],
   "Bulbasaur (Pokémon)": [9.72, null],
+  "Bulbasaur sem chicote (Pokémon)": [9.72, null],
+  "Bulbasaur com chicote (Pokémon)": [9.96, null],
   "Charizard (Pokémon)": [14.43, null],
   "Charmander (Pokémon)": [8.55, null],
   "Charmeleon (Pokémon)": [8.65, null],
@@ -754,3 +757,61 @@ var CUSTOS_INICIAIS = {
   "Sneeuwman": [1.96, null],
   "Kerstkabouter": [1.78, null]
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Novidades do catálogo (menu Popzu → Aplicar novidades do catálogo)
+// Divide um produto em variantes: o produto antigo vira a 1ª variante (mantém código e "Impressas"
+// do Estoque) e as outras são acrescentadas logo abaixo, com o mesmo preço. Pode rodar mais de uma
+// vez: o que já foi feito é pulado. No fim atualiza a lista do formulário.
+// ─────────────────────────────────────────────────────────────────────────────
+var NOVIDADES = [
+  { antigo: 'Bulbasaur (Pokémon)', novos: [
+    { nome: 'Bulbasaur sem chicote (Pokémon)', custo: 9.72, codigo: 'pokemon-bulbassauro' },
+    { nome: 'Bulbasaur com chicote (Pokémon)', custo: 9.96, codigo: 'pokemon-bulbassauro-chicote' }
+  ] }
+];
+
+function linhaDe_(sh, col, valor) {
+  if (sh.getLastRow() < 2) return -1;
+  var v = sh.getRange(2, col, sh.getLastRow() - 1, 1).getValues();
+  for (var i = 0; i < v.length; i++) if (String(v[i][0]) === valor) return i + 2;
+  return -1;
+}
+
+function aplicarNovidades() {
+  var ss = SpreadsheetApp.getActive();
+  var prod = ss.getSheetByName('Produtos'), est = ss.getSheetByName('Estoque');
+  if (prod.getMaxColumns() < PROD_CUSTO_GRANDE) prod.insertColumnsAfter(prod.getMaxColumns(), PROD_CUSTO_GRANDE - prod.getMaxColumns());
+  var feitos = [];
+  NOVIDADES.forEach(function (nv) {
+    // Produtos
+    var r = linhaDe_(prod, 1, nv.antigo);
+    if (r > 0) {
+      var base = prod.getRange(r, 1, 1, PROD_CUSTO_GRANDE).getValues()[0];
+      prod.getRange(r, 1).setValue(nv.novos[0].nome);
+      prod.getRange(r, PROD_CUSTO).setValue(nv.novos[0].custo);
+      for (var k = nv.novos.length - 1; k >= 1; k--) {
+        if (linhaDe_(prod, 1, nv.novos[k].nome) > 0) continue;
+        prod.insertRowAfter(r);
+        prod.getRange(r + 1, 1, 1, PROD_CUSTO_GRANDE).setValues([[nv.novos[k].nome, base[1], base[2], base[3], nv.novos[k].custo, '']]);
+      }
+      feitos.push(nv.antigo);
+    }
+    // Estoque
+    if (!est) return;
+    var e = linhaDe_(est, 2, nv.antigo);
+    if (e > 0) {
+      est.getRange(e, 2).setValue(nv.novos[0].nome);
+      var tam = est.getRange(e, 3).getValue();
+      for (var j = nv.novos.length - 1; j >= 1; j--) {
+        if (linhaDe_(est, 2, nv.novos[j].nome) > 0) continue;
+        est.insertRowAfter(e);
+        est.getRange(e + 1, 1, 1, 4).setValues([[nv.novos[j].codigo, nv.novos[j].nome, tam, 0]]);
+        est.getRange(e, 5, 1, 2).copyTo(est.getRange(e + 1, 5, 1, 2));   // fórmulas Vendidas/Disponível
+      }
+    }
+  });
+  SpreadsheetApp.flush();
+  atualizarFormulario();
+  ss.toast(feitos.length ? 'Aplicado: ' + feitos.join(', ') : 'Nada novo para aplicar.', 'Popzu', 8);
+}
