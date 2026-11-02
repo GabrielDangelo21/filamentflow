@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAllFilamentsWithStock, getCategories, getBrands, adjustFilamentStock, getUnifiedOrders, isOrderPending } from '../services/storage';
-import { ColorDot, getColorFromName } from '../utils/colorUtils';
+import { getColorFromName } from '../utils/colorUtils';
 import CustomSelect from '../components/CustomSelect';
 
 const Select = CustomSelect;
@@ -231,9 +231,10 @@ const SpoolCard = ({ filament, onAjustar }) => {
   );
 };
 
-// Pedidos feitos e ainda não recebidos: não contam no estoque, servem para não pedir de novo
-const ACaminho = ({ orders, catalogo }) => {
-  if (orders.length === 0) return null;
+// Acessórios de pedidos ainda não recebidos; os filamentos a caminho aparecem no card de cada cor
+const AcessoriosACaminho = ({ orders }) => {
+  const comAcessorios = orders.filter(o => o.items.some(i => i.type === 'accessory'));
+  if (comAcessorios.length === 0) return null;
   const chip = {
     display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
     background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.25)',
@@ -245,28 +246,18 @@ const ACaminho = ({ orders, catalogo }) => {
       borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '2rem',
     }}>
       <div style={{ fontSize: '1rem', fontWeight: '700', color: INCOMING_COLOR, marginBottom: '0.75rem' }}>
-        🚚 A caminho
+        🚚 Acessórios a caminho
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {orders.map(order => (
+        {comAcessorios.map(order => (
           <div key={order.id}>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
               Pedido de {new Date(order.date?.includes('T') ? order.date : order.date + 'T12:00:00').toLocaleDateString()}{order.store ? ` · ${order.store}` : ''}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {order.items.map((item, i) => {
-                if (item.type !== 'filament') {
-                  return <span key={i} style={chip}>{item.name} × {item.quantity}</span>;
-                }
-                const f = catalogo.get(item.sku);
-                return (
-                  <span key={i} style={chip} title={f ? `${f.categoria} · SKU ${item.sku}` : `SKU ${item.sku}`}>
-                    {f && <ColorDot cor={f.cor} size={8} />}
-                    {f ? `${f.cor} · ${f.categoria}` : item.sku}
-                    <span style={{ color: 'var(--text-muted)' }}>{formatKg(Number(item.weightGrams) || 0)}</span>
-                  </span>
-                );
-              })}
+              {order.items.filter(i => i.type === 'accessory').map((item, i) => (
+                <span key={i} style={chip}>{item.name} × {item.quantity}</span>
+              ))}
             </div>
           </div>
         ))}
@@ -565,7 +556,7 @@ export default function Estoque() {
         )}
       </div>
 
-      <ACaminho orders={pedidosACaminho} catalogo={new Map(filaments.map(f => [f.sku, f]))} />
+      <AcessoriosACaminho orders={pedidosACaminho} />
 
       {/* Shelves / Cabinet */}
       {filaments.length === 0 ? (
