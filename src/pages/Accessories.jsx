@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getUnifiedOrders, getAccCategories, saveAccCategory, deleteAccCategory, saveAllAccCategories } from '../services/storage';
+import { getUnifiedOrders, getAccCategories, saveAccCategory, deleteAccCategory, saveAllAccCategories, isOrderPending } from '../services/storage';
 
 const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose }) => {
   const [newItem, setNewItem] = useState('');
@@ -93,7 +93,7 @@ const Accessories = () => {
   const allAccEntries = orders.flatMap(order =>
     order.items
       .filter(i => i.type === 'accessory')
-      .map(i => ({ ...i, orderDate: order.date, orderStore: order.store, orderId: order.id }))
+      .map(i => ({ ...i, orderDate: order.date, orderStore: order.store, orderId: order.id, pending: isOrderPending(order) }))
   ).reverse();
 
   const filteredEntries = filterCategory
@@ -219,7 +219,10 @@ const Accessories = () => {
               filteredEntries.map((item, idx) => (
                 <tr key={`${item.orderId}-${idx}`}>
                   <td>{formatDate(item.orderDate)}</td>
-                  <td style={{ fontWeight: 600 }}>{item.name}</td>
+                  <td style={{ fontWeight: 600 }}>
+                    {item.name}
+                    {item.pending && <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#60A5FA', whiteSpace: 'nowrap' }}>🚚 A caminho</div>}
+                  </td>
                   <td>
                     <span style={{
                       background: 'rgba(139,92,246,0.15)', color: 'var(--secondary)',

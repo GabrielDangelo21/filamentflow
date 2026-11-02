@@ -398,6 +398,7 @@ const Dashboard = () => {
                         {isEmpty ? 'ESGOTADO' : (f.currentStock / 1000).toFixed(2).replace('.', ',') + 'kg'}
                       </div>
                       {!isEmpty && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>&lt; 500g restantes</div>}
+                      {f.incomingGrams > 0 && <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#60A5FA' }}>🚚 +{(f.incomingGrams / 1000).toFixed(2).replace('.', ',')}kg a caminho</div>}
                     </div>
                   </div>
                 );

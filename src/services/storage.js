@@ -63,7 +63,9 @@ export const deleteFilament = (id) => {
 };
 
 // --- UNIFIED ORDERS ---
-// Each order: { id, date, store, shipping, otherCosts, createdAt, items: [...] }
+// Each order: { id, date, store, shipping, otherCosts, createdAt, pending, receivedAt, items: [...] }
+// pending = true: comprado mas ainda não recebido (não conta no estoque nem no preço por grama).
+// Pedidos sem o campo são antigos e contam como recebidos.
 // Each item: { type: 'filament', sku, weightGrams, price }
 //         OR { type: 'accessory', name, category, quantity, price }
 
@@ -99,9 +101,19 @@ export const updateUnifiedOrder = (order) => {
   const orders = getUnifiedOrders();
   const idx = orders.findIndex(o => o.id === order.id);
   if (idx >= 0) {
-    orders[idx] = order;
+    orders[idx] = { ...orders[idx], ...order };
     saveToStorage(STORAGE_KEYS.UNIFIED_ORDERS, orders);
   }
+};
+
+export const isOrderPending = (order) => order.pending === true;
+
+export const markOrderReceived = (id) => {
+  updateUnifiedOrder({ id, pending: false, receivedAt: new Date().toISOString() });
+};
+
+export const markOrderPending = (id) => {
+  updateUnifiedOrder({ id, pending: true, receivedAt: null });
 };
 
 export const deleteUnifiedOrder = (id) => {
@@ -170,7 +182,7 @@ export const getFilamentStock = (sku) => {
   const prints = getPrints();
 
   let totalIn = 0;
-  orders.forEach(order => {
+  orders.filter(o => !isOrderPending(o)).forEach(order => {
     order.items.filter(i => i.type === 'filament' && i.sku === sku)
       .forEach(i => { totalIn += Number(i.weightGrams) || 0; });
   });
@@ -188,6 +200,12 @@ export const getFilamentStock = (sku) => {
   return totalIn - totalOut + totalAdjust;
 };
 
+// Gramas compradas e ainda não recebidas
+export const getFilamentIncoming = (sku) =>
+  getUnifiedOrders().filter(isOrderPending).reduce((acc, order) =>
+    acc + order.items.filter(i => i.type === 'filament' && i.sku === sku)
+      .reduce((s, i) => s + (Number(i.weightGrams) || 0), 0), 0);
+
 // --- STOCK ADJUSTMENTS ---
 // Correções manuais do estoque (ex.: pesar o carretel). Guardam só a diferença em gramas,
 // por isso não mexem em pedidos, impressões nem no preço por grama.
@@ -204,7 +222,7 @@ export const adjustFilamentStock = (sku, realGrams) => {
 };
 
 export const getAllFilamentsWithStock = () => {
-  return getFilaments().map(f => ({ ...f, currentStock: getFilamentStock(f.sku) }));
+  return getFilaments().map(f => ({ ...f, currentStock: getFilamentStock(f.sku), incomingGrams: getFilamentIncoming(f.sku) }));
 };
 
 // --- CATEGORIES ---
@@ -248,7 +266,7 @@ export const deleteBrand = (brand) => {
 export const saveAllBrands = (brands) => saveToStorage(STORAGE_KEYS.BRANDS, brands);
 
 // --- COST CALCULATION ---
-// Preço médio por grama de cada SKU, somando TODOS os itens com preço de todos os pedidos
+// Preço médio por grama de cada SKU, somando TODOS os itens com preço de todos os pedidos recebidos
 // (inclusive vários carretéis do mesmo SKU no mesmo pedido).
 // Fica em cache enquanto os pedidos guardados não mudarem, para não reler tudo a cada cálculo.
 let priceCache = { raw: null, map: new Map() };
@@ -257,7 +275,7 @@ const getPriceMap = () => {
   const raw = localStorage.getItem(STORAGE_KEYS.UNIFIED_ORDERS);
   if (raw === priceCache.raw) return priceCache.map;
   const totals = new Map();
-  getUnifiedOrders().forEach(order => {
+  getUnifiedOrders().filter(o => !isOrderPending(o)).forEach(order => {
     (order.items || [])
       .filter(i => i.type === 'filament' && Number(i.price) > 0)
       .forEach(i => {
@@ -283,7 +301,7 @@ export const getAveragePricePerGram = (categoria = null) => {
   const categoriaPorSku = new Map(getFilaments().map(f => [f.sku, f.categoria]));
   let totalCost = 0;
   let totalGrams = 0;
-  getUnifiedOrders().forEach(order => {
+  getUnifiedOrders().filter(o => !isOrderPending(o)).forEach(order => {
     order.items
       .filter(i => i.type === 'filament' && Number(i.price) > 0)
       .filter(i => !categoria || categoriaPorSku.get(i.sku) === categoria)
@@ -307,7 +325,7 @@ export const getPrintCost = (print) => {
 export const getAccessoriesByCategory = (category) => {
   const orders = getUnifiedOrders();
   const names = new Set();
-  orders.forEach(order => {
+  orders.filter(o => !isOrderPending(o)).forEach(order => {
     order.items
       .filter(i => i.type === 'accessory' && i.category === category)
       .forEach(i => names.add(i.name));

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAllFilamentsWithStock, getCategories, getBrands, adjustFilamentStock, getUnifiedOrders } from '../services/storage';
-import { getColorFromName } from '../utils/colorUtils';
+import { getAllFilamentsWithStock, getCategories, getBrands, adjustFilamentStock, getUnifiedOrders, isOrderPending } from '../services/storage';
+import { ColorDot, getColorFromName } from '../utils/colorUtils';
 import CustomSelect from '../components/CustomSelect';
 
 const Select = CustomSelect;
@@ -8,6 +8,9 @@ const Select = CustomSelect;
 const LOW_STOCK = 250;
 const MEDIUM_STOCK = 500;
 const FULL_SPOOL = 1000;
+const INCOMING_COLOR = '#60A5FA';
+
+const formatKg = (grams) => `${(grams / 1000).toFixed(2).replace('.', ',')}kg`;
 
 const getStockStatus = (stock) => {
   if (stock <= 0) return { label: 'Vazio', color: '#7F1D1D', textColor: '#F87171', badge: '#7F1D1D' };
@@ -88,7 +91,7 @@ const SpoolCard = ({ filament, onAjustar }) => {
 
   return (
     <div
-      title={`${filament.marca} · ${filament.cor}\nSKU: ${filament.sku}\nCategoria: ${filament.categoria}\nEstoque: ${filament.currentStock}g\nClique para ajustar o estoque`}
+      title={`${filament.marca} · ${filament.cor}\nSKU: ${filament.sku}\nCategoria: ${filament.categoria}\nEstoque: ${filament.currentStock}g${filament.incomingGrams > 0 ? `\nA caminho: ${filament.incomingGrams}g` : ''}\nClique para ajustar o estoque`}
       onClick={() => onAjustar(filament)}
       onMouseEnter={e => {
         e.currentTarget.style.transform = 'translateY(-6px)';
@@ -217,6 +220,56 @@ const SpoolCard = ({ filament, onAjustar }) => {
             transition: 'width 0.6s ease',
           }} />
         </div>
+
+        {filament.incomingGrams > 0 && (
+          <div style={{ fontSize: '0.66rem', fontWeight: '700', color: INCOMING_COLOR, marginTop: '7px', whiteSpace: 'nowrap' }}>
+            🚚 +{formatKg(filament.incomingGrams)} a caminho
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Pedidos feitos e ainda não recebidos: não contam no estoque, servem para não pedir de novo
+const ACaminho = ({ orders, catalogo }) => {
+  if (orders.length === 0) return null;
+  const chip = {
+    display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+    background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.25)',
+    borderRadius: '6px', padding: '3px 8px', fontSize: '0.78rem',
+  };
+  return (
+    <div style={{
+      background: 'rgba(96,165,250,0.05)', border: '1px solid rgba(96,165,250,0.3)',
+      borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '2rem',
+    }}>
+      <div style={{ fontSize: '1rem', fontWeight: '700', color: INCOMING_COLOR, marginBottom: '0.75rem' }}>
+        🚚 A caminho
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {orders.map(order => (
+          <div key={order.id}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+              Pedido de {new Date(order.date?.includes('T') ? order.date : order.date + 'T12:00:00').toLocaleDateString()}{order.store ? ` · ${order.store}` : ''}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {order.items.map((item, i) => {
+                if (item.type !== 'filament') {
+                  return <span key={i} style={chip}>{item.name} × {item.quantity}</span>;
+                }
+                const f = catalogo.get(item.sku);
+                return (
+                  <span key={i} style={chip} title={f ? `${f.categoria} · SKU ${item.sku}` : `SKU ${item.sku}`}>
+                    {f && <ColorDot cor={f.cor} size={8} />}
+                    {f ? `${f.cor} · ${f.categoria}` : item.sku}
+                    <span style={{ color: 'var(--text-muted)' }}>{formatKg(Number(item.weightGrams) || 0)}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -336,11 +389,14 @@ export default function Estoque() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterBrand, setFilterBrand] = useState('all');
   const [ajustando, setAjustando] = useState(null);
+  const [pedidosACaminho, setPedidosACaminho] = useState([]);
 
   // Filamentos já comprados aparecem mesmo a 0g (para lembrar de voltar a pedir);
   // os que nunca foram comprados ficam escondidos.
   const loadFilaments = () => {
-    const comprados = new Set(getUnifiedOrders().flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
+    const pedidos = getUnifiedOrders();
+    setPedidosACaminho(pedidos.filter(isOrderPending).sort((a, b) => new Date(a.date) - new Date(b.date)));
+    const comprados = new Set(pedidos.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
     setFilaments(getAllFilamentsWithStock().filter(f => f.currentStock > 0 || comprados.has(f.sku)));
   };
 
@@ -361,7 +417,8 @@ export default function Estoque() {
       || (filterStatus === 'instock' && f.currentStock > 0)
       || (filterStatus === 'ok' && f.currentStock >= MEDIUM_STOCK)
       || (filterStatus === 'low' && f.currentStock > 0 && f.currentStock < MEDIUM_STOCK)
-      || (filterStatus === 'empty' && f.currentStock <= 0);
+      || (filterStatus === 'empty' && f.currentStock <= 0)
+      || (filterStatus === 'incoming' && f.incomingGrams > 0);
     return matchSearch && matchCat && matchBrand && matchStatus;
   });
 
@@ -377,6 +434,7 @@ export default function Estoque() {
   const lowStock = filaments.filter(f => f.currentStock > 0 && f.currentStock < MEDIUM_STOCK).length;
   const empty = filaments.filter(f => f.currentStock <= 0).length;
   const totalGrams = filaments.reduce((s, f) => s + Math.max(0, f.currentStock), 0);
+  const incoming = filaments.filter(f => f.incomingGrams > 0).length;
 
   const inputStyle = {
     background: 'var(--card-bg)',
@@ -423,6 +481,7 @@ export default function Estoque() {
           { label: 'Em estoque', value: inStock, color: '#34D399', status: 'instock' },
           { label: 'Estoque baixo', value: lowStock, color: '#FCD34D', status: 'low' },
           { label: 'Vazios', value: empty, color: '#F87171', status: 'empty' },
+          { label: 'A caminho', value: incoming, color: INCOMING_COLOR, status: 'incoming' },
           { label: 'Total em estoque', value: `${(totalGrams / 1000).toFixed(2).replace('.', ',')}kg`, color: 'var(--text-muted)', status: 'instock' },
         ].map(stat => {
           const ativo = filterStatus === stat.status;
@@ -486,6 +545,7 @@ export default function Estoque() {
             { value: 'ok', label: `OK (≥ ${MEDIUM_STOCK}g)` },
             { value: 'low', label: `Baixo (< ${MEDIUM_STOCK}g)` },
             { value: 'empty', label: 'Vazio (0g)' },
+            { value: 'incoming', label: 'A caminho' },
           ]}
         />
 
@@ -504,6 +564,8 @@ export default function Estoque() {
           </button>
         )}
       </div>
+
+      <ACaminho orders={pedidosACaminho} catalogo={new Map(filaments.map(f => [f.sku, f]))} />
 
       {/* Shelves / Cabinet */}
       {filaments.length === 0 ? (

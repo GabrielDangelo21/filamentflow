@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getFilaments, getUnifiedOrders, saveUnifiedOrder, updateUnifiedOrder, deleteUnifiedOrder, getAccCategories } from '../services/storage';
+import { getFilaments, getUnifiedOrders, saveUnifiedOrder, updateUnifiedOrder, deleteUnifiedOrder, getAccCategories, isOrderPending, markOrderReceived, markOrderPending } from '../services/storage';
 import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
 import MaskedNumberInput from '../components/MaskedNumberInput';
 
@@ -23,6 +23,8 @@ const createEmptyAccessoryItem = (defaultCategory = '') => ({
   showNameSuggestions: false,
   nameHighlightedIndex: -1
 });
+
+const PENDING_COLOR = '#60A5FA';
 
 const Orders = () => {
   const [filaments, setFilaments] = useState([]);
@@ -74,7 +76,7 @@ const Orders = () => {
     getUnifiedOrders().sort((a, b) => {
       const da = a.date?.includes('T') ? new Date(a.date) : new Date(a.date + 'T12:00:00');
       const db = b.date?.includes('T') ? new Date(b.date) : new Date(b.date + 'T12:00:00');
-      return db - da;
+      return (isOrderPending(b) - isOrderPending(a)) || (db - da);
     })
   );
 
@@ -266,8 +268,8 @@ const Orders = () => {
       updateUnifiedOrder({ ...orderData, id: editingOrderId });
       setSuccessMessage('✓ Pedido atualizado!');
     } else {
-      saveUnifiedOrder(orderData);
-      setSuccessMessage('✓ Pedido registrado!');
+      saveUnifiedOrder({ ...orderData, pending: true });
+      setSuccessMessage('✓ Pedido registrado como a caminho!');
     }
 
     resetForm();
@@ -335,6 +337,20 @@ const Orders = () => {
   const handleDelete = (id) => {
     if (confirm('Excluir este pedido? O estoque de filamentos será recalculado.')) {
       deleteUnifiedOrder(id);
+      loadData();
+    }
+  };
+
+  const handleReceived = (id) => {
+    markOrderReceived(id);
+    loadData();
+    setSuccessMessage('✓ Pedido recebido! Itens disponíveis no estoque.');
+    setTimeout(() => setSuccessMessage(''), 1500);
+  };
+
+  const handleBackToPending = (id) => {
+    if (confirm('Marcar este pedido como ainda não recebido? Os itens saem do estoque até você clicar em Recebido.')) {
+      markOrderPending(id);
       loadData();
     }
   };
@@ -759,6 +775,10 @@ const Orders = () => {
                 const itemCount = order.items.length;
                 const orderTotal = order.items.reduce((acc, i) => acc + (i.price != null ? Number(i.price) : 0), 0);
                 const hasAnyPrice = order.items.some(i => i.price != null);
+                const pending = isOrderPending(order);
+                const groupBorder = pending
+                  ? `3px solid ${PENDING_COLOR}`
+                  : (itemCount > 1 ? '3px solid rgba(255,255,255,0.1)' : '3px solid transparent');
                 return (
                   <React.Fragment key={order.id}>
                     {order.items.map((item, itemIndex) => {
@@ -767,7 +787,7 @@ const Orders = () => {
                       const filament = item.type === 'filament' ? filaments.find(f => f.sku === item.sku) : null;
                       return (
                         <tr key={`${order.id}-${itemIndex}`} style={{
-                          borderLeft: itemCount > 1 ? '3px solid rgba(255,255,255,0.1)' : '3px solid transparent',
+                          borderLeft: groupBorder,
                           borderBottom: isLast ? 'none' : '1px dashed rgba(255,255,255,0.04)'
                         }}>
                           <td style={{ verticalAlign: 'top', paddingTop: '0.85rem' }}>
@@ -776,6 +796,11 @@ const Orders = () => {
                                 <div>{formatDate(order.date)}</div>
                                 {order.store && (
                                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{order.store}</div>
+                                )}
+                                {pending ? (
+                                  <div style={{ marginTop: '0.3rem', fontSize: '0.72rem', fontWeight: 700, color: PENDING_COLOR, whiteSpace: 'nowrap' }}>🚚 A caminho</div>
+                                ) : order.receivedAt && (
+                                  <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--success)', whiteSpace: 'nowrap' }}>Recebido em {formatDate(order.receivedAt)}</div>
                                 )}
                                 {hasExtras && (
                                   <div style={{ marginTop: '0.3rem', fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
@@ -834,7 +859,15 @@ const Orders = () => {
                           </td>
                           <td>
                             {isFirst ? (
-                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {pending ? (
+                                  <button className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                    onClick={() => handleReceived(order.id)}>✓ Recebido</button>
+                                ) : (
+                                  <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                                    title="Voltar a marcar como a caminho"
+                                    onClick={() => handleBackToPending(order.id)}>Não recebido</button>
+                                )}
                                 <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                                   onClick={() => handleEdit(order)}>Editar</button>
                                 <button className="btn btn-danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
@@ -846,7 +879,7 @@ const Orders = () => {
                       );
                     })}
                     <tr style={{
-                      borderLeft: itemCount > 1 ? '3px solid rgba(255,255,255,0.1)' : '3px solid transparent',
+                      borderLeft: groupBorder,
                       borderBottom: '2px solid rgba(255,255,255,0.08)',
                       background: 'rgba(255,255,255,0.03)'
                     }}>
