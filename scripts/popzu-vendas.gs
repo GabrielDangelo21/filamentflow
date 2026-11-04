@@ -57,6 +57,7 @@ function onOpen() {
     .addItem('Abrir formulário de venda', 'mostrarLink')
     .addItem('Atualizar lista do formulário', 'atualizarFormulario')
     .addItem('Aplicar novidades do catálogo', 'aplicarNovidades')
+    .addItem('Atualizar Site Popzu para 70%', 'atualizarSite70')
     .addItem('Adicionar Cartões Pokémon', 'adicionarCartoes')
     .addSeparator()
     .addItem('Configurar sincronização com o app', 'configurarSincronizacao')
@@ -706,49 +707,49 @@ var CUSTOS_INICIAIS = {
   "Snoopy (Snoopy)": [5.59, null],
   "Smurf (Smurfs)": [5.13, null],
   "Chase (Patrulha Canina)": [9.6, null],
-  // Originais do Whale (Site Popzu): [Pequeno = 50%, Grande = 100%]
-  "Baby T-Rex": [2.78, 10.77],
-  "Baby Triceratops": [3.18, 13.49],
-  "Baby Spinosaurus": [3.56, 14.27],
-  "Baby Brachiosaurus": [3.15, 12.48],
-  "Baby Ankylosaurus": [3.17, 12.84],
-  "Baby Carnotaurus": [3.21, 12.83],
-  "Cute Corgi": [2.74, 11.32],
-  "Cute Husky": [2.71, 15.25],
-  "Cute Bulldog": [2.73, 11.57],
-  "Dachshund Dog": [1.86, 6.71],
-  "Yorkshire Dog": [3.05, 12.69],
-  "Rottweiler Dog": [4.21, 18.36],
-  "Fat Capybara": [2.66, 10.7],
-  "Derp Capybara": [2.66, 11.05],
-  "Hamster": [1.44, 4.95],
-  "Hamster Flexi": [1.48, 4.99],
-  "Derp Monkey": [2.73, 11.01],
-  "Snowy Owl": [2.87, 12.89],
-  "Mochi Octopus": [4.46, 18.71],
-  "Derp Octopus": [4.72, 20.16],
-  "Mochi Seal": [2.04, 9.02],
-  "Derp Seal": [2.4, 9.65],
-  "Cute Dolphin": [2.2, 8.9],
-  "Clownfish": [2.98, 12.03],
-  "Blue Tang Fish": [4.49, 19.99],
-  "Baby Mermaid": [2.81, 11.68],
-  "Pumpkin Killer": [3.77, 21.25],
-  "Baby Vampire": [4.07, 17.55],
-  "Baby Reaper": [3.54, 14.63],
-  "Pumpboo": [4.01, 17.41],
-  "Pumpkinaut": [3.26, 12.71],
-  "Derp Pumpkin": [3.39, 14.7],
-  "The Mummy": [2.12, 9.68],
-  "Derp Werewolf": [2.45, 9.68],
-  "Baby Werewolf": [4.05, 17.3],
-  "Alien": [1.31, 5.45],
-  "Alien Baby": [2.1, 8.33],
-  "Alien Women": [1.51, 5.24],
-  "Astronaut Boy": [2.35, 8.86],
-  "Super Nova": [2.39, 9.41],
-  "Luna": [2.32, 9.0],
-  "Derp Dragon": [2.73, 10.87],
+  // Originais do Whale (Site Popzu): [Pequeno = 70%, Grande = 100%]
+  "Baby T-Rex": [5.18, 10.77],
+  "Baby Triceratops": [6.12, 13.49],
+  "Baby Spinosaurus": [6.8, 14.27],
+  "Baby Brachiosaurus": [5.91, 12.48],
+  "Baby Ankylosaurus": [5.97, 12.84],
+  "Baby Carnotaurus": [6, 12.83],
+  "Cute Corgi": [5.25, 11.32],
+  "Cute Husky": [7.01, 15.25],
+  "Cute Bulldog": [5.22, 11.57],
+  "Dachshund Dog": [3.3, 6.71],
+  "Yorkshire Dog": [5.91, 12.69],
+  "Rottweiler Dog": [8.37, 18.36],
+  "Fat Capybara": [4.94, 10.7],
+  "Derp Capybara": [5.11, 11.05],
+  "Hamster": [2.48, 4.95],
+  "Hamster Flexi": [2.5, 4.99],
+  "Derp Monkey": [5.24, 11.01],
+  "Snowy Owl": [5.69, 12.89],
+  "Mochi Octopus": [8.52, 18.71],
+  "Derp Octopus": [9.07, 20.16],
+  "Mochi Seal": [3.95, 9.02],
+  "Derp Seal": [4.53, 9.65],
+  "Cute Dolphin": [4.12, 8.9],
+  "Clownfish": [5.66, 12.03],
+  "Blue Tang Fish": [8.87, 19.99],
+  "Baby Mermaid": [8.5, null],
+  "Pumpkin Killer": [9.48, 21.25],
+  "Baby Vampire": [8.4, 17.55],
+  "Baby Reaper": [6.88, 14.63],
+  "Pumpboo": [7.8, 17.41],
+  "Pumpkinaut": [6.01, 12.71],
+  "Derp Pumpkin": [6.51, 14.7],
+  "The Mummy": [4.42, 9.68],
+  "Derp Werewolf": [4.57, 9.68],
+  "Baby Werewolf": [7.97, 17.3],
+  "Alien": [2.61, 5.45],
+  "Alien Baby": [2.02, 3.86],
+  "Alien Women": [2.62, 5.24],
+  "Astronaut Boy": [4.24, 8.86],
+  "Super Nova": [4.57, 9.41],
+  "Luna": [4.3, 9],
+  "Derp Dragon": [5.13, 10.87],
   "The Elemental Dragon": [null, 5.25],
   // Sabre Design (Natal) — preço único
   "Kerstboomhanger": [0.74, null],
@@ -855,4 +856,78 @@ function aplicarNovidades() {
   SpreadsheetApp.flush();
   atualizarFormulario();
   ss.toast(feitos.length ? 'Aplicado: ' + feitos.join(', ') : 'Nada novo para aplicar.', 'Popzu', 8);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Site Popzu (Originais do Whale): o tamanho "Pequeno" passa de 50% para 70%
+// Menu Popzu → Atualizar Site Popzu para 70%. Troca, na aba Produtos, o preço e o custo do Pequeno
+// (70%) e do Grande (100%). Preços com IVA, como já estavam. As vendas antigas não mudam
+// (o custo delas fica gravado na coluna O da aba Vendas). null = mantém o valor atual da planilha.
+// ─────────────────────────────────────────────────────────────────────────────
+// { produto: [custo 70%, preço 70% com IVA, custo 100%, preço 100% com IVA] }
+var SITE_70 = {
+  "Baby T-Rex": [5.18, 16, 10.77, 29],
+  "Baby Triceratops": [6.12, 18, 13.49, 34],
+  "Baby Spinosaurus": [6.8, 19, 14.27, 39],
+  "Baby Brachiosaurus": [5.91, 17, 12.48, 35],
+  "Baby Ankylosaurus": [5.97, 18, 12.84, 35],
+  "Baby Carnotaurus": [6, 18, 12.83, 35],
+  "Cute Corgi": [5.25, 15, 11.32, 30],
+  "Cute Husky": [7.01, 19, 15.25, 38],
+  "Cute Bulldog": [5.22, 15, 11.57, 30],
+  "Dachshund Dog": [3.3, 11, 6.71, 20],
+  "Yorkshire Dog": [5.91, 17, 12.69, 35],
+  "Rottweiler Dog": [8.37, 22, 18.36, 45],
+  "Fat Capybara": [4.94, 13, 10.7, 26],
+  "Derp Capybara": [5.11, 13, 11.05, 26],
+  "Hamster": [2.48, 8, 4.95, 16],
+  "Hamster Flexi": [2.5, 10, 4.99, 14],
+  "Derp Monkey": [5.24, 15, 11.01, 29],
+  "Snowy Owl": [5.69, 15, 12.89, 31],
+  "Mochi Octopus": [8.52, 21, 18.71, 44],
+  "Derp Octopus": [9.07, 21, 20.16, 46],
+  "Mochi Seal": [3.95, 10, 9.02, 22],
+  "Derp Seal": [4.53, 13, 9.65, 26],
+  "Cute Dolphin": [4.12, 12, 8.9, 23],
+  "Clownfish": [5.66, 15, 12.03, 30],
+  "Blue Tang Fish": [8.87, 25, 19.99, 53],
+  "Baby Mermaid": [8.5, 24, null, null],
+  "Pumpkin Killer": [9.48, 27, 21.25, 55],
+  "Baby Vampire": [8.4, 24, 17.55, 48],
+  "Baby Reaper": [6.88, 19, 14.63, 37],
+  "Pumpboo": [7.8, 21, 17.41, 42],
+  "Pumpkinaut": [6.01, 18, 12.71, 37],
+  "Derp Pumpkin": [6.51, 17, 14.7, 34],
+  "The Mummy": [4.42, 11, 9.68, 22],
+  "Derp Werewolf": [4.57, 13, 9.68, 27],
+  "Baby Werewolf": [7.97, 22, 17.3, 42],
+  "Alien": [2.61, 7, 5.45, 15],
+  "Alien Baby": [2.02, 6, 3.86, 12],
+  "Alien Women": [2.62, 7, 5.24, 15],
+  "Astronaut Boy": [4.24, 15, 8.86, 26],
+  "Super Nova": [4.57, 13, 9.41, 26],
+  "Luna": [4.3, 12, 9, 26],
+  "Derp Dragon": [5.13, 13, 10.87, 32],
+  "The Elemental Dragon": [null, null, 5.25, 17]
+};
+
+function atualizarSite70() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName('Produtos');
+  if (sh.getMaxColumns() < PROD_CUSTO_GRANDE) sh.insertColumnsAfter(sh.getMaxColumns(), PROD_CUSTO_GRANDE - sh.getMaxColumns());
+  var v = sh.getRange(2, 1, sh.getLastRow() - 1, PROD_CUSTO_GRANDE).getValues();
+  var n = 0, faltam = [];
+  var novos = v.map(function (r) {
+    if (r[1] !== 'Site Popzu') return r.slice(2);
+    var x = SITE_70[String(r[0])];
+    if (!x) { faltam.push(r[0]); return r.slice(2); }
+    n++;
+    var usar = function (novo, atual) { return novo === null ? atual : novo; };
+    // colunas C, D, E, F = preço pequeno, preço grande, custo pequeno, custo grande
+    return [usar(x[1], r[2]), usar(x[3], r[3]), usar(x[0], r[4]), usar(x[2], r[5])];
+  });
+  sh.getRange(2, 3, novos.length, 4).setValues(novos);
+  var msg = n + ' produtos do Site Popzu atualizados (Pequeno = 70%).' + (faltam.length ? ' Sem dados: ' + faltam.join(', ') : '');
+  console.log(msg);
+  ss.toast(msg, 'Popzu', 10);
 }
