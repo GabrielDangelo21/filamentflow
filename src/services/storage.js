@@ -207,34 +207,43 @@ export const deletePrint = (id) => {
 };
 
 // --- STOCK CALCULATION ---
-export const getFilamentStock = (sku) => {
-  const orders = getUnifiedOrders();
-  const prints = getPrints();
+// Calcula o estoque de TODOS os SKUs numa passada só (pedidos, impressões e ajustes lidos uma vez).
+// Devolve { [sku]: { in, out, adjust, incoming } } em gramas.
+const calcularEstoque = () => {
+  const porSku = new Map();
+  const de = (sku) => {
+    const k = String(sku);
+    if (!porSku.has(k)) porSku.set(k, { in: 0, out: 0, adjust: 0, incoming: 0 });
+    return porSku.get(k);
+  };
 
-  let totalIn = 0;
-  orders.filter(o => !isOrderPending(o)).forEach(order => {
-    order.items.filter(i => i.type === 'filament' && i.sku === sku)
-      .forEach(i => { totalIn += Number(i.weightGrams) || 0; });
+  getUnifiedOrders().forEach(order => {
+    const campo = isOrderPending(order) ? 'incoming' : 'in';
+    order.items.filter(i => i.type === 'filament')
+      .forEach(i => { de(i.sku)[campo] += Number(i.weightGrams) || 0; });
   });
 
-  let totalOut = 0;
-  prints.forEach(print => {
-    const item = print.filamentsUsed.find(f => f.sku === sku);
-    if (item) totalOut += Number(item.weightGrams) || 0;
+  getPrints().forEach(print => {
+    // Como antes: só a primeira linha de cada SKU numa impressão entra na saída
+    const vistos = new Set();
+    (print.filamentsUsed || []).forEach(f => {
+      if (vistos.has(f.sku)) return;
+      vistos.add(f.sku);
+      de(f.sku).out += Number(f.weightGrams) || 0;
+    });
   });
 
-  const totalAdjust = getStockAdjustments()
-    .filter(a => a.sku === sku)
-    .reduce((acc, a) => acc + (Number(a.deltaGrams) || 0), 0);
-
-  return totalIn - totalOut + totalAdjust;
+  getStockAdjustments().forEach(a => { de(a.sku).adjust += Number(a.deltaGrams) || 0; });
+  return porSku;
 };
 
+const VAZIO = { in: 0, out: 0, adjust: 0, incoming: 0 };
+const saldo = (t) => t.in - t.out + t.adjust;
+
+export const getFilamentStock = (sku) => saldo(calcularEstoque().get(String(sku)) || VAZIO);
+
 // Gramas compradas e ainda não recebidas
-export const getFilamentIncoming = (sku) =>
-  getUnifiedOrders().filter(isOrderPending).reduce((acc, order) =>
-    acc + order.items.filter(i => i.type === 'filament' && i.sku === sku)
-      .reduce((s, i) => s + (Number(i.weightGrams) || 0), 0), 0);
+export const getFilamentIncoming = (sku) => (calcularEstoque().get(String(sku)) || VAZIO).incoming;
 
 // --- STOCK ADJUSTMENTS ---
 // Correções manuais do estoque (ex.: pesar o carretel). Guardam só a diferença em gramas,
@@ -252,7 +261,11 @@ export const adjustFilamentStock = (sku, realGrams) => {
 };
 
 export const getAllFilamentsWithStock = () => {
-  return getFilaments().map(f => ({ ...f, currentStock: getFilamentStock(f.sku), incomingGrams: getFilamentIncoming(f.sku) }));
+  const estoque = calcularEstoque();
+  return getFilaments().map(f => {
+    const t = estoque.get(f.sku) || VAZIO;
+    return { ...f, currentStock: saldo(t), incomingGrams: t.incoming };
+  });
 };
 
 // --- CATEGORIES ---
