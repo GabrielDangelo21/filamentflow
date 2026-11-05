@@ -14,9 +14,39 @@ const STORAGE_KEYS = {
 };
 
 // --- GENERIC HELPERS ---
-const getFromStorage = (key) => {
+// Chaves que estavam corrompidas nesta sessão (o Dashboard mostra um aviso)
+const chavesCorrompidas = [];
+export const getChavesCorrompidas = () => [...chavesCorrompidas];
+
+// Lê uma chave em JSON sem travar o app. Se o conteúdo estiver corrompido (ou com formato errado),
+// guarda uma cópia em "<chave>_corrompido_<data>" — para a próxima gravação não apagar o que havia —
+// e devolve o valor padrão.
+const lerJSON = (key, padrao, valido = () => true) => {
   const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : [];
+  if (data === null || data === '') return padrao;
+  try {
+    const valor = JSON.parse(data);
+    if (valido(valor)) return valor;
+  } catch { /* trata abaixo */ }
+  const copia = `${key}_corrompido_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+  try {
+    localStorage.setItem(copia, data);
+    localStorage.removeItem(key);
+  } catch { /* sem espaço para a cópia: mantém a chave original intacta */ }
+  console.error(`FilamentFlow: dados corrompidos em "${key}". Cópia guardada em "${copia}".`);
+  if (!chavesCorrompidas.includes(key)) chavesCorrompidas.push(key);
+  return padrao;
+};
+
+const getFromStorage = (key) => lerJSON(key, [], Array.isArray);
+
+// Lê todas as listas na abertura do app, para os dados corrompidos serem detectados
+// (e avisados no Dashboard) antes de qualquer tela gravar por cima.
+const CHAVES_LISTA = ['FILAMENTS', 'UNIFIED_ORDERS', 'PRINTS', 'CATEGORIES', 'BRANDS', 'ACC_CATEGORIES', 'PROXIMAS', 'STOCK_ADJUSTMENTS', 'SALES'];
+export const verificarDados = () => {
+  CHAVES_LISTA.forEach(k => lerJSON(STORAGE_KEYS[k], null, Array.isArray));
+  ['POPZU_SYNC', 'POPZU_CUSTOS', 'PRICE_SETTINGS']
+    .forEach(k => lerJSON(STORAGE_KEYS[k], null, v => v === null || (typeof v === 'object' && !Array.isArray(v))));
 };
 
 const saveToStorage = (key, data) => {
@@ -229,9 +259,9 @@ export const getAllFilamentsWithStock = () => {
 const DEFAULT_CATEGORIES = ['PLA Basic', 'PLA Matte', 'PLA Silk', 'PETG Basic', 'PETG CF', 'ABS', 'TPU', 'PVA'];
 
 export const getCategories = () => {
-  const cats = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
-  if (!cats) { saveToStorage(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES); return DEFAULT_CATEGORIES; }
-  return JSON.parse(cats);
+  const cats = lerJSON(STORAGE_KEYS.CATEGORIES, null, Array.isArray);
+  if (!cats) { saveToStorage(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES); return [...DEFAULT_CATEGORIES]; }
+  return cats;
 };
 
 export const saveCategory = (category) => {
@@ -249,9 +279,9 @@ export const saveAllCategories = (cats) => saveToStorage(STORAGE_KEYS.CATEGORIES
 const DEFAULT_BRANDS = ['Sunlu', 'Bambu Lab', 'eSUN', 'Creality', 'Polymaker'];
 
 export const getBrands = () => {
-  const brands = localStorage.getItem(STORAGE_KEYS.BRANDS);
-  if (!brands) { saveToStorage(STORAGE_KEYS.BRANDS, DEFAULT_BRANDS); return DEFAULT_BRANDS; }
-  return JSON.parse(brands);
+  const brands = lerJSON(STORAGE_KEYS.BRANDS, null, Array.isArray);
+  if (!brands) { saveToStorage(STORAGE_KEYS.BRANDS, DEFAULT_BRANDS); return [...DEFAULT_BRANDS]; }
+  return brands;
 };
 
 export const saveBrand = (brand) => {
@@ -337,9 +367,8 @@ export const getAccessoriesByCategory = (category) => {
 const DEFAULT_ACC_CATEGORIES = ['Ferramentas', 'Consumíveis', 'Adesivos', 'Superfície de Impressão', 'Armazenamento', 'Limpeza', 'Eletrônica', 'Outros'];
 
 export const getAccCategories = () => {
-  const cats = localStorage.getItem(STORAGE_KEYS.ACC_CATEGORIES);
-  if (!cats) { saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, DEFAULT_ACC_CATEGORIES); return DEFAULT_ACC_CATEGORIES; }
-  const parsed = JSON.parse(cats);
+  const parsed = lerJSON(STORAGE_KEYS.ACC_CATEGORIES, null, Array.isArray);
+  if (!parsed) { saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, DEFAULT_ACC_CATEGORIES); return [...DEFAULT_ACC_CATEGORIES]; }
   // Migração para português do Brasil
   if (parsed.includes('Electrónica')) {
     const fixed = [...new Set(parsed.map(c => (c === 'Electrónica' ? 'Eletrônica' : c)))];
@@ -553,9 +582,33 @@ const getPriceSettingsRaw = () => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.PRICE_SETTINGS) || 'null'); } catch { return null; }
 };
 
+// Data em que a migração "custo sem mão de obra" entrou no código (commit 8999743)
+const DATA_MIG_CUSTO_SEM_MO = '2026-10-31T10:08:04.000Z';
+
+// Backups antigos (versão ≤ 3) não dizem se os custos já estavam sem mão de obra.
+// Deduz pela data de exportação: depois da migração ter rodado neste navegador (se rodou perto do
+// lançamento) ou, sem essa referência, depois do commit da migração.
+const backupJaMigrado = (backup) => {
+  if (backup.migracoes) return Boolean(backup.migracoes.custoSemMaoDeObra);
+  if (!backup.exportedAt) return false;
+  const local = localStorage.getItem(MIG_CUSTO_SEM_MO);
+  const limite = new Date(new Date(DATA_MIG_CUSTO_SEM_MO).getTime() + 7 * 864e5).toISOString();
+  const referencia = local && local < limite ? local : DATA_MIG_CUSTO_SEM_MO;
+  return backup.exportedAt >= referencia;
+};
+
+// --- LEMBRETE DE BACKUP ---
+const ULTIMO_BACKUP = 'filamentflow_ultimo_backup';
+export const getUltimoBackup = () => localStorage.getItem(ULTIMO_BACKUP);
+export const registrarBackupFeito = () => localStorage.setItem(ULTIMO_BACKUP, new Date().toISOString());
+export const temDadosGuardados = () =>
+  [STORAGE_KEYS.FILAMENTS, STORAGE_KEYS.UNIFIED_ORDERS, STORAGE_KEYS.PRINTS, STORAGE_KEYS.SALES]
+    .some(k => getFromStorage(k).length > 0);
+
 export const exportBackup = () => ({
-  version: 3,
+  version: 4,
   exportedAt: new Date().toISOString(),
+  migracoes: { custoSemMaoDeObra: localStorage.getItem(MIG_CUSTO_SEM_MO) },
   filaments: getFilaments(),
   unifiedOrders: getUnifiedOrders(),
   prints: getPrints(),
@@ -570,8 +623,29 @@ export const exportBackup = () => ({
   popzuCustos: getPopzuCustos()
 });
 
+const CAMPOS_LISTA = ['filaments', 'unifiedOrders', 'prints', 'categories', 'brands', 'accCategories', 'stockAdjustments', 'proximas', 'sales'];
+const CAMPOS_OBJETO = ['priceSettings', 'popzuSync', 'popzuCustos', 'migracoes'];
+
+// Confere o arquivo inteiro antes de gravar qualquer coisa (para não importar pela metade)
+export const validarBackup = (backup) => {
+  if (!backup || typeof backup !== 'object' || ![1, 2, 3, 4].includes(backup.version)) {
+    throw new Error('Arquivo de backup inválido.');
+  }
+  const ehObjeto = (v) => typeof v === 'object' && !Array.isArray(v);
+  const ruins = [
+    ...CAMPOS_LISTA.filter(c => backup[c] != null && !Array.isArray(backup[c])),
+    ...CAMPOS_OBJETO.filter(c => backup[c] != null && !ehObjeto(backup[c])),
+  ];
+  if (ruins.length) throw new Error(`Backup com dados inválidos em: ${ruins.join(', ')}.`);
+  if (!CAMPOS_LISTA.some(c => Array.isArray(backup[c]))) throw new Error('O arquivo não contém dados do FilamentFlow.');
+  const semId = ['unifiedOrders', 'prints', 'sales']
+    .filter(c => (backup[c] || []).some(item => !item || typeof item !== 'object'));
+  if (semId.length) throw new Error(`Backup com registros inválidos em: ${semId.join(', ')}.`);
+};
+
 export const importBackup = (backup) => {
-  if (!backup || ![1, 2, 3].includes(backup.version)) throw new Error('Arquivo de backup inválido.');
+  validarBackup(backup);
+  const jaMigrado = backupJaMigrado(backup);
   if (backup.filaments) saveToStorage(STORAGE_KEYS.FILAMENTS, backup.filaments);
   if (backup.unifiedOrders) saveToStorage(STORAGE_KEYS.UNIFIED_ORDERS, backup.unifiedOrders);
   if (backup.prints) saveToStorage(STORAGE_KEYS.PRINTS, backup.prints);
@@ -584,4 +658,20 @@ export const importBackup = (backup) => {
   if (backup.popzuCustos) localStorage.setItem(STORAGE_KEYS.POPZU_CUSTOS, JSON.stringify(backup.popzuCustos));
   if (backup.popzuSync) localStorage.setItem(STORAGE_KEYS.POPZU_SYNC, JSON.stringify(backup.popzuSync));
   if (backup.priceSettings) localStorage.setItem(STORAGE_KEYS.PRICE_SETTINGS, JSON.stringify(backup.priceSettings));
+  // Backup de antes da migração: roda de novo sobre os dados importados (senão a mão de obra
+  // volta para dentro do custo e o lucro fica menor). Backup já migrado: marca como feita.
+  // Backup sem vendas nem custos Popzu: as vendas atuais continuam as mesmas, nada a migrar.
+  if (!backup.sales && !backup.popzuCustos) return;
+  if (jaMigrado) {
+    if (!localStorage.getItem(MIG_CUSTO_SEM_MO)) {
+      localStorage.setItem(MIG_CUSTO_SEM_MO, backup.migracoes?.custoSemMaoDeObra || backup.exportedAt);
+    }
+  } else {
+    // Mantém a data original da migração neste navegador: ela é a referência para
+    // decidir se os próximos backups antigos já estavam migrados.
+    const dataOriginal = localStorage.getItem(MIG_CUSTO_SEM_MO);
+    localStorage.removeItem(MIG_CUSTO_SEM_MO);
+    executarMigracoes();
+    if (dataOriginal) localStorage.setItem(MIG_CUSTO_SEM_MO, dataOriginal);
+  }
 };

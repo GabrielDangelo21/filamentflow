@@ -1,5 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, getPrintCost, getSales, getSaleProfit } from '../services/storage';
+import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, validarBackup, getPrintCost, getSales, getSaleProfit, getChavesCorrompidas, getUltimoBackup, registrarBackupFeito, temDadosGuardados } from '../services/storage';
+
+const DIAS_LEMBRETE_BACKUP = 7;
+
+// Texto do lembrete, ou null se o backup está em dia (ou ainda não há dados)
+const lembreteBackup = () => {
+  if (!temDadosGuardados()) return null;
+  const ultimo = getUltimoBackup();
+  if (!ultimo) return 'Você ainda não fez nenhum backup. Os dados ficam só neste navegador: se ele for limpo, tudo se perde.';
+  const dias = Math.floor((Date.now() - new Date(ultimo).getTime()) / 864e5);
+  if (dias < DIAS_LEMBRETE_BACKUP) return null;
+  return `Seu último backup foi há ${dias} dias (${new Date(ultimo).toLocaleDateString('pt-BR')}). Exporte um novo para não perder o que mudou.`;
+};
 import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, BarController,
@@ -35,6 +47,8 @@ const Dashboard = () => {
   const [monthlyPrints, setMonthlyPrints] = useState([]);
   const [categoryBreakdown, setCategoryBreakdown] = useState([]);
   const [backupMsg, setBackupMsg] = useState('');
+  const [lembrete, setLembrete] = useState(lembreteBackup);
+  const [corrompidas] = useState(getChavesCorrompidas);
   const importInputRef = useRef(null);
 
   const downloadBackup = (nome) => {
@@ -47,6 +61,8 @@ const Dashboard = () => {
     a.download = `${nome}_${date}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    registrarBackupFeito();
+    setLembrete(lembreteBackup());
   };
 
   const handleExport = () => {
@@ -61,7 +77,9 @@ const Dashboard = () => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const backup = JSON.parse(ev.target.result);
+        let backup;
+        try { backup = JSON.parse(ev.target.result); } catch { throw new Error('o arquivo não é um JSON válido.'); }
+        validarBackup(backup);
         if (!confirm('Importar este backup vai substituir todos os dados atuais.\n\nAntes disso, uma cópia dos dados atuais será baixada automaticamente. Continuar?')) return;
         downloadBackup('filamentflow_antes_da_importacao');
         importBackup(backup);
@@ -251,6 +269,35 @@ const Dashboard = () => {
         </div>
       )}
       <input ref={importInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+
+      {corrompidas.length > 0 && (
+        <div role="alert" style={{
+          background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#FCA5A5',
+          borderRadius: '0.5rem', padding: '1rem 1.25rem', marginBottom: '1rem', fontSize: '0.9rem'
+        }}>
+          <strong>Alguns dados estavam corrompidos e foram deixados de lado:</strong> {corrompidas.join(', ')}.
+          {' '}Uma cópia ficou guardada no navegador (chaves terminadas em "_corrompido_…"). Importe seu último backup para recuperá-los.
+        </div>
+      )}
+
+      {lembrete && (
+        <div role="status" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap',
+          background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.45)', color: '#FCD34D',
+          borderRadius: '0.5rem', padding: '0.85rem 1.25rem', marginBottom: '1rem', fontSize: '0.9rem'
+        }}>
+          <span>⚠️ {lembrete}</span>
+          <button
+            onClick={handleExport}
+            style={{
+              background: '#F59E0B', color: '#000', border: 'none', borderRadius: '0.4rem',
+              padding: '0.45rem 0.9rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700
+            }}
+          >
+            Fazer backup agora
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1>Visão Geral das Impressões</h1>
