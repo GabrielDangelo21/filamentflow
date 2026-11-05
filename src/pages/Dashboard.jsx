@@ -360,45 +360,45 @@ const Dashboard = () => {
       </div>
 
       {/* Cards Superiores */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+      <div className="kpi-grade kpi-grade-3" style={{ marginBottom: '1rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3B82F6' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>VENDAS REGISTRADAS</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#3B82F6' }}>{stats.totalSales}</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#3B82F6' }}>{stats.totalSales}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #00F0FF' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>FATURADO</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#00F0FF' }}>€ {stats.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#00F0FF' }}>€ {stats.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${stats.totalProfit >= 0 ? '#10B981' : '#F87171'}` }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>LUCRO NAS VENDAS (COM CUSTO)</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: stats.totalProfit >= 0 ? '#10B981' : '#F87171' }}>€ {stats.totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: stats.totalProfit >= 0 ? '#10B981' : '#F87171' }}>€ {stats.totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+      <div className="kpi-grade kpi-grade-6" style={{ marginBottom: '2rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EF4444' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>INVESTIMENTO TOTAL</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EF4444' }}>€ {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#EF4444' }}>€ {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EAB308' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>TOTAL COMPRADO</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EAB308' }}>{(stats.totalPurchasedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#EAB308' }}>{(stats.totalPurchasedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3B82F6' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>IMPRESSÕES REALIZADAS</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#3B82F6' }}>{stats.totalPrints}</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#3B82F6' }}>{stats.totalPrints}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EF4444' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>CUSTO EM IMPRESSÕES</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EF4444' }}>€ {stats.totalPrintCost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#EF4444' }}>€ {stats.totalPrintCost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EAB308' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>TOTAL USADO</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#EAB308' }}>{(stats.totalUsedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#EAB308' }}>{(stats.totalUsedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #F97316' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>TEMPO TOTAL</p>
-          <p style={{ fontSize: '1.6rem', fontWeight: 700, color: '#F97316' }}>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#F97316' }}>
             {Math.floor((stats.totalTimeMinutes || 0) / 60)}h {(stats.totalTimeMinutes || 0) % 60}min
           </p>
         </div>

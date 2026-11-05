@@ -48,6 +48,34 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  container-type: inline-size;
+}
+
+/* Cartões de números (Dashboard): as colunas e a fonte se ajustam à largura da área de conteúdo */
+.kpi-grade {
+  display: grid;
+  gap: 1rem;
+}
+.kpi-grade-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kpi-grade-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+.kpi-valor {
+  font-size: clamp(1.1rem, 2.1cqi, 1.6rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kpi-grade-6 .kpi-valor { font-size: clamp(1.1rem, 1.7cqi, 1.6rem); }
+
+@container (max-width: 1100px) {
+  .kpi-grade-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kpi-valor, .kpi-grade-6 .kpi-valor { font-size: clamp(1.1rem, 3.2cqi, 1.6rem); }
+}
+
+@container (max-width: 560px) {
+  .kpi-grade-3 { grid-template-columns: minmax(0, 1fr); }
+  .kpi-grade-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi-valor, .kpi-grade-6 .kpi-valor { font-size: clamp(1.1rem, 5.5cqi, 1.6rem); }
 }
 
 /* Typography */
