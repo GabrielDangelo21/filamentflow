@@ -9,7 +9,7 @@ const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose })
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
       background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-      overflowY: 'auto', paddingTop: '2rem', paddingBottom: '2rem'
+      overflowY: 'auto', padding: '2rem 1rem'
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: '#111827', border: '1px solid rgba(255,255,255,0.1)',
@@ -128,7 +128,7 @@ const Accessories = () => {
       )}
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--primary)' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>ITENS REGISTRADOS</p>
           <p style={{ fontSize: '2rem', fontWeight: 700 }}>{totalItemCount}</p>

@@ -44,6 +44,142 @@ body {
 }
 
 /* Layout utilities */
+
+/* Estrutura do app: menu lateral + conteúdo (no celular, barra no topo + menu por cima) */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-topbar { display: none; }
+.app-menu-fundo { display: none; }
+.app-menu-fechar { display: none; }
+
+.app-sidebar {
+  width: 260px;
+  height: 100%;
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid var(--card-border);
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.app-sidebar-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  margin-bottom: 3rem;
+}
+
+.app-logo {
+  font-size: 1.5rem;
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-size: 1rem;
+  font-family: var(--font-family);
+  font-weight: 500;
+}
+.app-nav-item:hover { color: var(--text-main); }
+.app-nav-item.ativo {
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .app-layout { flex-direction: column; }
+
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    padding: 0.6rem 1rem;
+    background: rgba(11, 15, 25, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--card-border);
+  }
+  .app-menu-btn, .app-menu-fechar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+  .app-topbar-titulo { font-weight: 600; color: var(--text-main); }
+
+  .app-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1000;
+    width: min(280px, 85vw);
+    padding: 1rem 0.75rem;
+    background: #12142a;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    visibility: hidden;
+  }
+  .app-sidebar.aberto { transform: none; visibility: visible; }
+  .app-sidebar-topo { margin-bottom: 1.5rem; padding: 0 0.5rem; }
+  .app-nav-item { padding: 0.8rem 1rem; }
+
+  .app-menu-fundo {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .app-main { padding: 1rem; }
+  .modal-content { width: calc(100% - 2rem); max-height: 90dvh; }
+  .container { padding: 0; }
+  h1 { font-size: 1.75rem; }
+}
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -57,6 +193,7 @@ body {
   gap: 1rem;
 }
 .kpi-grade-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kpi-grade-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .kpi-grade-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
 .kpi-valor {
@@ -70,12 +207,34 @@ body {
 @container (max-width: 1100px) {
   .kpi-grade-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .kpi-valor, .kpi-grade-6 .kpi-valor { font-size: clamp(1.1rem, 3.2cqi, 1.6rem); }
+  .kpi-grade-4 .kpi-valor { font-size: clamp(1.1rem, 2.2cqi, 1.6rem); }
+}
+
+@container (max-width: 800px) {
+  .kpi-grade-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi-grade-4 .kpi-valor { font-size: clamp(1rem, 4.4cqi, 1.6rem); }
 }
 
 @container (max-width: 560px) {
   .kpi-grade-3 { grid-template-columns: minmax(0, 1fr); }
-  .kpi-grade-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpi-valor, .kpi-grade-6 .kpi-valor { font-size: clamp(1.1rem, 5.5cqi, 1.6rem); }
+  .kpi-grade-4, .kpi-grade-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi-valor { font-size: clamp(1.1rem, 5.5cqi, 1.6rem); }
+  .kpi-grade-4 .kpi-valor, .kpi-grade-6 .kpi-valor { font-size: clamp(1rem, 4.6cqi, 1.6rem); }
+  .kpi-grade > .stat-card { padding: 0.9rem !important; }
+}
+
+/* Grades de formulário/painéis: viram 1 coluna (ou 2) quando a área de conteúdo fica estreita.
+   O !important vence o grid-template-columns escrito direto no componente. */
+@container (max-width: 700px) {
+  .grade-responsiva { grid-template-columns: minmax(0, 1fr) !important; }
+  .grade-responsiva-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .grade-responsiva-2 > * { min-width: 0; }
+}
+
+/* Tabelas: rolam na horizontal dentro do painel em vez de esticar a página */
+.glass-panel:has(> .data-table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Typography */
@@ -204,6 +363,11 @@ h1 {
   border-bottom: 1px solid rgba(255, 255, 255, 0.02);
 }
 
+@media (max-width: 768px) {
+  .data-table th, .data-table td { padding: 0.65rem 0.75rem; white-space: nowrap; }
+  .data-table th { font-size: 0.75rem; }
+}
+
 .data-table tbody tr {
   transition: background-color 0.2s ease;
 }
@@ -234,11 +398,13 @@ h1 {
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: none; }
 }
 
+/* Sem "forwards": ao terminar, o elemento fica sem transform. Com transform, ele vira a referência
+   dos pop-ups (position: fixed) de dentro da página, que deixam de cobrir a tela. */
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+  animation: fadeIn 0.4s ease-out;
 }
 
 /* Grid Utilities */

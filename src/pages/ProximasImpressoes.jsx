@@ -146,12 +146,12 @@ const PlacaRow = ({ placa, index, onChange, onSubmit, filaments, allFilaments })
       padding: '0.75rem 1rem', border: '1px solid var(--card-border)',
     }}>
       {/* Linha 1: número, nome, tempo, cores */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
         <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 700, minWidth: '16px' }}>
           {index + 1}
         </span>
         <input
-          style={{ ...inputStyle, flex: 1 }}
+          style={{ ...inputStyle, flex: '1 1 8rem', minWidth: 0 }}
           value={placa.nome}
           onChange={e => onChange(index, 'nome', e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onSubmit?.()}

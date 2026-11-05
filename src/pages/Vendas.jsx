@@ -17,7 +17,7 @@ const fmtDateTime = (iso) => {
 const card = (label, value, color, sub) => (
   <div key={label} className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${color}` }}>
     <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>{label}</p>
-    <p style={{ fontSize: '1.6rem', fontWeight: 700, color }}>{value}</p>
+    <p className="kpi-valor" style={{ fontWeight: 700, color }} title={String(value)}>{value}</p>
     {sub && <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '0.2rem' }}>{sub}</p>}
   </div>
 );
@@ -191,7 +191,7 @@ export default function Vendas() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+      <div className="kpi-grade kpi-grade-4" style={{ marginBottom: '2rem' }}>
         {card('VENDAS', lista.length, '#3B82F6', `${pecas} peça${pecas !== 1 ? 's' : ''}`)}
         {card('FATURADO', fmtEur(faturado), '#00F0FF')}
         {card('CUSTO', fmtEur(custo), '#EF4444', `${comCusto.length} venda${comCusto.length !== 1 ? 's' : ''} com custo`)}

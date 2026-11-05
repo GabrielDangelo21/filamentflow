@@ -102,7 +102,7 @@ export default function Estimativa() {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 310px', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '1fr 310px', gap: '1.5rem', alignItems: 'start' }}>
 
         {/* ── Dados da impressão ── */}
         <div style={card}>

@@ -331,7 +331,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', columnGap: '1rem', marginBottom: '2rem' }}>
         <h1>Visão Geral das Impressões</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -404,7 +404,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+      <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
         {/* Ranking */}
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
           <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem' }}>Top Filamentos Mais Usados</h2>
@@ -487,7 +487,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
+      <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
         {/* Impressões por mês */}
         <section>
           <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Impressões por Mês</h2>

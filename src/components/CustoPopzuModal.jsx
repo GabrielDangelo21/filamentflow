@@ -112,7 +112,7 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
         </div>
 
         {modo === 'impressoes' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 230px', gap: '1rem' }}>
+          <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '1fr 230px', gap: '1rem' }}>
             <div>
               <input className="form-input" placeholder="Buscar impressão por nome ou projeto..." value={busca}
                 onChange={e => setBusca(e.target.value)} style={{ marginBottom: '0.6rem' }} />

@@ -418,7 +418,7 @@ const Orders = () => {
             {filamentItems.map((item, index) => {
               const filtered = getFilteredFilaments(item);
               return (
-                <div key={item._id} style={{
+                <div key={item._id} className="grade-responsiva" style={{
                   display: 'grid', gridTemplateColumns: '1fr 130px 140px auto',
                   gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'start'
                 }}>
@@ -527,7 +527,7 @@ const Orders = () => {
               accessoryItems.map((item, index) => {
                 const filtered = getFilteredAccNames(item.name);
                 return (
-                  <div key={item._id} style={{
+                  <div key={item._id} className="grade-responsiva" style={{
                     display: 'grid', gridTemplateColumns: '1fr 170px 80px 140px auto',
                     gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'start'
                   }}>
@@ -608,7 +608,7 @@ const Orders = () => {
             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1.5rem'
           }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', alignItems: 'end' }}>
+            <div className="grade-responsiva-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', alignItems: 'end' }}>
               <div>
                 <label className="form-label">Onde foi Comprado *</label>
                 <div style={{ position: 'relative' }}>

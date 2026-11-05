@@ -157,7 +157,7 @@ export default function Orcamento() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 310px', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '1fr 310px', gap: '1.5rem', alignItems: 'start' }}>
 
         {/* ── Lista de projetos ── */}
         <div>

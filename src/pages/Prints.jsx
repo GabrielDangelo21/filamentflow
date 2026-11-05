@@ -522,7 +522,7 @@ const Prints = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr 0.6fr 1.4fr 1.5fr', gap: '1rem', marginBottom: formData.timeMinutes !== '' ? '0.5rem' : '2rem', alignItems: 'start' }}>
+          <div className="grade-responsiva-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr 0.6fr 1.4fr 1.5fr', gap: '1rem', marginBottom: formData.timeMinutes !== '' ? '0.5rem' : '2rem', alignItems: 'start' }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Data de Início</label>
               <input

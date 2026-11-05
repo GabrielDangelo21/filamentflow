@@ -21,7 +21,7 @@ const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose })
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
       background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-      overflowY: 'auto', paddingTop: '2rem', paddingBottom: '2rem'
+      overflowY: 'auto', padding: '2rem 1rem'
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: '#111827', border: '1px solid rgba(255,255,255,0.1)',
@@ -316,7 +316,7 @@ const Filaments = () => {
       </div>
 
       {/* Filaments Table */}
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
+      <div className="glass-panel">
         <table className="data-table">
           <thead>
             <tr>

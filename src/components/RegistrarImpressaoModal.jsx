@@ -357,7 +357,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
           </div>
 
           {/* Linha 1: Data + Horas */}
-          <div style={{ display: 'grid', gridTemplateColumns: '155px 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
+          <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '155px 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
             <div>
               <label style={lbl}>Data de Início</label>
               <input type="date" value={formData.date} onChange={e => {
@@ -401,7 +401,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
           </div>
 
           {/* Linha 2: Cores + Placa + Impressora */}
-          <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr', gap: '0.85rem', marginBottom: '1.25rem' }}>
+          <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr', gap: '0.85rem', marginBottom: '1.25rem' }}>
             <div>
               <label style={lbl}>Cores</label>
               <input type="number" min="1" max="16" value={formData.colors}
@@ -435,7 +435,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
             </h3>
             <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
               {usedFilaments.map((item, i) => (
-                <div key={i} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', background:'rgba(255,255,255,0.03)', padding:'0.85rem', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                <div key={i} className="grade-responsiva" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', background:'rgba(255,255,255,0.03)', padding:'0.85rem', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
                   <div>
                     <label style={lbl}>Filamento da Cor {i + 1}</label>
                     <div style={{ position:'relative' }}>
