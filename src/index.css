@@ -236,6 +236,50 @@ body {
   .grade-responsiva-estreita { grid-template-columns: minmax(0, 1fr) !important; }
 }
 
+/* Seletor de período dos cartões do Dashboard */
+.periodo-barra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+.seletor-periodo {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+.seletor-periodo button {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.seletor-periodo button:hover { color: var(--text-main); }
+.seletor-periodo button.ativo { background: rgba(0, 240, 255, 0.14); color: var(--primary); }
+.seletor-periodo button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.periodo-legenda { font-size: 0.78rem; color: var(--text-muted); }
+
+/* Linha de variação embaixo do valor de cada cartão */
+.kpi-delta {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.kpi-delta.sobe { color: var(--success); }
+.kpi-delta.desce { color: #F87171; }
+
 /* Pop-ups ficam fora da área de conteúdo (ver Portal.jsx): a própria caixa do pop-up é a
    referência das container queries das grades de dentro dele */
 .modal-content, .modal-caixa { container-type: inline-size; }
