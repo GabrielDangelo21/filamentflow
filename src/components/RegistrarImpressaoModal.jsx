@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   getAllFilamentsWithStock, savePrint, getFilaments,
   getAccessoriesByCategory, getPrints, temCompraRegistrada,
 } from '../services/storage';
-import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+import ColorDot from './ColorDot';
+import { getColorFromName, getBrandColor } from '../utils/colorUtils';
 import CustomSelect from './CustomSelect';
 import MaskedNumberInput from './MaskedNumberInput';
+import Portal from './Portal';
 
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
 const DEFAULT_PRINTER = 'P2S-1';
@@ -51,18 +53,38 @@ const lbl = {
   marginBottom: '0.4rem',
 };
 
+// Estoque é só informativo (o cálculo nem sempre é real); filamentos sem compra vão para o fim
+const lerFilamentosParaImpressao = () => {
+  const list = getAllFilamentsWithStock().map(f => ({ ...f, temCompra: temCompraRegistrada(f.sku) }));
+  return list.sort((a, b) => (b.temCompra - a.temCompra) || a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
+};
+
+// Placas e impressoras compradas (Pedidos → Acessórios), com os valores padrão
+const lerPlacas = () => {
+  const accPlacas = getAccessoriesByCategory('Placas de impressão');
+  return [DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)];
+};
+const lerImpressoras = () => {
+  const accPrinters = getAccessoriesByCategory('Impressora').filter(p => p !== 'A1 Combo');
+  return accPrinters.length ? accPrinters : DEFAULT_PRINTERS;
+};
+
+// Ajusta uma lista ao número de cores: acrescenta itens vazios ou corta os do fim
+const redimensionar = (lista, n, vazio) =>
+  lista.length >= n ? lista.slice(0, n) : [...lista, ...Array.from({ length: n - lista.length }, vazio)];
+
 export default function RegistrarImpressaoModal({ initialDescription, initialProject, initialTimeMinutes, initialCores, initialFilaments, onClose, onSaved, onDelete }) {
-  const [filaments,    setFilaments]    = useState([]);
-  const [allFilaments, setAllFilaments] = useState([]);
-  const [placas,       setPlacas]       = useState([DEFAULT_PLACA]);
-  const [printers,     setPrinters]     = useState(DEFAULT_PRINTERS);
-  const [prints,       setPrints]       = useState([]);
+  const [filaments]    = useState(lerFilamentosParaImpressao);
+  const [allFilaments] = useState(getFilaments);
+  const [placas]       = useState(lerPlacas);
+  const [printers]     = useState(lerImpressoras);
+  const [prints]       = useState(getPrints);
 
   const numCoresInit = Math.max(1, parseInt(initialCores) || 1);
-  const filsInit = (initialFilaments?.length
-    ? initialFilaments
-    : Array(numCoresInit).fill(null).map(() => ({ sku: '', weightGrams: '' }))
-  ).map(f => ({ sku: f.sku || '', weightGrams: f.weightGrams || '' }));
+  const filsInit = redimensionar(
+    (initialFilaments || []).map(f => ({ sku: f.sku || '', weightGrams: f.weightGrams || '' })),
+    numCoresInit, () => ({ sku: '', weightGrams: '' })
+  );
 
   const [formData, setFormData] = useState({
     date:        new Date().toISOString().split('T')[0],
@@ -74,7 +96,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     timeMinutes: initialTimeMinutes || '',
     colors:      numCoresInit,
     placa:       DEFAULT_PLACA,
-    printer:     DEFAULT_PRINTER,
+    printer:     printers.includes(DEFAULT_PRINTER) ? DEFAULT_PRINTER : (printers.find(p => p.includes('P2S')) || printers[0]),
   });
 
   const [usedFilaments,   setUsedFilaments]   = useState(filsInit);
@@ -100,20 +122,8 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
   const descRef = useRef(null);
 
   useEffect(() => {
-    // Estoque é só informativo (o cálculo nem sempre é real); filamentos sem compra vão para o fim
-    const list = getAllFilamentsWithStock().map(f => ({ ...f, temCompra: temCompraRegistrada(f.sku) }));
-    list.sort((a, b) => (b.temCompra - a.temCompra) || a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
-    setFilaments(list);
-    setAllFilaments(getFilaments());
-    setPrints(getPrints());
-    const accPlacas = getAccessoriesByCategory('Placas de impressão');
-    setPlacas([DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)]);
-    const accPrinters = getAccessoriesByCategory('Impressora').filter(p => p !== 'A1 Combo');
-    const printerList = accPrinters.length ? accPrinters : DEFAULT_PRINTERS;
-    setPrinters(printerList);
-    const defaultPrinter = printerList.find(p => p.includes('P2S')) || printerList[0];
-    setFormData(f => ({ ...f, printer: printerList.includes(f.printer) ? f.printer : defaultPrinter }));
-    setTimeout(() => descRef.current?.focus(), 60);
+    const id = setTimeout(() => descRef.current?.focus(), 60);
+    return () => clearTimeout(id);
   }, []);
 
   // Close on Escape
@@ -123,18 +133,15 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
 
-  // Sync usedFilaments length to colors
-  useEffect(() => {
-    const n = parseInt(formData.colors) || 1;
-    setUsedFilaments(prev => {
-      if (n === prev.length) return prev;
-      if (n > prev.length) return [...prev, ...Array(n - prev.length).fill({ sku: '', weightGrams: '' })];
-      return prev.slice(0, n);
-    });
-    setSearchTerms(prev   => { const a = [...prev];   while (a.length < (parseInt(formData.colors)||1)) a.push('');    return a.slice(0, parseInt(formData.colors)||1); });
-    setShowSuggestions(prev => { const a=[...prev];   while (a.length < (parseInt(formData.colors)||1)) a.push(false); return a.slice(0, parseInt(formData.colors)||1); });
-    setHighlightedIdxs(prev => { const a=[...prev];   while (a.length < (parseInt(formData.colors)||1)) a.push(-1);   return a.slice(0, parseInt(formData.colors)||1); });
-  }, [formData.colors]);
+  // Mudar o nº de cores acrescenta ou tira linhas de filamento
+  const mudarCores = (valor) => {
+    set('colors', valor);
+    const n = parseInt(valor) || 1;
+    setUsedFilaments(l => redimensionar(l, n, () => ({ sku: '', weightGrams: '' })));
+    setSearchTerms(l => redimensionar(l, n, () => ''));
+    setShowSuggestions(l => redimensionar(l, n, () => false));
+    setHighlightedIdxs(l => redimensionar(l, n, () => -1));
+  };
 
   // ── Filament search ─────────────────────────────────────────────────────────
   const getFiltered = (i) => {
@@ -239,6 +246,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
   const projSugs = getProjSuggestions();
 
   return (
+    <Portal>
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{
@@ -248,7 +256,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
         padding: '2rem 1rem', overflowY: 'auto',
       }}
     >
-      <div style={{
+      <div className="modal-caixa" style={{
         background: '#151B2D',
         border: '1px solid rgba(255,255,255,0.12)',
         borderRadius: '16px',
@@ -357,7 +365,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
           </div>
 
           {/* Linha 1: Data + Horas */}
-          <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '155px 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
+          <div className="grade-responsiva-estreita" style={{ display: 'grid', gridTemplateColumns: '155px 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
             <div>
               <label style={lbl}>Data de Início</label>
               <input type="date" value={formData.date} onChange={e => {
@@ -372,22 +380,22 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
 
             <div>
               <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', marginBottom:'0.4rem' }}>
-                <span style={{ ...lbl, flex:1, marginBottom:0 }}>Hora Inicial</span>
+                <span style={{ ...lbl, flex:1, minWidth:0, marginBottom:0 }}>Hora Inicial</span>
                 <span style={{ width:'22px', flexShrink:0 }} />
-                <span style={{ ...lbl, flex:'0 0 135px', marginBottom:0, textAlign:'center' }}>Data Final</span>
-                <span style={{ ...lbl, flex:1, marginBottom:0 }}>Hora Final</span>
+                <span style={{ ...lbl, flex:1, minWidth:0, maxWidth:'135px', marginBottom:0, textAlign:'center' }}>Data Final</span>
+                <span style={{ ...lbl, flex:1, minWidth:0, marginBottom:0 }}>Hora Final</span>
               </div>
               <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
                 <input type="time" value={formData.startTime}
                   onChange={e => handleTimeChange('startTime', e.target.value)}
-                  style={{ ...inp, flex:1 }} />
+                  style={{ ...inp, flex:1, minWidth:0 }} />
                 <span style={{ color:'var(--primary)', fontWeight:700, flexShrink:0 }}>→</span>
                 <input type="date" value={formData.endDate}
                   onChange={e => handleTimeChange('endDate', e.target.value)}
-                  style={{ ...inp, flex:'0 0 135px', fontSize:'0.82rem', padding:'0.6rem 0.5rem' }} />
+                  style={{ ...inp, flex:1, minWidth:0, maxWidth:'135px', fontSize:'0.82rem', padding:'0.6rem 0.5rem' }} />
                 <input type="time" value={formData.endTime}
                   onChange={e => handleTimeChange('endTime', e.target.value)}
-                  style={{ ...inp, flex:1 }} />
+                  style={{ ...inp, flex:1, minWidth:0 }} />
               </div>
               {formData.timeMinutes !== '' && Number(formData.timeMinutes) > 0 && (
                 <div style={{ marginTop:'0.4rem', background:'rgba(0,240,255,0.08)', border:'1px solid rgba(0,240,255,0.2)', borderRadius:'6px', padding:'0.35rem 0.75rem', display:'flex', gap:'0.75rem', alignItems:'center' }}>
@@ -401,11 +409,11 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
           </div>
 
           {/* Linha 2: Cores + Placa + Impressora */}
-          <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr', gap: '0.85rem', marginBottom: '1.25rem' }}>
+          <div className="grade-responsiva-estreita" style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr', gap: '0.85rem', marginBottom: '1.25rem' }}>
             <div>
               <label style={lbl}>Cores</label>
               <input type="number" min="1" max="16" value={formData.colors}
-                onChange={e => set('colors', e.target.value)}
+                onChange={e => mudarCores(e.target.value)}
                 style={{ ...inp, textAlign:'center' }} />
             </div>
             <div>
@@ -435,7 +443,7 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
             </h3>
             <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
               {usedFilaments.map((item, i) => (
-                <div key={i} className="grade-responsiva" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', background:'rgba(255,255,255,0.03)', padding:'0.85rem', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                <div key={i} className="grade-responsiva-estreita" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', background:'rgba(255,255,255,0.03)', padding:'0.85rem', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)' }}>
                   <div>
                     <label style={lbl}>Filamento da Cor {i + 1}</label>
                     <div style={{ position:'relative' }}>
@@ -542,5 +550,6 @@ export default function RegistrarImpressaoModal({ initialDescription, initialPro
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

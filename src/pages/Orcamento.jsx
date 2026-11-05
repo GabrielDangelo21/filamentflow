@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { getPrints, getPrintCost, temCompraRegistrada, getSales } from '../services/storage';
 import { usePriceSettings, calcularPreco } from '../utils/pricing';
 import ResumoPreco from '../components/ResumoPreco';
 import VendaModal from '../components/VendaModal';
+import Portal from '../components/Portal';
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -41,21 +42,19 @@ const Checkbox = ({ checked, indeterminate, onChange }) => (
 );
 
 // ── Main Page ────────────────────────────────────────────────────────────────
+// Ids das impressões que já entraram em alguma venda
+const lerVendidas = () => new Set(getSales().flatMap(s => s.printIds || []));
+
 export default function Orcamento() {
-  const [prints, setPrints]           = useState([]);
+  const [prints]                     = useState(() => getPrints().reverse());
   const [selected, setSelected]       = useState(new Set());
   const [expanded, setExpanded]       = useState(new Set());
   const [settings, setSetting] = usePriceSettings();
-  const [vendidas, setVendidas]       = useState(new Set());
+  const [vendidas, setVendidas]       = useState(lerVendidas);
   const [novaVenda, setNovaVenda]     = useState(null);
   const [mensagem, setMensagem]       = useState('');
 
-  const carregarVendidas = () => setVendidas(new Set(getSales().flatMap(s => s.printIds || [])));
-
-  useEffect(() => {
-    setPrints(getPrints().reverse());
-    carregarVendidas();
-  }, []);
+  const carregarVendidas = () => setVendidas(lerVendidas());
 
   // ── Groups ──────────────────────────────────────────────────────────────────
   const groups = useMemo(() => {
@@ -347,9 +346,11 @@ export default function Orcamento() {
       )}
 
       {mensagem && (
+        <Portal>
         <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000, background: 'var(--primary)', color: '#000', padding: '1rem 1.5rem', borderRadius: '0.5rem', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
           {mensagem}
         </div>
+        </Portal>
       )}
     </div>
   );

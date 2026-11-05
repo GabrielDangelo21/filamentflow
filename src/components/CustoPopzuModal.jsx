@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { getPrints, getPrintCost, setPopzuCusto, getPopzuCustos } from '../services/storage';
 import { usePriceSettings, calcularPreco } from '../utils/pricing';
 import MaskedNumberInput from './MaskedNumberInput';
+import Portal from './Portal';
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -94,6 +95,7 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
   );
 
   return (
+    <Portal>
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-content glass-panel" style={{ padding: '1.75rem', background: '#151B2D', maxWidth: '760px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
@@ -112,7 +114,7 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
         </div>
 
         {modo === 'impressoes' ? (
-          <div className="grade-responsiva" style={{ display: 'grid', gridTemplateColumns: '1fr 230px', gap: '1rem' }}>
+          <div className="grade-responsiva-estreita" style={{ display: 'grid', gridTemplateColumns: '1fr 230px', gap: '1rem' }}>
             <div>
               <input className="form-input" placeholder="Buscar impressão por nome ou projeto..." value={busca}
                 onChange={e => setBusca(e.target.value)} style={{ marginBottom: '0.6rem' }} />
@@ -184,5 +186,6 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

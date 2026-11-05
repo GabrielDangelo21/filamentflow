@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { getUnifiedOrders, getAccCategories, saveAccCategory, deleteAccCategory, saveAllAccCategories, isOrderPending } from '../services/storage';
+import Portal from '../components/Portal';
 
 const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose }) => {
   const [newItem, setNewItem] = useState('');
   const handleAdd = () => { if (!newItem.trim()) return; onAdd(newItem.trim()); setNewItem(''); };
   return (
+    <Portal>
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
@@ -54,19 +56,15 @@ const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose })
         </div>
       </div>
     </div>
+    </Portal>
   );
 };
 
 const Accessories = () => {
-  const [orders, setOrders] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [orders] = useState(getUnifiedOrders);
+  const [categories, setCategories] = useState(getAccCategories);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState('');
-
-  useEffect(() => {
-    setCategories(getAccCategories());
-    setOrders(getUnifiedOrders());
-  }, []);
 
   const handleAddCategory = (name) => {
     saveAccCategory(name);

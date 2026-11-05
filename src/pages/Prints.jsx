@@ -1,19 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAllFilamentsWithStock, savePrint, getPrints, deletePrint, getFilaments, getPrintCost, getFilamentPricePerGram, getAccessoriesByCategory, temCompraRegistrada } from '../services/storage';
-import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+import ColorDot from '../components/ColorDot';
+import { getColorFromName, getBrandColor } from '../utils/colorUtils';
 import CustomSelect from '../components/CustomSelect';
 import MaskedNumberInput from '../components/MaskedNumberInput';
+import Portal from '../components/Portal';
 
 const DEFAULT_PLACA = 'PEI Texturizada Bambu Lab';
 const DEFAULT_PRINTER = 'P2S-1';
 const DEFAULT_PRINTERS = ['P2S-1', 'P2S-2'];
 
+// Estoque é só informativo (o cálculo nem sempre é real); filamentos sem compra vão para o fim
+const lerFilamentosParaImpressao = () => {
+  const list = getAllFilamentsWithStock().map(f => ({ ...f, temCompra: temCompraRegistrada(f.sku) }));
+  return list.sort((a, b) => (b.temCompra - a.temCompra) || a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
+};
+
+// Placas e impressoras compradas (Pedidos → Acessórios), com os valores padrão
+const lerPlacas = () => {
+  const accPlacas = getAccessoriesByCategory('Placas de impressão');
+  return [DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)];
+};
+const lerImpressoras = () => {
+  const accPrinters = getAccessoriesByCategory('Impressora').filter(p => p !== 'A1 Combo');
+  return accPrinters.length ? accPrinters : DEFAULT_PRINTERS;
+};
+
+// Ajusta uma lista ao número de cores: acrescenta itens vazios ou corta os do fim
+const redimensionar = (lista, n, vazio) =>
+  lista.length >= n ? lista.slice(0, n) : [...lista, ...Array.from({ length: n - lista.length }, vazio)];
+
 const Prints = () => {
-  const [filaments, setFilaments] = useState([]);
-  const [allFilaments, setAllFilaments] = useState([]);
-  const [prints, setPrints] = useState([]);
-  const [placas, setPlacas] = useState([]);
-  const [printers, setPrinters] = useState(DEFAULT_PRINTERS);
+  const [filaments, setFilaments] = useState(lerFilamentosParaImpressao);
+  const [allFilaments] = useState(getFilaments);
+  const [prints, setPrints] = useState(() => getPrints().reverse());
+  const [placas] = useState(lerPlacas);
+  const [printers] = useState(lerImpressoras);
   const [isEditing, setIsEditing] = useState(false);
   const [viewingPrintIdx, setViewingPrintIdx] = useState(null);
   const descriptionInputRef = useRef(null);
@@ -51,7 +73,10 @@ const Prints = () => {
     return `${h}h ${m}min`;
   };
 
-  const [formData, setFormData] = useState(initialFormState);
+  const [formData, setFormData] = useState(() => {
+    const padrao = printers.find(p => p.includes('P2S')) || printers[0];
+    return { ...initialFormState, printer: printers.includes(initialFormState.printer) ? initialFormState.printer : padrao };
+  });
   const [usedFilaments, setUsedFilaments] = useState([{ sku: '', weightGrams: '' }]);
   const [searchTerms, setSearchTerms] = useState(['']);
   const [showSuggestions, setShowSuggestions] = useState([false]);
@@ -64,54 +89,19 @@ const Prints = () => {
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [printerFilter, setPrinterFilter] = useState(null);
 
-  // Estoque é só informativo (o cálculo nem sempre é real); filamentos sem compra vão para o fim
-  const loadFilaments = () => {
-    const list = getAllFilamentsWithStock().map(f => ({ ...f, temCompra: temCompraRegistrada(f.sku) }));
-    list.sort((a, b) => (b.temCompra - a.temCompra) || a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
-    setFilaments(list);
+  const loadFilaments = () => setFilaments(lerFilamentosParaImpressao());
+
+  useEffect(() => { descriptionInputRef.current?.focus(); }, []);
+
+  // Mudar o nº de cores acrescenta ou tira linhas de filamento
+  const mudarCores = (valor) => {
+    setFormData(f => ({ ...f, colors: valor }));
+    const n = parseInt(valor) || 1;
+    setUsedFilaments(l => redimensionar(l, n, () => ({ sku: '', weightGrams: '' })));
+    setSearchTerms(l => redimensionar(l, n, () => ''));
+    setShowSuggestions(l => redimensionar(l, n, () => false));
+    setHighlightedIndexes(l => redimensionar(l, n, () => -1));
   };
-
-  useEffect(() => {
-    loadFilaments();
-    setAllFilaments(getFilaments());
-    setPrints(getPrints().reverse());
-    const accPlacas = getAccessoriesByCategory('Placas de impressão');
-    const allPlacas = [DEFAULT_PLACA, ...accPlacas.filter(p => p !== DEFAULT_PLACA)];
-    setPlacas(allPlacas);
-    const accPrinters = getAccessoriesByCategory('Impressora').filter(p => p !== 'A1 Combo');
-    const printerList = accPrinters.length ? accPrinters : DEFAULT_PRINTERS;
-    setPrinters(printerList);
-    const defaultPrinter = printerList.find(p => p.includes('P2S')) || printerList[0];
-    setFormData(f => ({ ...f, printer: printerList.includes(f.printer) ? f.printer : defaultPrinter }));
-    setTimeout(() => descriptionInputRef.current?.focus(), 0);
-  }, []);
-
-  useEffect(() => {
-    const numCores = parseInt(formData.colors) || 1;
-    if (numCores !== usedFilaments.length) {
-      const newUsed = [...usedFilaments];
-      const newTerms = [...searchTerms];
-      const newShow = [...showSuggestions];
-      const newHighlighted = [...highlightedIndexes];
-      if (numCores > usedFilaments.length) {
-        for (let i = usedFilaments.length; i < numCores; i++) {
-          newUsed.push({ sku: '', weightGrams: '' });
-          newTerms.push('');
-          newShow.push(false);
-          newHighlighted.push(-1);
-        }
-      } else {
-        newUsed.splice(numCores);
-        newTerms.splice(numCores);
-        newShow.splice(numCores);
-        newHighlighted.splice(numCores);
-      }
-      setUsedFilaments(newUsed);
-      setSearchTerms(newTerms);
-      setShowSuggestions(newShow);
-      setHighlightedIndexes(newHighlighted);
-    }
-  }, [formData.colors]);
 
   const handleFilamentChange = (index, field, value) => {
     const newUsed = [...usedFilaments];
@@ -371,14 +361,15 @@ const Prints = () => {
       placa: print.placa || DEFAULT_PLACA,
       printer: print.printer || DEFAULT_PRINTER,
     });
-    setUsedFilaments(print.filamentsUsed);
+    const n = parseInt(print.colors) || 1;
+    setUsedFilaments(redimensionar(print.filamentsUsed, n, () => ({ sku: '', weightGrams: '' })));
     const terms = print.filamentsUsed.map(f => {
       const info = allFilaments.find(fil => fil.sku === f.sku) || filaments.find(fil => fil.sku === f.sku);
       return info ? `${info.marca} - ${info.cor} (${f.sku})` : f.sku;
     });
-    setSearchTerms(terms);
-    setShowSuggestions(print.filamentsUsed.map(() => false));
-    setHighlightedIndexes(print.filamentsUsed.map(() => -1));
+    setSearchTerms(redimensionar(terms, n, () => ''));
+    setShowSuggestions(redimensionar(print.filamentsUsed.map(() => false), n, () => false));
+    setHighlightedIndexes(redimensionar(print.filamentsUsed.map(() => -1), n, () => -1));
     document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -398,6 +389,7 @@ const Prints = () => {
   return (
     <div className="animate-fade-in">
       {successMessage && (
+        <Portal>
         <div style={{
           position: 'fixed',
           top: '20px',
@@ -414,6 +406,7 @@ const Prints = () => {
         }}>
           {successMessage}
         </div>
+        </Portal>
       )}
       <h1>{isEditing ? 'Editar Impressão' : 'Registro de Impressões'}</h1>
 
@@ -595,7 +588,7 @@ const Prints = () => {
                 type="number"
                 className="form-input"
                 value={formData.colors}
-                onChange={e => setFormData({ ...formData, colors: e.target.value })}
+                onChange={e => mudarCores(e.target.value)}
                 min="1"
                 max="16"
                 required
@@ -917,7 +910,6 @@ const Prints = () => {
                   {isOpen && (
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
                       {group.prints.map((print, idx) => {
-                        const cost = getPrintCost(print);
                         const dateStr = (() => { try { const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00'); return d.toLocaleDateString(); } catch { return '?'; } })();
                         return (
                           <div key={print.id} style={{

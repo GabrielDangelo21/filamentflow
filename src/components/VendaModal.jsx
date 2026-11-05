@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import MaskedNumberInput from './MaskedNumberInput';
 import { saveSale } from '../services/storage';
+import Portal from './Portal';
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -46,6 +47,7 @@ export default function VendaModal({ venda, onClose, onSaved }) {
   };
 
   return (
+    <Portal>
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-content glass-panel" style={{ padding: '2rem', background: '#151B2D' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -121,5 +123,6 @@ export default function VendaModal({ venda, onClose, onSaved }) {
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getSales, deleteSale, getSaleProfit, temCusto, getPopzuConfig, savePopzuConfig, buscarVendasPopzu } from '../services/storage';
 import VendaModal from '../components/VendaModal';
 import CustoPopzuModal from '../components/CustoPopzuModal';
+import Portal from '../components/Portal';
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -50,6 +51,7 @@ function PopzuConfigModal({ onClose, onSaved }) {
   };
 
   return (
+    <Portal>
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-content glass-panel" style={{ padding: '2rem', background: '#151B2D' }}>
         <h2 style={{ marginTop: 0, fontSize: '1.3rem' }}>Sincronização Popzu</h2>
@@ -74,6 +76,7 @@ function PopzuConfigModal({ onClose, onSaved }) {
         </form>
       </div>
     </div>
+    </Portal>
   );
 }
 

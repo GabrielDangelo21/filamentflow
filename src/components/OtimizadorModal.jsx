@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import Portal from './Portal';
 
 const fmtTempo = (min) => {
   if (!min || min <= 0) return '—';
@@ -30,16 +31,6 @@ const nowStr = () => {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
-
-function getCombinations(arr, n) {
-  if (n === 0) return [[]];
-  if (arr.length < n) return [];
-  const [first, ...rest] = arr;
-  return [
-    ...getCombinations(rest, n - 1).map(c => [first, ...c]),
-    ...getCombinations(rest, n),
-  ];
-}
 
 function findBestSingle(plates, slotMin) {
   if (!plates.length) return null;
@@ -171,6 +162,7 @@ export default function OtimizadorModal({ plates, onClose }) {
   const ordinals = ['1ª', '2ª', '3ª'];
 
   return (
+    <Portal>
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '2rem 1rem' }}
       onClick={onClose}
@@ -359,5 +351,6 @@ export default function OtimizadorModal({ plates, onClose }) {
         )}
       </div>
     </div>
+    </Portal>
   );
 }

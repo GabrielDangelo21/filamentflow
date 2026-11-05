@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   getProximas, saveProxima, updateProxima, deleteProxima, reorderProximas,
   getAllFilamentsWithStock, getFilaments,
@@ -6,7 +6,8 @@ import {
 import OtimizadorModal from '../components/OtimizadorModal';
 import RegistrarImpressaoModal from '../components/RegistrarImpressaoModal';
 import MaskedNumberInput from '../components/MaskedNumberInput';
-import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+import ColorDot from '../components/ColorDot';
+import { getColorFromName, getBrandColor } from '../utils/colorUtils';
 
 const inputStyle = {
   background: 'var(--card-bg)',
@@ -74,17 +75,19 @@ const PlacaRow = ({ placa, index, onChange, onSubmit, filaments, allFilaments })
   const [showSugs, setShowSugs] = useState(Array(numCores).fill(false));
   const [highlighted, setHighlighted] = useState(Array(numCores).fill(-1));
 
-  useEffect(() => {
-    const n = Math.max(1, parseInt(placa.cores) || 1);
+  // Mudou o nº de cores: acrescenta ou corta as linhas (padrão do React para ajustar estado a uma prop)
+  const [coresAnteriores, setCoresAnteriores] = useState(numCores);
+  if (coresAnteriores !== numCores) {
     const resize = (arr, empty) => {
       const next = [...arr];
-      while (next.length < n) next.push(empty);
-      return next.slice(0, n);
+      while (next.length < numCores) next.push(empty);
+      return next.slice(0, numCores);
     };
+    setCoresAnteriores(numCores);
     setSearchTerms(prev => resize(prev, ''));
     setShowSugs(prev => resize(prev, false));
     setHighlighted(prev => resize(prev, -1));
-  }, [placa.cores]);
+  }
 
   const getFiltered = (i) => {
     const s = (searchTerms[i] || '').toLowerCase();
@@ -282,10 +285,13 @@ const FormFields = ({ t, setT, l, setL, np, setNP, ps, onPChange, onSubmit, onCa
 );
 
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
+const lerFilamentosOrdenados = () =>
+  getAllFilamentsWithStock().sort((a, b) => a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
+
 export default function ProximasImpressoes() {
-  const [items, setItems] = useState([]);
-  const [filaments, setFilaments] = useState([]);
-  const [allFilaments, setAllFilaments] = useState([]);
+  const [items, setItems] = useState(getProximas);
+  const [filaments] = useState(lerFilamentosOrdenados);
+  const [allFilaments] = useState(getFilaments);
 
   // ── Add form ──
   const addTitleRef = useRef(null);
@@ -311,16 +317,9 @@ export default function ProximasImpressoes() {
   const [dragIdx, setDragIdx] = useState(null);
   const [overIdx, setOverIdx] = useState(null);
 
-  useEffect(() => {
-    setItems(getProximas());
-    const all = getAllFilamentsWithStock();
-    all.sort((a, b) => a.marca.localeCompare(b.marca) || a.cor.localeCompare(b.cor));
-    setFilaments(all);
-    setAllFilaments(getFilaments());
-  }, []);
-
-  useEffect(() => { setPlacas(prev => syncPlacas(prev, numPlacas)); }, [numPlacas]);
-  useEffect(() => { setEditPlacas(prev => syncPlacas(prev, editNumPlacas)); }, [editNumPlacas]);
+  // Mudar o nº de placas acrescenta ou tira placas do formulário
+  const mudarNumPlacas = (n) => { setNumPlacas(n); setPlacas(prev => syncPlacas(prev, n)); };
+  const mudarEditNumPlacas = (n) => { setEditNumPlacas(n); setEditPlacas(prev => syncPlacas(prev, n)); };
 
   const reload = () => setItems(getProximas());
 
@@ -534,7 +533,7 @@ export default function ProximasImpressoes() {
         <FormFields
           t={titulo} setT={setTitulo}
           l={link} setL={setLink}
-          np={numPlacas} setNP={setNumPlacas}
+          np={numPlacas} setNP={mudarNumPlacas}
           ps={placas} onPChange={handlePlacaChange}
           onSubmit={handleAdd}
           err={error}
@@ -582,7 +581,7 @@ export default function ProximasImpressoes() {
                   <FormFields
                     t={editTitulo} setT={setEditTitulo}
                     l={editLink} setL={setEditLink}
-                    np={editNumPlacas} setNP={setEditNumPlacas}
+                    np={editNumPlacas} setNP={mudarEditNumPlacas}
                     ps={editPlacas} onPChange={handleEditPlacaChange}
                     onSubmit={handleSaveEdit}
                     onCancel={handleCancelEdit}

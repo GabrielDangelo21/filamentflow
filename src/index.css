@@ -231,6 +231,19 @@ body {
   .grade-responsiva-2 > * { min-width: 0; }
 }
 
+/* Dentro dos pop-ups (caixas mais estreitas) só empilha quando a caixa fica bem estreita */
+@container (max-width: 480px) {
+  .grade-responsiva-estreita { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* Pop-ups ficam fora da área de conteúdo (ver Portal.jsx): a própria caixa do pop-up é a
+   referência das container queries das grades de dentro dele */
+.modal-content, .modal-caixa { container-type: inline-size; }
+
+@media (max-width: 768px) {
+  .modal-caixa { padding: 1.25rem !important; }
+}
+
 /* Tabelas: rolam na horizontal dentro do painel em vez de esticar a página */
 .glass-panel:has(> .data-table) {
   overflow-x: auto;

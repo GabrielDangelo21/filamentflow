@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const getColorFromName = (corName) => {
   if (!corName) return '#00F0FF';
   const n = corName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -28,16 +26,5 @@ export const getColorFromName = (corName) => {
   return '#00F0FF';
 };
 
-export const ColorDot = ({ cor, size = 10 }) => (
-  <span style={{
-    display: 'inline-block',
-    width: size,
-    height: size,
-    borderRadius: '50%',
-    background: getColorFromName(cor),
-    border: '1px solid rgba(255,255,255,0.25)',
-    flexShrink: 0,
-  }} />
-);
-
-export const getBrandColor = (_brand) => 'inherit';
+// Cor da marca no texto: hoje não muda nada (herda a cor do texto)
+export const getBrandColor = () => 'inherit';

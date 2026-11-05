@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const toRaw = (v) => Math.round((parseFloat(String(v).replace(',', '.')) || 0) * 100);
 

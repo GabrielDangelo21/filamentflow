@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);

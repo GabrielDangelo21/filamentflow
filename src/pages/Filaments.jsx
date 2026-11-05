@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { getFilaments, saveFilament, deleteFilament, getAllFilamentsWithStock, getCategories, saveCategory, deleteCategory, saveAllCategories, getBrands, saveBrand, deleteBrand, saveAllBrands } from '../services/storage';
-import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+import { useState, useRef } from 'react';
+import { saveFilament, deleteFilament, getAllFilamentsWithStock, getCategories, saveCategory, deleteCategory, saveAllCategories, getBrands, saveBrand, deleteBrand, saveAllBrands } from '../services/storage';
+import ColorDot from '../components/ColorDot';
+import { getColorFromName, getBrandColor } from '../utils/colorUtils';
+import Portal from '../components/Portal';
 
 /* ── Reusable List Manager Modal ── */
 const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose }) => {
@@ -17,6 +19,7 @@ const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose })
   };
 
   return (
+    <Portal>
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
@@ -102,42 +105,31 @@ const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose })
         </div>
       </div>
     </div>
+    </Portal>
   );
 };
 
+// Filamentos com estoque, em ordem de SKU (numérica quando o SKU é número)
+const lerFilamentosOrdenados = () => getAllFilamentsWithStock().sort((a, b) => {
+  const numA = Number(a.sku);
+  const numB = Number(b.sku);
+  if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+  return (a.sku || '').localeCompare(b.sku || '', undefined, { numeric: true });
+});
+
 /* ── Main Component ── */
 const Filaments = () => {
-  const [filaments, setFilaments] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [formData, setFormData] = useState({ marca: '', sku: '', cor: '', categoria: '', id: null });
+  const [filaments, setFilaments] = useState(lerFilamentosOrdenados);
+  const [categories, setCategories] = useState(getCategories);
+  const [brands, setBrands] = useState(getBrands);
+  const [formData, setFormData] = useState(() => ({
+    marca: getBrands()[0] || '', sku: '', cor: '', categoria: getCategories()[0] || '', id: null,
+  }));
   const [isEditing, setIsEditing] = useState(false);
   const [modalOpen, setModalOpen] = useState(null); // 'brands' | 'categories' | null
   const skuInputRef = useRef(null);
 
-  useEffect(() => {
-    loadFilaments();
-    const loadedCats = getCategories();
-    const loadedBrands = getBrands();
-    setCategories(loadedCats);
-    setBrands(loadedBrands);
-    setFormData(prev => ({
-      ...prev,
-      categoria: loadedCats[0] || '',
-      marca: loadedBrands[0] || ''
-    }));
-  }, []);
-
-  const loadFilaments = () => {
-    const all = getAllFilamentsWithStock();
-    all.sort((a, b) => {
-      const numA = Number(a.sku);
-      const numB = Number(b.sku);
-      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-      return (a.sku || '').localeCompare(b.sku || '', undefined, { numeric: true });
-    });
-    setFilaments(all);
-  };
+  const loadFilaments = () => setFilaments(lerFilamentosOrdenados());
 
   const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();

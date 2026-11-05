@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, validarBackup, getPrintCost, getSales, getSaleProfit, getChavesCorrompidas, getUltimoBackup, registrarBackupFeito, temDadosGuardados, getSkusRepetidos, removerSkusRepetidos } from '../services/storage';
 
 const DIAS_LEMBRETE_BACKUP = 7;
@@ -12,12 +12,13 @@ const lembreteBackup = () => {
   if (dias < DIAS_LEMBRETE_BACKUP) return null;
   return `Seu último backup foi há ${dias} dias (${new Date(ultimo).toLocaleDateString('pt-BR')}). Exporte um novo para não perder o que mudou.`;
 };
-import { getColorFromName, ColorDot, getBrandColor } from '../utils/colorUtils';
+import { getColorFromName, getBrandColor } from '../utils/colorUtils';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, BarController,
   LineElement, LineController, PointElement, ArcElement, DoughnutController, Tooltip, Legend,
 } from 'chart.js';
 import { Chart, Doughnut } from 'react-chartjs-2';
+import Portal from '../components/Portal';
 
 ChartJS.register(
   CategoryScale, LinearScale, BarElement, BarController,
@@ -26,26 +27,91 @@ ChartJS.register(
 
 const PALETTE = ['#00F0FF', '#8B5CF6', '#EAB308', '#F97316', '#10B981', '#EF4444', '#3B82F6', '#EC4899'];
 
-const Dashboard = () => {
-  const [stats, setStats] = useState({
-    totalFilaments: 0,
-    totalStockGrams: 0,
-    totalOrders: 0,
-    totalPrints: 0,
-    totalCost: 0,
-    totalPrintCost: 0,
-    totalPurchasedGrams: 0,
-    totalUsedGrams: 0,
-    totalTimeMinutes: 0,
-    totalSales: 0,
-    totalRevenue: 0,
-    totalProfit: 0,
+// Números e listas do painel, calculados uma vez ao abrir o Dashboard
+const calcularPainel = () => {
+  const allFilaments = getAllFilamentsWithStock();
+  const allOrders = getUnifiedOrders();
+  const allPrints = getPrints();
+
+  const totalStock = allFilaments.reduce((acc, f) => acc + (f.currentStock || 0), 0);
+  const totalCost = allOrders.reduce((acc, o) =>
+    acc + o.items.reduce((s, i) => s + (i.price != null ? Number(i.price) : 0), 0), 0);
+  const totalPrintCost = allPrints.reduce((acc, p) => acc + getPrintCost(p), 0);
+  const totalPurchasedGrams = allOrders.reduce((acc, o) =>
+    acc + o.items.filter(i => i.type === 'filament').reduce((s, i) => s + Number(i.weightGrams || 0), 0), 0);
+  const totalUsedGrams = allPrints.reduce((acc, p) => acc + (p.totalWeight || 0), 0);
+  const totalTimeMinutes = allPrints.reduce((acc, p) => acc + (Number(p.timeMinutes) || 0), 0);
+  const allSales = getSales();
+
+  const stats = {
+    totalFilaments: allFilaments.length,
+    totalStockGrams: totalStock,
+    totalOrders: allOrders.length,
+    totalPrints: allPrints.length,
+    totalCost: totalCost,
+    totalPrintCost: totalPrintCost,
+    totalPurchasedGrams: totalPurchasedGrams,
+    totalUsedGrams: totalUsedGrams,
+    totalTimeMinutes: totalTimeMinutes,
+    totalSales: allSales.length,
+    totalRevenue: allSales.reduce((acc, s) => acc + (Number(s.finalPrice) || 0), 0),
+    totalProfit: allSales.reduce((acc, s) => acc + (getSaleProfit(s) ?? 0), 0),
+  };
+
+  // Impressões por mês (últimos 6 meses com dados)
+  const monthMap = {};
+  allPrints.forEach(print => {
+    const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!monthMap[key]) monthMap[key] = { grams: 0, count: 0 };
+    monthMap[key].grams += Number(print.totalWeight) || 0;
+    monthMap[key].count += 1;
+  });
+  const monthlyChart = Object.keys(monthMap).sort().slice(-6).map(key => {
+    const [y, mo] = key.split('-');
+    const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+    return { label, kg: monthMap[key].grams / 1000, count: monthMap[key].count };
   });
 
-  const [topFilaments, setTopFilaments] = useState([]);
-  const [lowStockFilaments, setLowStockFilaments] = useState([]);
-  const [monthlyPrints, setMonthlyPrints] = useState([]);
-  const [categoryBreakdown, setCategoryBreakdown] = useState([]);
+
+  // Consumo de filamento por categoria
+  const catMap = {};
+  allPrints.forEach(print => {
+    (print.filamentsUsed || []).forEach(f => {
+      const fil = allFilaments.find(x => x.sku === f.sku);
+      const cat = fil?.categoria || 'Outro';
+      catMap[cat] = (catMap[cat] || 0) + Number(f.weightGrams || 0);
+    });
+  });
+  const categoryBreakdown = (
+    Object.entries(catMap).sort((a, b) => b[1] - a[1]).map(([categoria, grams]) => ({ categoria, grams }))
+  );
+
+  const filamentConsumption = {};
+  allPrints.forEach(print => {
+    (print.filamentsUsed || []).forEach(f => {
+      filamentConsumption[f.sku] = (filamentConsumption[f.sku] || 0) + Number(f.weightGrams || 0);
+    });
+  });
+  const topList = Object.entries(filamentConsumption)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([sku, grams]) => {
+      const fil = allFilaments.find(f => f.sku === sku) || {};
+      return { sku, grams, marca: fil.marca || 'N/A', cor: fil.cor || 'N/A', categoria: fil.categoria || 'N/A' };
+    });
+
+
+  const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
+  const lowStock = allFilaments
+    .filter(f => purchasedSKUs.has(f.sku) && (f.currentStock || 0) < 500)
+    .sort((a, b) => (a.currentStock || 0) - (b.currentStock || 0));
+
+  return { stats, monthlyPrints: monthlyChart, categoryBreakdown, topFilaments: topList, lowStockFilaments: lowStock };
+};
+
+const Dashboard = () => {
+  const [{ stats, topFilaments, lowStockFilaments, monthlyPrints, categoryBreakdown }] = useState(calcularPainel);
   const [backupMsg, setBackupMsg] = useState('');
   const [lembrete, setLembrete] = useState(lembreteBackup);
   const [corrompidas] = useState(getChavesCorrompidas);
@@ -103,87 +169,6 @@ const Dashboard = () => {
     reader.readAsText(file);
     e.target.value = '';
   };
-
-  useEffect(() => {
-    const allFilaments = getAllFilamentsWithStock();
-    const allOrders = getUnifiedOrders();
-    const allPrints = getPrints();
-
-    const totalStock = allFilaments.reduce((acc, f) => acc + (f.currentStock || 0), 0);
-    const totalCost = allOrders.reduce((acc, o) =>
-      acc + o.items.reduce((s, i) => s + (i.price != null ? Number(i.price) : 0), 0), 0);
-    const totalPrintCost = allPrints.reduce((acc, p) => acc + getPrintCost(p), 0);
-    const totalPurchasedGrams = allOrders.reduce((acc, o) =>
-      acc + o.items.filter(i => i.type === 'filament').reduce((s, i) => s + Number(i.weightGrams || 0), 0), 0);
-    const totalUsedGrams = allPrints.reduce((acc, p) => acc + (p.totalWeight || 0), 0);
-    const totalTimeMinutes = allPrints.reduce((acc, p) => acc + (Number(p.timeMinutes) || 0), 0);
-    const allSales = getSales();
-
-    setStats({
-      totalFilaments: allFilaments.length,
-      totalStockGrams: totalStock,
-      totalOrders: allOrders.length,
-      totalPrints: allPrints.length,
-      totalCost: totalCost,
-      totalPrintCost: totalPrintCost,
-      totalPurchasedGrams: totalPurchasedGrams,
-      totalUsedGrams: totalUsedGrams,
-      totalTimeMinutes: totalTimeMinutes,
-      totalSales: allSales.length,
-      totalRevenue: allSales.reduce((acc, s) => acc + (Number(s.finalPrice) || 0), 0),
-      totalProfit: allSales.reduce((acc, s) => acc + (getSaleProfit(s) ?? 0), 0),
-    });
-
-    // Impressões por mês (últimos 6 meses com dados)
-    const monthMap = {};
-    allPrints.forEach(print => {
-      const d = print.date.includes('T') ? new Date(print.date) : new Date(print.date + 'T12:00:00');
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      if (!monthMap[key]) monthMap[key] = { grams: 0, count: 0 };
-      monthMap[key].grams += Number(print.totalWeight) || 0;
-      monthMap[key].count += 1;
-    });
-    const monthlyChart = Object.keys(monthMap).sort().slice(-6).map(key => {
-      const [y, mo] = key.split('-');
-      const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-      return { label, kg: monthMap[key].grams / 1000, count: monthMap[key].count };
-    });
-    setMonthlyPrints(monthlyChart);
-
-    // Consumo de filamento por categoria
-    const catMap = {};
-    allPrints.forEach(print => {
-      (print.filamentsUsed || []).forEach(f => {
-        const fil = allFilaments.find(x => x.sku === f.sku);
-        const cat = fil?.categoria || 'Outro';
-        catMap[cat] = (catMap[cat] || 0) + Number(f.weightGrams || 0);
-      });
-    });
-    setCategoryBreakdown(
-      Object.entries(catMap).sort((a, b) => b[1] - a[1]).map(([categoria, grams]) => ({ categoria, grams }))
-    );
-
-    const filamentConsumption = {};
-    allPrints.forEach(print => {
-      (print.filamentsUsed || []).forEach(f => {
-        filamentConsumption[f.sku] = (filamentConsumption[f.sku] || 0) + Number(f.weightGrams || 0);
-      });
-    });
-    const topList = Object.entries(filamentConsumption)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([sku, grams]) => {
-        const fil = allFilaments.find(f => f.sku === sku) || {};
-        return { sku, grams, marca: fil.marca || 'N/A', cor: fil.cor || 'N/A', categoria: fil.categoria || 'N/A' };
-      });
-    setTopFilaments(topList);
-
-    const purchasedSKUs = new Set(allOrders.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
-    const lowStock = allFilaments
-      .filter(f => purchasedSKUs.has(f.sku) && (f.currentStock || 0) < 500)
-      .sort((a, b) => (a.currentStock || 0) - (b.currentStock || 0));
-    setLowStockFilaments(lowStock);
-  }, []);
 
   const monthlyChartData = {
     labels: monthlyPrints.map(m => m.label),
@@ -267,6 +252,7 @@ const Dashboard = () => {
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
       {backupMsg && (
+        <Portal>
         <div style={{
           position: 'fixed', top: '20px', right: '20px', zIndex: 10000,
           background: backupMsg.startsWith('✓') ? 'var(--primary)' : '#EF4444',
@@ -277,6 +263,7 @@ const Dashboard = () => {
         }}>
           {backupMsg}
         </div>
+        </Portal>
       )}
       <input ref={importInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
 

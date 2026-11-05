@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { getAllFilamentsWithStock, getCategories, getBrands, adjustFilamentStock, getUnifiedOrders, isOrderPending } from '../services/storage';
+import { useState } from 'react';
+import { getAllFilamentsWithStock, getCategories, adjustFilamentStock, getUnifiedOrders, isOrderPending } from '../services/storage';
 import { getColorFromName } from '../utils/colorUtils';
 import CustomSelect from '../components/CustomSelect';
+import Portal from '../components/Portal';
 
 const Select = CustomSelect;
 
@@ -32,6 +33,7 @@ const AjusteModal = ({ filament, onClose, onSaved }) => {
   };
 
   return (
+    <Portal>
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{
@@ -80,6 +82,7 @@ const AjusteModal = ({ filament, onClose, onSaved }) => {
         </div>
       </div>
     </div>
+    </Portal>
   );
 };
 
@@ -372,29 +375,27 @@ const Shelf = ({ category, filaments, onAjustar }) => {
   );
 };
 
+// Filamentos já comprados aparecem mesmo a 0g (para lembrar de voltar a pedir);
+// os que nunca foram comprados ficam escondidos.
+const lerEstoque = () => {
+  const pedidos = getUnifiedOrders();
+  const comprados = new Set(pedidos.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
+  return {
+    filaments: getAllFilamentsWithStock().filter(f => f.currentStock > 0 || comprados.has(f.sku)),
+    pedidosACaminho: pedidos.filter(isOrderPending).sort((a, b) => new Date(a.date) - new Date(b.date)),
+  };
+};
+
 export default function Estoque() {
-  const [filaments, setFilaments] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [{ filaments, pedidosACaminho }, setEstoque] = useState(lerEstoque);
+  const [categories] = useState(getCategories);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterBrand, setFilterBrand] = useState('all');
   const [ajustando, setAjustando] = useState(null);
-  const [pedidosACaminho, setPedidosACaminho] = useState([]);
 
-  // Filamentos já comprados aparecem mesmo a 0g (para lembrar de voltar a pedir);
-  // os que nunca foram comprados ficam escondidos.
-  const loadFilaments = () => {
-    const pedidos = getUnifiedOrders();
-    setPedidosACaminho(pedidos.filter(isOrderPending).sort((a, b) => new Date(a.date) - new Date(b.date)));
-    const comprados = new Set(pedidos.flatMap(o => o.items.filter(i => i.type === 'filament').map(i => i.sku)));
-    setFilaments(getAllFilamentsWithStock().filter(f => f.currentStock > 0 || comprados.has(f.sku)));
-  };
-
-  useEffect(() => {
-    loadFilaments();
-    setCategories(getCategories());
-  }, []);
+  const loadFilaments = () => setEstoque(lerEstoque());
 
   const availableCategories = categories.filter(c => filaments.some(f => f.categoria === c));
   const brands = [...new Set(filaments.map(f => f.marca))].sort();

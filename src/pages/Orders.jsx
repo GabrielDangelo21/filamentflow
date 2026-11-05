@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getFilaments, getUnifiedOrders, saveUnifiedOrder, updateUnifiedOrder, deleteUnifiedOrder, getAccCategories, isOrderPending, markOrderReceived, markOrderPending } from '../services/storage';
-import { ColorDot, getColorFromName, getBrandColor } from '../utils/colorUtils';
+import ColorDot from '../components/ColorDot';
+import { getColorFromName, getBrandColor } from '../utils/colorUtils';
 import MaskedNumberInput from '../components/MaskedNumberInput';
+import Portal from '../components/Portal';
 
 const createEmptyFilamentItem = () => ({
   _id: Math.random(),
@@ -26,10 +28,18 @@ const createEmptyAccessoryItem = (defaultCategory = '') => ({
 
 const PENDING_COLOR = '#60A5FA';
 
+// Pedidos "a caminho" primeiro; depois do mais novo para o mais antigo
+const lerPedidosOrdenados = () =>
+  getUnifiedOrders().sort((a, b) => {
+    const da = a.date?.includes('T') ? new Date(a.date) : new Date(a.date + 'T12:00:00');
+    const db = b.date?.includes('T') ? new Date(b.date) : new Date(b.date + 'T12:00:00');
+    return (isOrderPending(b) - isOrderPending(a)) || (db - da);
+  });
+
 const Orders = () => {
-  const [filaments, setFilaments] = useState([]);
-  const [accCategories, setAccCategories] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const [filaments] = useState(getFilaments);
+  const [accCategories] = useState(getAccCategories);
+  const [orders, setOrders] = useState(lerPedidosOrdenados);
 
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [orderStore, setOrderStore] = useState('');
@@ -52,13 +62,6 @@ const Orders = () => {
   const prevAccessoryLength = useRef(0);
 
   useEffect(() => {
-    setFilaments(getFilaments());
-    const cats = getAccCategories();
-    setAccCategories(cats);
-    loadData();
-  }, []);
-
-  useEffect(() => {
     if (filamentItems.length > prevFilamentLength.current) {
       filamentInputRefs.current[filamentItems.length - 1]?.focus();
     }
@@ -72,13 +75,7 @@ const Orders = () => {
     prevAccessoryLength.current = accessoryItems.length;
   }, [accessoryItems.length]);
 
-  const loadData = () => setOrders(
-    getUnifiedOrders().sort((a, b) => {
-      const da = a.date?.includes('T') ? new Date(a.date) : new Date(a.date + 'T12:00:00');
-      const db = b.date?.includes('T') ? new Date(b.date) : new Date(b.date + 'T12:00:00');
-      return (isOrderPending(b) - isOrderPending(a)) || (db - da);
-    })
-  );
+  const loadData = () => setOrders(lerPedidosOrdenados());
 
   // --- Filament item helpers ---
   const updateFilamentItem = (index, changes) =>
@@ -384,6 +381,7 @@ const Orders = () => {
   return (
     <div className="animate-fade-in">
       {successMessage && (
+        <Portal>
         <div style={{
           position: 'fixed', top: '20px', right: '20px', zIndex: 10000,
           background: 'var(--primary)', color: 'white',
@@ -392,6 +390,7 @@ const Orders = () => {
         }}>
           {successMessage}
         </div>
+        </Portal>
       )}
 
       <h1>{isEditing ? 'Editar Pedido' : 'Entrada de Estoque (Pedidos)'}</h1>
