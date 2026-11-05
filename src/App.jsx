@@ -1,38 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import Layout from './components/Layout';
-import Estoque from './pages/Estoque';
-import Dashboard from './pages/Dashboard';
-import Filaments from './pages/Filaments';
-import Orders from './pages/Orders';
-import Prints from './pages/Prints';
-import Accessories from './pages/Accessories';
-import ProximasImpressoes from './pages/ProximasImpressoes';
-import Orcamento from './pages/Orcamento';
-import Estimativa from './pages/Estimativa';
-import Vendas from './pages/Vendas';
+
+// Cada aba é carregada só quando é aberta (o Chart.js, por exemplo, só vem com o Dashboard)
+const PAGINAS = {
+  dashboard:   lazy(() => import('./pages/Dashboard')),
+  estoque:     lazy(() => import('./pages/Estoque')),
+  orders:      lazy(() => import('./pages/Orders')),
+  prints:      lazy(() => import('./pages/Prints')),
+  filaments:   lazy(() => import('./pages/Filaments')),
+  accessories: lazy(() => import('./pages/Accessories')),
+  proximas:    lazy(() => import('./pages/ProximasImpressoes')),
+  orcamento:   lazy(() => import('./pages/Orcamento')),
+  estimativa:  lazy(() => import('./pages/Estimativa')),
+  vendas:      lazy(() => import('./pages/Vendas')),
+};
+
+// A aba aberta fica no endereço (#estoque, #vendas…): recarregar mantém a aba e o "voltar" funciona
+const abaDoEndereco = () => {
+  const aba = window.location.hash.replace(/^#\/?/, '');
+  return PAGINAS[aba] ? aba : 'dashboard';
+};
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(abaDoEndereco);
 
-  const renderPage = () => {
-    switch (activeTab) {
-      case 'estoque': return <Estoque />;
-      case 'dashboard': return <Dashboard />;
-      case 'filaments': return <Filaments />;
-      case 'orders': return <Orders />;
-      case 'prints': return <Prints />;
-      case 'accessories': return <Accessories />;
-      case 'proximas': return <ProximasImpressoes />;
-      case 'orcamento': return <Orcamento />;
-      case 'estimativa': return <Estimativa />;
-      case 'vendas': return <Vendas />;
-      default: return <Estoque />;
-    }
+  useEffect(() => {
+    const aoMudarEndereco = () => setActiveTab(abaDoEndereco());
+    window.addEventListener('hashchange', aoMudarEndereco);
+    return () => window.removeEventListener('hashchange', aoMudarEndereco);
+  }, []);
+
+  const mudarAba = (aba) => {
+    if (aba !== activeTab) window.location.hash = aba;
   };
 
+  const Pagina = PAGINAS[activeTab];
+
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      {renderPage()}
+    <Layout activeTab={activeTab} onTabChange={mudarAba}>
+      <Suspense fallback={<p style={{ color: 'var(--text-muted)' }}>Carregando…</p>}>
+        <Pagina />
+      </Suspense>
     </Layout>
   );
 }
