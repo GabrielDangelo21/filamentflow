@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, validarBackup, getPrintCost, getSales, getSaleProfit, getChavesCorrompidas, getUltimoBackup, registrarBackupFeito, temDadosGuardados } from '../services/storage';
+import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, validarBackup, getPrintCost, getSales, getSaleProfit, getChavesCorrompidas, getUltimoBackup, registrarBackupFeito, temDadosGuardados, getSkusRepetidos, removerSkusRepetidos } from '../services/storage';
 
 const DIAS_LEMBRETE_BACKUP = 7;
 
@@ -49,6 +49,16 @@ const Dashboard = () => {
   const [backupMsg, setBackupMsg] = useState('');
   const [lembrete, setLembrete] = useState(lembreteBackup);
   const [corrompidas] = useState(getChavesCorrompidas);
+  const [skusRepetidos, setSkusRepetidos] = useState(getSkusRepetidos);
+
+  const handleRemoverRepetidos = () => {
+    const lista = skusRepetidos.map(r => `SKU ${r.sku} (${r.quantidade} cadastros)`).join('\n');
+    if (!confirm(`Remover os cadastros repetidos? Fica só o primeiro de cada SKU, que é o que o app já usa:\n\n${lista}\n\nDica: exporte um backup antes.`)) return;
+    const n = removerSkusRepetidos();
+    setSkusRepetidos(getSkusRepetidos());
+    setBackupMsg(`✓ ${n} cadastro(s) repetido(s) removido(s).`);
+    setTimeout(() => setBackupMsg(''), 3000);
+  };
   const importInputRef = useRef(null);
 
   const downloadBackup = (nome) => {
@@ -277,6 +287,28 @@ const Dashboard = () => {
         }}>
           <strong>Alguns dados estavam corrompidos e foram deixados de lado:</strong> {corrompidas.join(', ')}.
           {' '}Uma cópia ficou guardada no navegador (chaves terminadas em "_corrompido_…"). Importe seu último backup para recuperá-los.
+        </div>
+      )}
+
+      {skusRepetidos.length > 0 && (
+        <div role="status" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap',
+          background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.45)', color: '#93C5FD',
+          borderRadius: '0.5rem', padding: '0.85rem 1.25rem', marginBottom: '1rem', fontSize: '0.9rem'
+        }}>
+          <span>
+            Há filamentos cadastrados mais de uma vez com o mesmo SKU: {skusRepetidos.map(r => r.sku).join(', ')}.
+            {' '}O app usa o primeiro cadastro de cada um; os outros estão guardados, mas não aparecem.
+          </span>
+          <button
+            onClick={handleRemoverRepetidos}
+            style={{
+              background: '#3B82F6', color: '#fff', border: 'none', borderRadius: '0.4rem',
+              padding: '0.45rem 0.9rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700
+            }}
+          >
+            Remover repetidos
+          </button>
         </div>
       )}
 

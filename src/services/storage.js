@@ -56,18 +56,33 @@ const saveToStorage = (key, data) => {
 const generateId = () => crypto.randomUUID();
 
 // --- FILAMENTS ---
+// Lista guardada, só com o SKU normalizado para texto (inclui cadastros com SKU repetido)
+const lerFilamentos = () => getFromStorage(STORAGE_KEYS.FILAMENTS).map(f => ({ ...f, sku: String(f.sku) }));
+
+// Só lê: se houver SKU repetido, o app usa o primeiro cadastro (os outros continuam guardados
+// e aparecem no aviso do Dashboard, onde dá para removê-los).
 export const getFilaments = () => {
-  const raw = getFromStorage(STORAGE_KEYS.FILAMENTS).map(f => ({ ...f, sku: String(f.sku) }));
-  let migrated = false;
-  raw.forEach(f => { if (!f.id) { f.id = generateId(); migrated = true; } });
   const seen = new Set();
-  const deduped = raw.filter(f => { if (seen.has(f.sku)) return false; seen.add(f.sku); return true; });
-  if (migrated || deduped.length !== raw.length) saveToStorage(STORAGE_KEYS.FILAMENTS, deduped);
-  return deduped;
+  return lerFilamentos().filter(f => { if (seen.has(f.sku)) return false; seen.add(f.sku); return true; });
+};
+
+// SKUs com mais de um cadastro: [{ sku, quantidade }]
+export const getSkusRepetidos = () => {
+  const cont = new Map();
+  lerFilamentos().forEach(f => cont.set(f.sku, (cont.get(f.sku) || 0) + 1));
+  return [...cont].filter(([, n]) => n > 1).map(([sku, quantidade]) => ({ sku, quantidade }));
+};
+
+// Remove os cadastros repetidos, mantendo o primeiro de cada SKU (o que o app já usa)
+export const removerSkusRepetidos = () => {
+  const antes = lerFilamentos().length;
+  const unicos = getFilaments();
+  saveToStorage(STORAGE_KEYS.FILAMENTS, unicos);
+  return antes - unicos.length;
 };
 
 export const saveFilament = (filament) => {
-  const filaments = getFilaments();
+  const filaments = lerFilamentos();
 
   if (filament.id) {
     const existingIndex = filaments.findIndex(f => f.id === filament.id);
@@ -89,7 +104,7 @@ export const saveFilament = (filament) => {
 };
 
 export const deleteFilament = (id) => {
-  saveToStorage(STORAGE_KEYS.FILAMENTS, getFilaments().filter(f => f.id !== id));
+  saveToStorage(STORAGE_KEYS.FILAMENTS, lerFilamentos().filter(f => f.id !== id));
 };
 
 // --- UNIFIED ORDERS ---
@@ -99,25 +114,12 @@ export const deleteFilament = (id) => {
 // Each item: { type: 'filament', sku, weightGrams, price }
 //         OR { type: 'accessory', name, category, quantity, price }
 
-export const getUnifiedOrders = () => {
-  let migrated = false;
-  const raw = getFromStorage(STORAGE_KEYS.UNIFIED_ORDERS).map(o => ({
+// Só lê (as correções de dados antigos ficam em migrarDadosLegados, que roda ao abrir o app)
+export const getUnifiedOrders = () =>
+  getFromStorage(STORAGE_KEYS.UNIFIED_ORDERS).map(o => ({
     ...o,
-    items: (o.items || []).map(i => {
-      if (i.type === 'filament') return { ...i, sku: String(i.sku) };
-      if (i.type === 'accessory' && i.category === 'Electrónica') { migrated = true; return { ...i, category: 'Eletrônica' }; }
-      if (i.type === 'accessory' && i.category === 'Impressora') {
-        if (i.name === 'P2S')      { migrated = true; return { ...i, name: 'P2S-1' }; }
-        if (i.name === 'A1 Combo') { migrated = true; return { ...i, category: 'Impressora (devolvida)' }; }
-      }
-      return i;
-    })
+    items: (o.items || []).map(i => (i.type === 'filament' ? { ...i, sku: String(i.sku) } : i)),
   }));
-  const seen = new Set();
-  const deduped = raw.filter(o => { if (seen.has(o.id)) return false; seen.add(o.id); return true; });
-  if (migrated || deduped.length !== raw.length) saveToStorage(STORAGE_KEYS.UNIFIED_ORDERS, deduped);
-  return deduped;
-};
 
 export const saveUnifiedOrder = (order) => {
   const orders = getUnifiedOrders();
@@ -151,29 +153,12 @@ export const deleteUnifiedOrder = (id) => {
 };
 
 // --- PRINTS ---
-export const getPrints = () => {
-  const prints = getFromStorage(STORAGE_KEYS.PRINTS);
-  let migrated = false;
-  prints.forEach(p => {
-    if (!p.id) { p.id = generateId(); migrated = true; }
-    if (!p.printer || p.printer === 'Bambu Lab P2S' || p.printer === 'P2S') { p.printer = 'P2S-1'; migrated = true; }
-    if (p.filamentsUsed) {
-      p.filamentsUsed = p.filamentsUsed.map(f => {
-        const item = { ...f, sku: String(f.sku) };
-        // Impressões antigas sem preço gravado: grava o preço médio atual (se houver compra)
-        if (!(Number(item.pricePerGram) > 0)) {
-          const ppg = getFilamentPricePerGram(item.sku);
-          if (ppg > 0) { item.pricePerGram = ppg; migrated = true; }
-        }
-        return item;
-      });
-    }
-  });
-  const seen = new Set();
-  const deduped = prints.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
-  if (migrated || deduped.length !== prints.length) saveToStorage(STORAGE_KEYS.PRINTS, deduped);
-  return deduped;
-};
+// Só lê (as correções de dados antigos ficam em migrarDadosLegados, que roda ao abrir o app)
+export const getPrints = () =>
+  getFromStorage(STORAGE_KEYS.PRINTS).map(p => ({
+    ...p,
+    filamentsUsed: (p.filamentsUsed || []).map(f => ({ ...f, sku: String(f.sku) })),
+  }));
 
 // Grava o preço por grama de cada filamento no momento do registro, para o custo
 // da impressão não mudar quando houver compras novas com outro preço.
@@ -382,12 +367,6 @@ const DEFAULT_ACC_CATEGORIES = ['Ferramentas', 'Consumíveis', 'Adesivos', 'Supe
 export const getAccCategories = () => {
   const parsed = lerJSON(STORAGE_KEYS.ACC_CATEGORIES, null, Array.isArray);
   if (!parsed) { saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, DEFAULT_ACC_CATEGORIES); return [...DEFAULT_ACC_CATEGORIES]; }
-  // Migração para português do Brasil
-  if (parsed.includes('Electrónica')) {
-    const fixed = [...new Set(parsed.map(c => (c === 'Electrónica' ? 'Eletrônica' : c)))];
-    saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, fixed);
-    return fixed;
-  }
   return parsed;
 };
 
@@ -565,7 +544,69 @@ export const buscarVendasPopzu = async () => {
 // Tira a mão de obra (placas × minutos × €/h) das vendas cujo custo foi calculado a partir de impressões.
 const MIG_CUSTO_SEM_MO = 'filamentflow_mig_custo_sem_mao_de_obra';
 
+// Correções de dados antigos. Roda toda vez que o app abre (e após importar um backup),
+// antes de qualquer tela ler os dados; só grava o que mudou.
+const semIdRepetido = (lista) => {
+  const vistos = new Set();
+  return lista.filter(x => { if (vistos.has(x.id)) return false; vistos.add(x.id); return true; });
+};
+
+const migrarDadosLegados = () => {
+  // Pedidos: nomes antigos de categorias/impressoras e registros duplicados
+  const pedidosBrutos = getFromStorage(STORAGE_KEYS.UNIFIED_ORDERS);
+  const pedidos = semIdRepetido(pedidosBrutos.map(o => ({
+    ...o,
+    items: (o.items || []).map(i => {
+      if (i.type === 'accessory' && i.category === 'Electrónica') return { ...i, category: 'Eletrônica' };
+      if (i.type === 'accessory' && i.category === 'Impressora') {
+        if (i.name === 'P2S')      return { ...i, name: 'P2S-1' };
+        if (i.name === 'A1 Combo') return { ...i, category: 'Impressora (devolvida)' };
+      }
+      return i;
+    }),
+  })));
+  if (JSON.stringify(pedidos) !== JSON.stringify(pedidosBrutos)) saveToStorage(STORAGE_KEYS.UNIFIED_ORDERS, pedidos);
+
+  // Filamentos sem id
+  const filamentos = getFromStorage(STORAGE_KEYS.FILAMENTS);
+  if (filamentos.some(f => !f.id)) {
+    saveToStorage(STORAGE_KEYS.FILAMENTS, filamentos.map(f => (f.id ? f : { ...f, id: generateId() })));
+  }
+
+  // Impressões: id, impressora padrão, preço por grama gravado e registros duplicados
+  const impressoesBrutas = getFromStorage(STORAGE_KEYS.PRINTS);
+  const impressoes = semIdRepetido(impressoesBrutas.map(p => {
+    const q = { ...p };
+    if (!q.id) q.id = generateId();
+    if (!q.printer || q.printer === 'Bambu Lab P2S' || q.printer === 'P2S') q.printer = 'P2S-1';
+    if (q.filamentsUsed) {
+      q.filamentsUsed = q.filamentsUsed.map(f => {
+        const item = { ...f, sku: String(f.sku) };
+        // Impressões antigas sem preço gravado: grava o preço médio atual (se houver compra)
+        if (!(Number(item.pricePerGram) > 0)) {
+          const ppg = getFilamentPricePerGram(item.sku);
+          if (ppg > 0) item.pricePerGram = ppg;
+        }
+        return item;
+      });
+    }
+    return q;
+  }));
+  if (JSON.stringify(impressoes) !== JSON.stringify(impressoesBrutas)) saveToStorage(STORAGE_KEYS.PRINTS, impressoes);
+
+  // Categorias de acessórios em português do Brasil
+  const cats = lerJSON(STORAGE_KEYS.ACC_CATEGORIES, null, Array.isArray);
+  if (cats && cats.includes('Electrónica')) {
+    saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, [...new Set(cats.map(c => (c === 'Electrónica' ? 'Eletrônica' : c)))]);
+  }
+};
+
 export const executarMigracoes = () => {
+  migrarDadosLegados();
+  migrarCustoSemMaoDeObra();
+};
+
+const migrarCustoSemMaoDeObra = () => {
   if (localStorage.getItem(MIG_CUSTO_SEM_MO)) return;
   const cfg = { laborMinutes: 5, hourlyRate: 15, ...(getPriceSettingsRaw() || {}) };
   const moPorPlaca = (Number(cfg.laborMinutes) || 0) / 60 * (Number(cfg.hourlyRate) || 0);
