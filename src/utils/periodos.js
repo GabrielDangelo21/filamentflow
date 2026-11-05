@@ -54,24 +54,34 @@ const noIntervalo = (data, iv) => {
 };
 
 // Números dos cartões dentro de um intervalo.
-// custoImpressao(print) e lucroVenda(sale) vêm do storage (getPrintCost / getSaleProfit).
-export const calcularKpis = ({ sales, orders, prints }, iv, { custoImpressao, lucroVenda }) => {
+// lucroVenda(sale) vem do storage (getSaleProfit): null = venda sem custo.
+export const calcularKpis = ({ sales, prints }, iv, { lucroVenda }) => {
   const vendas = sales.filter(s => noIntervalo(s.date, iv));
-  const pedidos = orders.filter(o => noIntervalo(o.date, iv));
   const impressoes = prints.filter(p => noIntervalo(p.date, iv));
   return {
     totalSales: vendas.length,
     totalRevenue: vendas.reduce((acc, s) => acc + (Number(s.finalPrice) || 0), 0),
     totalProfit: vendas.reduce((acc, s) => acc + (lucroVenda(s) ?? 0), 0),
-    totalCost: pedidos.reduce((acc, o) =>
-      acc + (o.items || []).reduce((s, i) => s + (i.price != null ? Number(i.price) || 0 : 0), 0), 0),
-    totalPurchasedGrams: pedidos.reduce((acc, o) =>
-      acc + (o.items || []).filter(i => i.type === 'filament').reduce((s, i) => s + (Number(i.weightGrams) || 0), 0), 0),
+    // Base da margem (mesma conta da aba Vendas): faturado sem IVA só das vendas que têm custo
+    receitaComCustoSemIva: vendas
+      .filter(s => lucroVenda(s) !== null)
+      .reduce((acc, s) => acc + (Number(s.finalPrice) || 0) / (1 + (Number(s.vatPct) || 0) / 100), 0),
     totalPrints: impressoes.length,
-    totalPrintCost: impressoes.reduce((acc, p) => acc + custoImpressao(p), 0),
     totalUsedGrams: impressoes.reduce((acc, p) => acc + (Number(p.totalWeight) || 0), 0),
     totalTimeMinutes: impressoes.reduce((acc, p) => acc + (Number(p.timeMinutes) || 0), 0),
   };
+};
+
+// Tempo de impressão em dias e horas ("10 dias 5 horas"); abaixo de 1 hora, em minutos
+export const formatarDuracao = (minutos) => {
+  const total = Math.round(Number(minutos) || 0);
+  if (total < 60) return `${total} min`;
+  const dias = Math.floor(total / 1440);
+  const horas = Math.floor((total % 1440) / 60);
+  const partes = [];
+  if (dias) partes.push(`${dias} ${dias === 1 ? 'dia' : 'dias'}`);
+  if (horas || !dias) partes.push(`${horas} ${horas === 1 ? 'hora' : 'horas'}`);
+  return partes.join(' ');
 };
 
 // Variação percentual entre o período e o anterior.

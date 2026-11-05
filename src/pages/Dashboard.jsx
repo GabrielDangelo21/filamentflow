@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
-import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, validarBackup, getPrintCost, getSales, getSaleProfit, getChavesCorrompidas, getUltimoBackup, registrarBackupFeito, temDadosGuardados, getSkusRepetidos, removerSkusRepetidos } from '../services/storage';
-import { PERIODOS, intervalos, calcularKpis, variacao } from '../utils/periodos';
+import { getAllFilamentsWithStock, getUnifiedOrders, getPrints, exportBackup, importBackup, validarBackup, getSales, getSaleProfit, getChavesCorrompidas, getUltimoBackup, registrarBackupFeito, temDadosGuardados, getSkusRepetidos, removerSkusRepetidos } from '../services/storage';
+import { PERIODOS, intervalos, calcularKpis, variacao, formatarDuracao } from '../utils/periodos';
+
+const fmtEur = (v) => `€ ${v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const DIAS_LEMBRETE_BACKUP = 7;
 
@@ -44,7 +46,7 @@ const calcularPainel = () => {
   const allPrints = getPrints();
 
   // Listas usadas pelos cartões (filtradas pelo período escolhido)
-  const bruto = { sales: getSales(), orders: allOrders, prints: allPrints };
+  const bruto = { sales: getSales(), prints: allPrints };
 
   // Impressões por mês (últimos 6 meses com dados)
   const monthMap = {};
@@ -105,7 +107,7 @@ const Dashboard = () => {
   // Cartões do topo: números do período escolhido e do período anterior (para a comparação)
   const { stats, anterior, descricaoAnterior } = useMemo(() => {
     const iv = intervalos(periodo);
-    const fns = { custoImpressao: getPrintCost, lucroVenda: getSaleProfit };
+    const fns = { lucroVenda: getSaleProfit };
     return {
       stats: calcularKpis(bruto, iv.atual, fns),
       anterior: iv.anterior ? calcularKpis(bruto, iv.anterior, fns) : null,
@@ -387,56 +389,30 @@ const Dashboard = () => {
         </span>
       </div>
 
-      <div className="kpi-grade kpi-grade-3" style={{ marginBottom: '1rem' }}>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3B82F6' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>VENDAS REGISTRADAS</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: '#3B82F6' }}>{stats.totalSales}</p>
-          {delta('totalSales')}
-        </div>
+      <div className="kpi-grade kpi-grade-3" style={{ marginBottom: '2rem' }}>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #00F0FF' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>FATURADO</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: '#00F0FF' }}>€ {stats.totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#00F0FF' }}>{fmtEur(stats.totalRevenue)}</p>
+          <p className="kpi-sub">{stats.totalSales} {stats.totalSales === 1 ? 'venda' : 'vendas'}</p>
           {delta('totalRevenue')}
         </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: `4px solid ${stats.totalProfit >= 0 ? '#10B981' : '#F87171'}` }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>LUCRO NAS VENDAS (COM CUSTO)</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: stats.totalProfit >= 0 ? '#10B981' : '#F87171' }}>€ {stats.totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }} title="Só vendas com custo definido">LUCRO</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: stats.totalProfit >= 0 ? '#10B981' : '#F87171' }}>{fmtEur(stats.totalProfit)}</p>
+          <p className="kpi-sub" title="Lucro ÷ faturado sem IVA das vendas com custo (mesma conta da aba Vendas)">
+            {stats.receitaComCustoSemIva > 0
+              ? `margem de ${(stats.totalProfit / stats.receitaComCustoSemIva * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+              : 'sem vendas com custo'}
+          </p>
           {delta('totalProfit')}
         </div>
-      </div>
-
-      <div className="kpi-grade kpi-grade-6" style={{ marginBottom: '2rem' }}>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EF4444' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }} title="Soma dos itens dos pedidos (filamentos, acessórios e equipamentos)">GASTO EM COMPRAS</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: '#EF4444' }}>€ {stats.totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-          {delta('totalCost', 'neutro')}
-        </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EAB308' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>FILAMENTO COMPRADO</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: '#EAB308' }}>{(stats.totalPurchasedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
-          {delta('totalPurchasedGrams', 'neutro')}
-        </div>
         <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #3B82F6' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>IMPRESSÕES REALIZADAS</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: '#3B82F6' }}>{stats.totalPrints}</p>
-          {delta('totalPrints')}
-        </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EF4444' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>CUSTO EM IMPRESSÕES</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: '#EF4444' }}>€ {stats.totalPrintCost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-          {delta('totalPrintCost', 'neutro')}
-        </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #EAB308' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>FILAMENTO USADO</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: '#EAB308' }}>{(stats.totalUsedGrams / 1000).toFixed(2).replace('.', ',')}kg</p>
-          {delta('totalUsedGrams')}
-        </div>
-        <div className="glass-panel stat-card" style={{ padding: '1.25rem', borderLeft: '4px solid #F97316' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>TEMPO DE IMPRESSÃO</p>
-          <p className="kpi-valor" style={{ fontWeight: 700, color: '#F97316' }}>
-            {Math.floor((stats.totalTimeMinutes || 0) / 60)}h {Math.round((stats.totalTimeMinutes || 0) % 60)}min
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>IMPRESSÕES</p>
+          <p className="kpi-valor" style={{ fontWeight: 700, color: '#3B82F6' }}>{stats.totalPrints.toLocaleString('pt-BR')}</p>
+          <p className="kpi-sub">
+            {(stats.totalUsedGrams / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg · {formatarDuracao(stats.totalTimeMinutes)}
           </p>
-          {delta('totalTimeMinutes')}
+          {delta('totalPrints')}
         </div>
       </div>
 

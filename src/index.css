@@ -269,6 +269,16 @@ body {
 .seletor-periodo button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .periodo-legenda { font-size: 0.78rem; color: var(--text-muted); }
 
+/* Detalhe embaixo do valor de cada cartão (ex.: "7 vendas") */
+.kpi-sub {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Linha de variação embaixo do valor de cada cartão */
 .kpi-delta {
   margin-top: 0.2rem;
