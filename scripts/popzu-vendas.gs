@@ -781,14 +781,19 @@ var NOVIDADES = [
 
 // Produtos novos (aparecem no site e passam a aparecer no formulário). Cada um entra logo depois de "depois",
 // com uma linha também no Estoque (0 impressas). Se já existir, é pulado.
+// (Zoro cicatriz e Zoro espada saíram desta lista em 14/11/2026: não existem mais no site e as linhas
+//  foram apagadas do Estoque; deixá-los aqui faria o menu recriar as linhas.)
 var NOVOS_PRODUTOS = [
-  { nome: 'Zoro (cicatriz) (One Piece)', depois: 'Roronoa Zoro (One Piece)', preco: 17, custo: 6.61, codigo: 'one-piece-zoro-cicatriz' },
-  { nome: 'Zoro (espada) (One Piece)', depois: 'Zoro (cicatriz) (One Piece)', preco: 18, custo: 7.7, codigo: 'one-piece-zoro-espada' },
   { nome: 'Gaara (Naruto)', depois: 'Sasuke Uchiha (Naruto)', preco: 19, custo: 8.56, codigo: 'naruto-gaara' },
   { nome: 'Rock Lee (Naruto)', depois: 'Gaara (Naruto)', preco: 15, custo: 6.35, codigo: 'naruto-rock-lee' },
-  { nome: 'Lindinha (Meninas Superpoderosas)', depois: 'Chase (Patrulha Canina)', preco: 24, custo: 10.59, codigo: 'meninas-superpoderosas-lindinha' },
+  { nome: 'Lindinha (Meninas Superpoderosas)', depois: 'Chase (Patrulha Canina)', preco: 24, custo: 10.59, codigo: 'meninas-super-poderosas-lindinha' },
   { nome: 'Jason Voorhees (Sexta-Feira 13)', depois: 'Lindinha (Meninas Superpoderosas)', preco: 28, custo: 12.57, codigo: 'sexta-feira-13-jason-voorhees' },
-  { nome: 'Sung Jin-Woo (Solo Leveling)', depois: 'Jason Voorhees (Sexta-Feira 13)', preco: 20, custo: 8.09, codigo: 'solo-leveling-sung-jin-woo' }
+  { nome: 'Sung Jin-Woo (Solo Leveling)', depois: 'Jason Voorhees (Sexta-Feira 13)', preco: 20, custo: 8.09, codigo: 'solo-leveling-sung-jin-woo' },
+  // 14/11/2026
+  { nome: 'Hinata Hyuga (Naruto)', depois: 'Rock Lee (Naruto)', preco: 18, custo: 7.99, codigo: 'naruto-hinata' },
+  { nome: 'Madara Uchiha (Naruto)', depois: 'Hinata Hyuga (Naruto)', preco: 22, custo: 10.81, codigo: 'naruto-madara' },
+  { nome: 'Minato Namikaze (Naruto)', depois: 'Madara Uchiha (Naruto)', preco: 22, custo: 10.20, codigo: 'naruto-minato' },
+  { nome: 'Darth Vader (Star Wars)', depois: 'Stormtrooper (1ª Ordem) (Star Wars)', preco: 18, custo: 8.03, codigo: 'star-wars-darth-vader' }
 ];
 
 function adicionarProdutos_(prod, est) {
