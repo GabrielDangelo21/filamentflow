@@ -152,7 +152,7 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
               </div>
               {linhaResumo('Material + falhas', calc.totalMaterial + calc.totalWaste)}
               {linhaResumo('Energia + desgaste', calc.totalElectricity + calc.totalWear)}
-              {linhaResumo('Embalagem', calc.totalPackaging)}
+              {linhaResumo('Embalagem do pedido', calc.totalPackaging)}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--card-border)', paddingTop: '0.5rem', marginTop: '0.4rem', fontWeight: 700 }}>
                 <span>Custo</span><span>{fmtEur(custoImpressoes)}</span>
               </div>
@@ -169,7 +169,7 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
             <label className="form-label">Custo da venda (sem mão de obra)</label>
             <MaskedNumberInput className="form-input" prefix="€" value={valor} onChange={setValor} />
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-              Dica: para uma peça que ainda não imprimiu, use a Estimativa de custo e digite aqui o “Total material” + a “Embalagem”.
+              Dica: para uma peça que ainda não imprimiu, use a Estimativa de custo e digite aqui o “Total material” + a “Embalagem do pedido”.
             </div>
           </div>
         )}

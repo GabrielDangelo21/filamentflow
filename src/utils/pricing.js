@@ -49,7 +49,9 @@ export const calcularPreco = ({ materialCost, totalTime, placas, extrasCost = 0 
   const totalLabor       = placas * (s.laborMinutes / 60) * s.hourlyRate;
   const totalWaste       = totalMaterial * s.wastePct / 100;
   const totalWear        = (totalTime / 60) * s.wearPerHour;
-  const totalPackaging   = placas > 0 ? s.packaging : 0; // orçamento de uma peça
+  // Embalagem de envio: uma por pedido, seja de 1 ou de 50 peças. O que vai em cada peça
+  // (saquinho, argola...) entra como extra por peça (calcularExtras).
+  const totalPackaging   = placas > 0 ? s.packaging : 0;
   const totalExtras      = Number(extrasCost) || 0;
   const totalCost        = totalMaterial + totalWaste + totalElectricity + totalWear + totalLabor + totalPackaging + totalExtras;
   // 'custo': preço = custo × (1 + %).  'preco': a % é a parte do preço que fica como lucro.

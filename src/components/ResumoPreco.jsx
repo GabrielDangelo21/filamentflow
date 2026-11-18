@@ -24,7 +24,7 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
     { key: 'laborMinutes', label: 'Mão de obra (min/placa)',   step: '5'     },
     { key: 'hourlyRate',   label: '€/hora',                        step: '0.5'   },
     { key: 'wearPerHour',  label: 'Desgaste da máquina (€/hora)',  step: '0.05'  },
-    { key: 'packaging',    label: 'Embalagem (€/peça)',            step: '0.1'   },
+    { key: 'packaging',    label: 'Embalagem do pedido (€)',       step: '0.1'   },
     { key: 'wastePct',     label: 'Falhas / desperdício (%)',      step: '1'     },
     { key: 'margin',       label: marginMode === 'preco' ? 'Margem sobre o preço (%)' : 'Acréscimo sobre o custo (%)', step: '5' },
     { key: 'vat',          label: 'IVA (%)',                       step: '1'     },
@@ -74,7 +74,7 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
 
             {[
               { label: '🤝 Mão de obra', value: calc.totalLabor       },
-              { label: '📦 Embalagem',   value: calc.totalPackaging   },
+              { label: '📦 Embalagem do pedido', value: calc.totalPackaging },
               ...(calc.totalExtras > 0 ? [{ label: '🔗 Extras', value: calc.totalExtras }] : []),
             ].map(linha)}
 
