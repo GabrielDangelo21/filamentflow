@@ -41,15 +41,17 @@ export const usePriceSettings = () => {
   return [settings, setSetting];
 };
 
-// materialCost em €, totalTime em minutos, placas = nº de placas (mão de obra é por placa)
-export const calcularPreco = ({ materialCost, totalTime, placas }, s) => {
+// materialCost em €, totalTime em minutos, placas = nº de placas (mão de obra é por placa),
+// extrasCost = acessórios gastos na venda (argolas, saquinhos...), em €; entram no custo e na margem
+export const calcularPreco = ({ materialCost, totalTime, placas, extrasCost = 0 }, s) => {
   const totalMaterial    = materialCost;
   const totalElectricity = (s.wattage / 1000) * (totalTime / 60) * s.kwh;
   const totalLabor       = placas * (s.laborMinutes / 60) * s.hourlyRate;
   const totalWaste       = totalMaterial * s.wastePct / 100;
   const totalWear        = (totalTime / 60) * s.wearPerHour;
   const totalPackaging   = placas > 0 ? s.packaging : 0; // orçamento de uma peça
-  const totalCost        = totalMaterial + totalWaste + totalElectricity + totalWear + totalLabor + totalPackaging;
+  const totalExtras      = Number(extrasCost) || 0;
+  const totalCost        = totalMaterial + totalWaste + totalElectricity + totalWear + totalLabor + totalPackaging + totalExtras;
   // 'custo': preço = custo × (1 + %).  'preco': a % é a parte do preço que fica como lucro.
   const priceExVat       = s.marginMode === 'preco'
     ? (s.margin < 100 ? totalCost / (1 - s.margin / 100) : totalCost)
@@ -60,7 +62,23 @@ export const calcularPreco = ({ materialCost, totalTime, placas }, s) => {
   const vatAmt           = priceExVat * s.vat / 100;
   const sellingPrice     = priceExVat + vatAmt;
   return {
-    totalMaterial, totalWaste, totalElectricity, totalWear, totalLabor, totalPackaging,
+    totalMaterial, totalWaste, totalElectricity, totalWear, totalLabor, totalPackaging, totalExtras,
     totalCost, priceExVat, marginAmt, markupPct, realMarginPct, vatAmt, sellingPrice,
   };
+};
+
+// Extras de uma venda: cada linha diz quantas unidades do acessório vão em cada peça.
+// extras = [{ name, porPeca }], pecas = nº de peças vendidas, custos = getCustosAcessorios().
+// Devolve { itens: [{ name, porPeca, quantidade, custoUnit, total, semPreco }], total }.
+export const calcularExtras = (extras, pecas, custos) => {
+  const porNome = new Map(custos.map(c => [c.name, c]));
+  const n = Math.max(0, Number(pecas) || 0);
+  const itens = extras.map(e => {
+    const porPeca = Math.max(0, Number(e.porPeca) || 0);
+    const info = porNome.get(e.name);
+    const custoUnit = info ? info.unitCost : 0;
+    const quantidade = porPeca * n;
+    return { name: e.name, porPeca, quantidade, custoUnit, total: quantidade * custoUnit, semPreco: !info };
+  });
+  return { itens, total: itens.reduce((s, i) => s + i.total, 0) };
 };

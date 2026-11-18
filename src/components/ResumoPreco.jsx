@@ -6,8 +6,8 @@ const fmtEur = (v) =>
 const fmtPct = (v) => v.toFixed(1).replace('.', ',') + '%';
 
 // Painel "Resumo" com o detalhe do custo, preço de venda e configurações de preço.
-// vazio: mostra emptyContent em vez dos valores; info/aviso: blocos opcionais no topo.
-export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso, acoes }) {
+// vazio: mostra emptyContent em vez dos valores; info/aviso/entradas: blocos opcionais no topo.
+export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso, entradas, acoes }) {
   const [showSettings, setShowSettings] = useState(false);
   const { wastePct, vat, marginMode } = settings;
 
@@ -55,6 +55,8 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
               </div>
             )}
 
+            {entradas}
+
             {/* Breakdown */}
             {[
               { label: '🧵 Material',    value: calc.totalMaterial    },
@@ -73,6 +75,7 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
             {[
               { label: '🤝 Mão de obra', value: calc.totalLabor       },
               { label: '📦 Embalagem',   value: calc.totalPackaging   },
+              ...(calc.totalExtras > 0 ? [{ label: '🔗 Extras', value: calc.totalExtras }] : []),
             ].map(linha)}
 
             <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '0.55rem', marginTop: '0.25rem' }}>

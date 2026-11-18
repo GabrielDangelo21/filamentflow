@@ -134,7 +134,7 @@ export default function Vendas() {
   const lucro    = comCusto.reduce((s, v) => s + getSaleProfit(v), 0);
   const semIva   = comCusto.reduce((s, v) => s + (Number(v.finalPrice) || 0) / (1 + (Number(v.vatPct) || 0) / 100), 0);
   const margem   = semIva > 0 ? (lucro / semIva) * 100 : 0;
-  const pecas    = lista.reduce((s, v) => s + (v.source === 'popzu' ? (Number(v.quantity) || 1) : 1), 0);
+  const pecas    = lista.reduce((s, v) => s + (Number(v.quantity) || 1), 0);
 
   const excluir = (v) => {
     if (!confirm(`Excluir a venda "${v.description}"? As impressões não são alteradas.`)) return;
@@ -235,7 +235,10 @@ export default function Vendas() {
                     {v.notes && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>{v.notes}</div>}
                   </td>
                   <td>{v.client || '—'}</td>
-                  <td>{popzu ? v.quantity : ((v.printIds || []).length ? `${v.printIds.length} placa${v.printIds.length !== 1 ? 's' : ''}` : '—')}</td>
+                  <td>{popzu ? v.quantity : [
+                    Number(v.quantity) > 1 ? `${v.quantity} peças` : null,
+                    (v.printIds || []).length ? `${v.printIds.length} placa${v.printIds.length !== 1 ? 's' : ''}` : null,
+                  ].filter(Boolean).join(' · ') || '—'}</td>
                   <td>
                     {temCusto(v) ? fmtEur(v.costTotal) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                     {popzu && v.costSource && (

@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { getPrints, getPrintCost, temCompraRegistrada, getSales } from '../services/storage';
-import { usePriceSettings, calcularPreco } from '../utils/pricing';
+import { getPrints, getPrintCost, temCompraRegistrada, getSales, getCustosAcessorios } from '../services/storage';
+import { usePriceSettings, calcularPreco, calcularExtras } from '../utils/pricing';
 import ResumoPreco from '../components/ResumoPreco';
+import ExtrasVenda from '../components/ExtrasVenda';
 import VendaModal from '../components/VendaModal';
 import Portal from '../components/Portal';
 
@@ -53,6 +54,10 @@ export default function Orcamento() {
   const [vendidas, setVendidas]       = useState(lerVendidas);
   const [novaVenda, setNovaVenda]     = useState(null);
   const [mensagem, setMensagem]       = useState('');
+  // Peças vendidas e acessórios gastos em cada peça (ex.: 50 chaveiros × 1 argola + 1 saquinho)
+  const [custosAcessorios]            = useState(getCustosAcessorios);
+  const [pecas, setPecas]             = useState(1);
+  const [extras, setExtras]           = useState([]);
 
   const carregarVendidas = () => setVendidas(lerVendidas());
 
@@ -104,11 +109,14 @@ export default function Orcamento() {
   const totalTime        = selectedPrints.reduce((s, p) => s + (Number(p.timeMinutes) || 0), 0);
   const totalWeight      = selectedPrints.reduce((s, p) => s + (Number(p.totalWeight) || 0), 0);
   const placasSemPreco   = selectedPrints.filter(p => p.filamentsUsed.some(f => !temCompraRegistrada(f.sku))).length;
+  const extrasCalc = calcularExtras(extras, pecas, custosAcessorios);
   const calc = calcularPreco({
     materialCost: selectedPrints.reduce((s, p) => s + getPrintCost(p), 0),
     totalTime,
     placas: selectedPrints.length,
+    extrasCost: extrasCalc.total,
   }, settings);
+  const numPecas = Math.max(1, Math.round(Number(pecas) || 1));
 
   const abrirVenda = () => {
     const nomes = [...new Set(selectedPrints.map(p => p.project || p.description).filter(Boolean))];
@@ -121,12 +129,20 @@ export default function Orcamento() {
       laborCost:      calc.totalLabor,
       suggestedPrice: calc.sellingPrice,
       vatPct:         settings.vat,
+      quantity:       numPecas,
+      // O que foi gasto em extras, com o custo unitário da época (fica gravado na venda)
+      extras:         extrasCalc.itens
+        .filter(i => i.quantidade > 0)
+        .map(({ name, porPeca, quantidade, custoUnit, total }) => ({ name, porPeca, quantidade, custoUnit, total })),
+      extrasCost:     extrasCalc.total,
     });
   };
 
   const vendaSalva = () => {
     setNovaVenda(null);
     setSelected(new Set());
+    setPecas(1);
+    setExtras([]);
     carregarVendidas();
     setMensagem('✓ Venda registrada! Veja na aba Vendas.');
     setTimeout(() => setMensagem(''), 3000);
@@ -330,6 +346,13 @@ export default function Orcamento() {
             <span>{selected.size} placa{selected.size !== 1 ? 's' : ''}</span>
             <span>{totalWeight.toFixed(2).replace('.', ',')}g · {fmtDur(totalTime)}</span>
           </>}
+          entradas={
+            <ExtrasVenda
+              pecas={pecas} setPecas={setPecas}
+              extras={extras} setExtras={setExtras}
+              custos={custosAcessorios} calculo={extrasCalc}
+            />
+          }
           acoes={
             <button className="btn btn-primary" onClick={abrirVenda} style={{ width: '100%', marginBottom: '0.75rem' }}>
               🧾 Registrar venda

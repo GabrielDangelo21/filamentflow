@@ -381,6 +381,33 @@ export const deleteAccCategory = (cat) => {
 
 export const saveAllAccCategories = (cats) => saveToStorage(STORAGE_KEYS.ACC_CATEGORIES, cats);
 
+// --- CUSTO UNITÁRIO DOS ACESSÓRIOS (extras de uma venda: argola, saquinho, etiqueta...) ---
+// Equipamentos não entram: não são gastos por peça vendida.
+const CATEGORIAS_EQUIPAMENTO = ['Impressora', 'Impressora (devolvida)'];
+
+// Custo de 1 unidade de cada acessório = soma dos preços ÷ soma das quantidades de todas as
+// compras recebidas com preço (o preço do item no pedido já inclui a parte do frete e do desconto).
+// Devolve [{ name, category, unitCost, quantity }] em ordem de nome.
+export const getCustosAcessorios = () => {
+  const totais = new Map();
+  getUnifiedOrders().filter(o => !isOrderPending(o)).forEach(order => {
+    order.items
+      .filter(i => i.type === 'accessory' && i.price != null && Number(i.quantity) > 0)
+      .filter(i => !CATEGORIAS_EQUIPAMENTO.includes(i.category))
+      .forEach(i => {
+        const nome = String(i.name || '').trim();
+        if (!nome) return;
+        const t = totais.get(nome) || { name: nome, category: i.category, cost: 0, quantity: 0 };
+        t.cost += Number(i.price) || 0;
+        t.quantity += Number(i.quantity) || 0;
+        totais.set(nome, t);
+      });
+  });
+  return [...totais.values()]
+    .map(t => ({ name: t.name, category: t.category, unitCost: t.cost / t.quantity, quantity: t.quantity }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+};
+
 // --- PRÓXIMAS IMPRESSÕES ---
 export const getProximas = () => getFromStorage(STORAGE_KEYS.PROXIMAS);
 

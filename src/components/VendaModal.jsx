@@ -72,7 +72,7 @@ export default function VendaModal({ venda, onClose, onSaved }) {
             <input className="form-input" value={form.description} placeholder="Ex: Hermione Knitted" onChange={e => set('description', e.target.value)} />
             {temImpressoes && (
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                Ligada a {venda.printIds.length} placa{venda.printIds.length !== 1 ? 's' : ''} da aba Impressões.
+                {Number(venda.quantity) > 1 ? `${venda.quantity} peças, ligada a` : 'Ligada a'} {venda.printIds.length} placa{venda.printIds.length !== 1 ? 's' : ''} da aba Impressões.
               </div>
             )}
           </div>
@@ -84,6 +84,12 @@ export default function VendaModal({ venda, onClose, onSaved }) {
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
                 {temImpressoes ? 'Calculado no Orçamento, sem a mão de obra. Pode ajustar.' : 'Material, falhas, energia, desgaste e embalagem.'}
               </div>
+              {(venda?.extras || []).length > 0 && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                  Inclui extras de {fmtEur(venda.extrasCost)}:{' '}
+                  {venda.extras.map(e => `${e.quantidade.toLocaleString('pt-BR')} ${e.name} (${fmtEur(e.total)})`).join(', ')}
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Preço final cobrado (com IVA) *</label>
