@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { getPrints, getPrintCost, setPopzuCusto, getPopzuCustos } from '../services/storage';
-import { usePriceSettings, calcularPreco } from '../utils/pricing';
+import { getPrints, getPrintCost, setPopzuCusto, getPopzuCustos, getCustosAcessorios, getExtrasVenda } from '../services/storage';
+import { usePriceSettings, calcularPreco, calcularExtras } from '../utils/pricing';
 import MaskedNumberInput from './MaskedNumberInput';
+import ExtrasVenda from './ExtrasVenda';
 import Portal from './Portal';
 
 const fmtEur = (v) =>
@@ -33,6 +34,14 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
   const [modo, setModo] = useState(existente?.metodo === 'manual' ? 'manual' : 'impressoes');
   const [selecionadas, setSelecionadas] = useState(() => new Set(existente?.printIds || []));
   const [valor, setValor] = useState(existente?.metodo === 'manual' ? Number(existente.costTotal) || 0 : 0);
+  // Peças vendidas (padrão: a quantidade da planilha) e extras por peça, como no Orçamento.
+  // Lista os acessórios marcados como "Extra de venda" e também os que já estavam neste custo.
+  const [custosAcessorios] = useState(() => {
+    const nomes = new Set([...getExtrasVenda(), ...(existente?.extras || []).map(e => e.name)]);
+    return getCustosAcessorios().filter(c => nomes.has(c.name));
+  });
+  const [pecas, setPecas] = useState(() => existente?.pecas || Number(venda.quantity) || 1);
+  const [extras, setExtras] = useState(() => (existente?.extras || []).map(e => ({ name: e.name, porPeca: e.porPeca })));
   const [busca, setBusca] = useState(() => {
     if (existente?.printIds?.length) return '';
     // sugere a busca pelo nome do produto, sem o tamanho
@@ -55,10 +64,12 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
   const escolhidas = prints.filter(p => selecionadas.has(p.id));
   const tempo = escolhidas.reduce((s, p) => s + (Number(p.timeMinutes) || 0), 0);
   const peso = escolhidas.reduce((s, p) => s + (Number(p.totalWeight) || 0), 0);
+  const extrasCalc = calcularExtras(extras, pecas, custosAcessorios);
   const calc = calcularPreco({
     materialCost: escolhidas.reduce((s, p) => s + getPrintCost(p), 0),
     totalTime: tempo,
     placas: escolhidas.length,
+    extrasCost: extrasCalc.total,
   }, settings);
 
   // Custo da venda = tudo menos a mão de obra (a mão de obra fica no lucro)
@@ -81,7 +92,15 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
 
   const salvar = () => {
     setPopzuCusto(venda.externalId, modo === 'impressoes'
-      ? { costTotal: custo, printIds: escolhidas.map(p => p.id), metodo: 'impressoes' }
+      ? {
+          costTotal: custo, printIds: escolhidas.map(p => p.id), metodo: 'impressoes',
+          pecas: Math.max(1, Math.round(Number(pecas) || 1)),
+          // O que foi gasto em extras, com o custo unitário da época (fica gravado no custo)
+          extras: extrasCalc.itens
+            .filter(i => i.quantidade > 0)
+            .map(({ name, porPeca, quantidade, custoUnit, total }) => ({ name, porPeca, quantidade, custoUnit, total })),
+          extrasCost: extrasCalc.total,
+        }
       : { costTotal: custo, printIds: [], metodo: 'manual' });
     onSaved();
   };
@@ -114,7 +133,7 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
         </div>
 
         {modo === 'impressoes' ? (
-          <div className="grade-responsiva-estreita" style={{ display: 'grid', gridTemplateColumns: '1fr 230px', gap: '1rem' }}>
+          <div className="grade-responsiva-estreita" style={{ display: 'grid', gridTemplateColumns: '1fr 270px', gap: '1rem', alignItems: 'start' }}>
             <div>
               <input className="form-input" placeholder="Buscar impressão por nome ou projeto..." value={busca}
                 onChange={e => setBusca(e.target.value)} style={{ marginBottom: '0.6rem' }} />
@@ -146,11 +165,18 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
                 })}
               </div>
             </div>
+            <div>
+            <ExtrasVenda
+              pecas={pecas} setPecas={setPecas}
+              extras={extras} setExtras={setExtras}
+              custos={custosAcessorios} calculo={extrasCalc}
+            />
             <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '0.9rem' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.5px', marginBottom: '0.6rem' }}>
                 {escolhidas.length} PLACA{escolhidas.length !== 1 ? 'S' : ''} · {peso.toFixed(0)}g · {fmtDur(tempo)}
               </div>
               {linhaResumo('Material + falhas', calc.totalMaterial + calc.totalWaste)}
+              {calc.totalExtras > 0 && linhaResumo('Extras', calc.totalExtras)}
               {linhaResumo('Energia + desgaste', calc.totalElectricity + calc.totalWear)}
               {linhaResumo('Embalagem do pedido', calc.totalPackaging)}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--card-border)', paddingTop: '0.5rem', marginTop: '0.4rem', fontWeight: 700 }}>
@@ -162,6 +188,7 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
               <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.6rem', marginBottom: 0 }}>
                 Mesmo cálculo do Orçamento de venda, sem a mão de obra.
               </p>
+            </div>
             </div>
           </div>
         ) : (
@@ -178,7 +205,7 @@ export default function CustoPopzuModal({ venda, onClose, onSaved }) {
           <span style={{ fontSize: '0.9rem', fontWeight: 700, color: !podeSalvar ? 'var(--text-muted)' : lucro >= 0 ? '#10B981' : '#F87171' }}>
             {podeSalvar ? `${lucro >= 0 ? 'Lucro' : 'Prejuízo'}: ${fmtEur(Math.abs(lucro))}` : 'Escolha as impressões ou digite o custo'}
           </span>
-          <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {existente && <button className="btn btn-danger" onClick={remover}>Remover custo</button>}
             <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
             <button className="btn btn-primary" onClick={salvar} disabled={!podeSalvar} style={{ opacity: podeSalvar ? 1 : 0.5 }}>Salvar custo</button>
