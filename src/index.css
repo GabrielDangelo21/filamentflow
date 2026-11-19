@@ -236,6 +236,45 @@ body {
   .grade-responsiva-estreita { grid-template-columns: minmax(0, 1fr) !important; }
 }
 
+/* Painel "Resumo" do Orçamento e da Estimativa: acompanha a rolagem e cabe sempre na tela.
+   O detalhe rola dentro do painel; o preço de venda e o botão ficam fixos embaixo. */
+.resumo-preco {
+  position: sticky;
+  top: 2rem;
+  max-height: calc(100vh - 4rem);
+  max-height: calc(100dvh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+.resumo-preco-cartao {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.resumo-preco-corpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.5rem 1.5rem 1rem;
+}
+.resumo-preco-rodape {
+  flex-shrink: 0;
+  padding: 0.85rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--card-border);
+  background: rgba(11, 15, 25, 0.35);
+}
+.resumo-preco-rodape .btn { margin-bottom: 0 !important; }
+
+/* No celular o painel vem depois da lista, no fluxo normal da página */
+@media (max-width: 768px) {
+  .resumo-preco { position: static; max-height: none; }
+  .resumo-preco-corpo { overflow: visible; }
+}
+
 /* Seletor de período dos cartões do Dashboard */
 .periodo-barra {
   display: flex;

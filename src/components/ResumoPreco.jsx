@@ -1,4 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+// Altura máxima do painel = o que sobra da tela abaixo dele, recalculada ao rolar e ao
+// redimensionar. Assim o preço e o botão do rodapé ficam visíveis em qualquer posição,
+// inclusive no topo da página, antes de o painel "grudar". No celular o painel não gruda.
+const useAlturaQueCabe = () => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rolagem = el.closest('.app-main') || window;
+    // Uma medida só por evento: barato o bastante para rodar direto na rolagem
+    const ajustar = () => {
+      if (window.matchMedia('(max-width: 768px)').matches) { el.style.maxHeight = ''; return; }
+      const topo = Math.max(el.getBoundingClientRect().top, 0);
+      el.style.maxHeight = `${Math.max(320, window.innerHeight - topo - 24)}px`;
+    };
+    ajustar();
+    rolagem.addEventListener('scroll', ajustar, { passive: true });
+    window.addEventListener('resize', ajustar);
+    return () => {
+      rolagem.removeEventListener('scroll', ajustar);
+      window.removeEventListener('resize', ajustar);
+    };
+  }, []);
+  return ref;
+};
 
 const fmtEur = (v) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(v || 0);
@@ -9,6 +35,7 @@ const fmtPct = (v) => v.toFixed(1).replace('.', ',') + '%';
 // vazio: mostra emptyContent em vez dos valores; info/aviso/entradas: blocos opcionais no topo.
 export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyContent, info, aviso, entradas, acoes }) {
   const [showSettings, setShowSettings] = useState(false);
+  const painelRef = useAlturaQueCabe();
   const { wastePct, vat, marginMode } = settings;
 
   const linha = ({ label, value }) => (
@@ -31,12 +58,11 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
   ];
 
   return (
-    <div style={{ position: 'sticky', top: '2rem' }}>
-      <div style={{
-        background: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
-        borderRadius: '14px', padding: '1.5rem',
-      }}>
+    // Cabe sempre na tela: o detalhe rola dentro do painel e o preço de venda + o botão
+    // ("Registrar venda") ficam fixos embaixo, sem precisar rolar a página até o fim.
+    <div className="resumo-preco" ref={painelRef}>
+      <div className="resumo-preco-cartao">
+        <div className="resumo-preco-corpo">
         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: 700, marginBottom: '1.25rem' }}>
           Resumo
         </div>
@@ -99,20 +125,6 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
                 <span style={{ fontWeight: 600 }}>+ {fmtEur(calc.vatAmt)}</span>
               </div>
             </div>
-
-            {/* Preço de venda */}
-            <div style={{
-              background: 'rgba(0,240,255,0.07)', border: '1px solid rgba(0,240,255,0.22)',
-              borderRadius: '12px', padding: '1.1rem', textAlign: 'center', marginBottom: '0.75rem',
-            }}>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.35rem' }}>
-                Preço de venda (com IVA)
-              </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                {fmtEur(calc.sellingPrice)}
-              </div>
-            </div>
-            {acoes}
           </>
         )}
 
@@ -155,6 +167,25 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: 0 }}>
               Compartilhado entre o Orçamento de venda e a Estimativa de custo.
             </p>
+          </div>
+        )}
+        </div>
+
+        {!vazio && (
+          <div className="resumo-preco-rodape">
+            {/* Preço de venda */}
+            <div style={{
+              background: 'rgba(0,240,255,0.07)', border: '1px solid rgba(0,240,255,0.22)',
+              borderRadius: '12px', padding: '0.9rem', textAlign: 'center', marginBottom: acoes ? '0.75rem' : 0,
+            }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.35rem' }}>
+                Preço de venda (com IVA)
+              </div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+                {fmtEur(calc.sellingPrice)}
+              </div>
+            </div>
+            {acoes}
           </div>
         )}
       </div>
