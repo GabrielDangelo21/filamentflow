@@ -89,19 +89,20 @@ export default function ResumoPreco({ calc, settings, setSetting, vazio, emptyCo
               { label: `♻️ Falhas (${wastePct}%)`, value: calc.totalWaste },
               { label: '⚡ Eletricidade', value: calc.totalElectricity },
               { label: '🔧 Desgaste',    value: calc.totalWear        },
+              // Extras por peça (argola, saquinho...) são material da peça: entram no Total material
+              ...(calc.totalExtras > 0 ? [{ label: '🔗 Extras', value: calc.totalExtras }] : []),
             ].map(linha)}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--card-border)', paddingTop: '0.55rem', marginBottom: '0.55rem' }}>
               <span style={{ fontSize: '0.87rem', fontWeight: 600 }}>Total material</span>
               <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                {fmtEur(calc.totalMaterial + calc.totalWaste + calc.totalElectricity + calc.totalWear)}
+                {fmtEur(calc.totalMaterial + calc.totalWaste + calc.totalElectricity + calc.totalWear + (calc.totalExtras || 0))}
               </span>
             </div>
 
             {[
               { label: '🤝 Mão de obra', value: calc.totalLabor       },
               { label: '📦 Embalagem do pedido', value: calc.totalPackaging },
-              ...(calc.totalExtras > 0 ? [{ label: '🔗 Extras', value: calc.totalExtras }] : []),
             ].map(linha)}
 
             <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '0.55rem', marginTop: '0.25rem' }}>
