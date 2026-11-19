@@ -275,6 +275,46 @@ body {
   .resumo-preco-corpo { overflow: visible; }
 }
 
+/* Orçamento de venda: busca, "Mostrar já vendidos" e "Carregar mais antigos" */
+.orcamento-filtros {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.orcamento-filtros .form-input {
+  flex: 1 1 16rem;
+  width: auto;
+  min-width: 0;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.92rem;
+}
+.orcamento-vendidos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.orcamento-vendidos input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.orcamento-status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
+}
+.orcamento-mais {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
 /* Seletor de período dos cartões do Dashboard */
 .periodo-barra {
   display: flex;

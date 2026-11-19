@@ -42,6 +42,11 @@ const Checkbox = ({ checked, indeterminate, onChange }) => (
   </div>
 );
 
+// Busca sem diferenciar maiúsculas nem acentos ("colmeia" acha "Colméia")
+const normalizar = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const DIA_MS = 864e5;
+const PASSO_DIAS = 30;
+
 // ── Main Page ────────────────────────────────────────────────────────────────
 // Ids das impressões que já entraram em alguma venda
 const lerVendidas = () => new Set(getSales().flatMap(s => s.printIds || []));
@@ -65,6 +70,13 @@ export default function Orcamento() {
 
   const carregarVendidas = () => setVendidas(lerVendidas());
 
+  // Lista: só os projetos com placa nos últimos 30 dias (mais 30 a cada "Carregar mais antigos"),
+  // sem os já vendidos por inteiro; a busca procura em todas as impressões.
+  const [hoje]                                  = useState(() => Date.now());
+  const [diasVisiveis, setDiasVisiveis]         = useState(PASSO_DIAS);
+  const [busca, setBusca]                       = useState('');
+  const [mostrarVendidos, setMostrarVendidos]   = useState(false);
+
   // ── Groups ──────────────────────────────────────────────────────────────────
   const groups = useMemo(() => {
     const map = new Map();
@@ -80,6 +92,27 @@ export default function Orcamento() {
       .sort(([, a], [, b]) => b.latestDate - a.latestDate)
       .map(([key, val]) => ({ key, ...val }));
   }, [prints]);
+
+  // ── Filtro da lista ─────────────────────────────────────────────────────────
+  const termo = normalizar(busca.trim());
+  const naoVendidos = groups.filter(g => !g.prints.every(p => vendidas.has(p.id)));
+  const qtdVendidosInteiros = groups.length - naoVendidos.length;
+  const candidatos = mostrarVendidos ? groups : naoVendidos;
+  const limite = hoje - diasVisiveis * DIA_MS;
+  const visiveis = termo
+    ? candidatos.filter(g => normalizar(g.key).includes(termo)
+        || g.prints.some(p => normalizar(p.description).includes(termo) || normalizar(p.project).includes(termo)))
+    : candidatos.filter(g => g.latestDate >= limite);
+  const maisAntigos = termo ? [] : candidatos.filter(g => g.latestDate < limite);
+  const idsVisiveis = new Set(visiveis.flatMap(g => g.prints.map(p => p.id)));
+  const marcadasForaDaLista = [...selected].filter(id => !idsVisiveis.has(id)).length;
+
+  // Mais 30 dias; se nesse intervalo não houver nada, vai até o próximo projeto mais antigo
+  const carregarMaisAntigos = () => {
+    const proximo = maisAntigos[0];
+    const ate = proximo ? Math.ceil((hoje - proximo.latestDate) / DIA_MS) : 0;
+    setDiasVisiveis(d => Math.max(d + PASSO_DIAS, ate));
+  };
 
   // ── Selection helpers ────────────────────────────────────────────────────────
   const togglePrint = (id) => {
@@ -193,8 +226,39 @@ export default function Orcamento() {
               </div>
             </div>
           ) : (
+            <>
+            {/* Busca e filtros */}
+            <div className="orcamento-filtros">
+              <input
+                type="search"
+                className="form-input"
+                value={busca}
+                onChange={e => setBusca(e.target.value)}
+                placeholder="Buscar em todas as impressões…"
+                aria-label="Buscar projeto ou placa em todas as impressões"
+              />
+              <label className="orcamento-vendidos">
+                <input type="checkbox" checked={mostrarVendidos} onChange={e => setMostrarVendidos(e.target.checked)} />
+                Mostrar já vendidos{qtdVendidosInteiros > 0 ? ` (${qtdVendidosInteiros})` : ''}
+              </label>
+            </div>
+            <p className="orcamento-status">
+              {termo
+                ? `${visiveis.length} ${visiveis.length === 1 ? 'projeto encontrado' : 'projetos encontrados'} em todas as impressões`
+                : `Últimos ${diasVisiveis} dias · ${visiveis.length} ${visiveis.length === 1 ? 'projeto' : 'projetos'}`}
+              {marcadasForaDaLista > 0 && ` · ${marcadasForaDaLista} ${marcadasForaDaLista === 1 ? 'placa marcada fora' : 'placas marcadas fora'} da lista (continuam no Resumo)`}
+            </p>
+
+            {visiveis.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'var(--card-bg)', border: '1px dashed var(--card-border)', borderRadius: '12px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                {termo
+                  ? `Nada encontrado para “${busca.trim()}”${!mostrarVendidos && qtdVendidosInteiros > 0 ? '. Marque “Mostrar já vendidos” para procurar também nos vendidos.' : '.'}`
+                  : `Nenhum projeto sem venda nos últimos ${diasVisiveis} dias.`}
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {groups.map(({ key, prints: gPrints }) => {
+              {visiveis.map(({ key, prints: gPrints }) => {
                 const isOpen   = expanded.has(key);
                 const allSel   = gPrints.every(p => selected.has(p.id));
                 const someSel  = gPrints.some(p => selected.has(p.id));
@@ -331,6 +395,16 @@ export default function Orcamento() {
                 );
               })}
             </div>
+
+            {maisAntigos.length > 0 && (
+              <div className="orcamento-mais">
+                <button type="button" className="btn btn-secondary" onClick={carregarMaisAntigos}>
+                  Carregar mais antigos
+                </button>
+                <span>+{maisAntigos.length} {maisAntigos.length === 1 ? 'projeto mais antigo' : 'projetos mais antigos'}</span>
+              </div>
+            )}
+            </>
           )}
         </div>
 
