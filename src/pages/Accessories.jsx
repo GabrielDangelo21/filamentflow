@@ -95,12 +95,22 @@ const Accessories = () => {
     setCategories(arr);
   };
 
-  // Extract all accessory items from unified orders with their order context
-  const allAccEntries = orders.flatMap(order =>
+  // Todos os acessórios dos pedidos, do mais recente para o mais antigo pela data da compra.
+  // Mesmo dia: o pedido lançado por último vem primeiro; dentro do pedido, a ordem dos itens.
+  const allAccEntries = orders.flatMap((order, iPedido) =>
     order.items
       .filter(i => i.type === 'accessory')
-      .map(i => ({ ...i, orderDate: order.date, orderStore: order.store, orderId: order.id, pending: isOrderPending(order) }))
-  ).reverse();
+      .map((i, iItem) => ({
+        ...i, orderDate: order.date, orderStore: order.store, orderId: order.id, pending: isOrderPending(order),
+        _ordem: [String(order.date || ''), String(order.createdAt || ''), iPedido, -iItem],
+      }))
+  ).sort((a, b) => {
+    for (let k = 0; k < a._ordem.length; k++) {
+      if (a._ordem[k] < b._ordem[k]) return 1;
+      if (a._ordem[k] > b._ordem[k]) return -1;
+    }
+    return 0;
+  });
 
   const filteredEntries = filterCategory
     ? allAccEntries.filter(i => i.category === filterCategory)
