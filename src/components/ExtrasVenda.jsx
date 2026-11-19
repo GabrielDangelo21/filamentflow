@@ -14,7 +14,8 @@ const campo = {
 };
 
 // Peças vendidas + acessórios gastos em cada peça (argola, saquinho...).
-// O custo unitário vem dos Pedidos (getCustosAcessorios); o total é calculado em calcularExtras.
+// custos: só os acessórios marcados como "Extra de venda" na aba Acessórios, com o custo unitário
+// dos Pedidos (getCustosAcessorios); o total é calculado em calcularExtras.
 export default function ExtrasVenda({ pecas, setPecas, extras, setExtras, custos, calculo }) {
   const disponiveis = custos.filter(c => !extras.some(e => e.name === c.name));
   const [escolhido, setEscolhido] = useState('');
@@ -97,7 +98,7 @@ export default function ExtrasVenda({ pecas, setPecas, extras, setExtras, custos
         </div>
       ) : custos.length === 0 && (
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
-          Nenhum acessório com preço nos Pedidos ainda.
+          Nenhum acessório marcado. Na aba Acessórios, clique em “Extra de venda” no que vai em cada peça (argola, saquinho…).
         </p>
       )}
     </div>

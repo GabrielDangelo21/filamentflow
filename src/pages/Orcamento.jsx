@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { getPrints, getPrintCost, temCompraRegistrada, getSales, getCustosAcessorios } from '../services/storage';
+import { getPrints, getPrintCost, temCompraRegistrada, getSales, getCustosAcessorios, getExtrasVenda } from '../services/storage';
 import { usePriceSettings, calcularPreco, calcularExtras } from '../utils/pricing';
 import ResumoPreco from '../components/ResumoPreco';
 import ExtrasVenda from '../components/ExtrasVenda';
@@ -55,7 +55,11 @@ export default function Orcamento() {
   const [novaVenda, setNovaVenda]     = useState(null);
   const [mensagem, setMensagem]       = useState('');
   // Peças vendidas e acessórios gastos em cada peça (ex.: 50 chaveiros × 1 argola + 1 saquinho)
-  const [custosAcessorios]            = useState(getCustosAcessorios);
+  // Só os acessórios marcados como "Extra de venda" na aba Acessórios
+  const [custosAcessorios]            = useState(() => {
+    const marcados = new Set(getExtrasVenda());
+    return getCustosAcessorios().filter(c => marcados.has(c.name));
+  });
   const [pecas, setPecas]             = useState(1);
   const [extras, setExtras]           = useState([]);
 

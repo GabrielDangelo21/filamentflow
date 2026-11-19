@@ -10,7 +10,8 @@ const STORAGE_KEYS = {
   SALES: 'filamentflow_sales',
   POPZU_SYNC: 'filamentflow_popzu_sync',
   POPZU_CUSTOS: 'filamentflow_popzu_custos',
-  PRICE_SETTINGS: 'filamentflow_calc_settings'
+  PRICE_SETTINGS: 'filamentflow_calc_settings',
+  EXTRAS_VENDA: 'filamentflow_extras_venda'
 };
 
 // --- GENERIC HELPERS ---
@@ -42,7 +43,7 @@ const getFromStorage = (key) => lerJSON(key, [], Array.isArray);
 
 // Lê todas as listas na abertura do app, para os dados corrompidos serem detectados
 // (e avisados no Dashboard) antes de qualquer tela gravar por cima.
-const CHAVES_LISTA = ['FILAMENTS', 'UNIFIED_ORDERS', 'PRINTS', 'CATEGORIES', 'BRANDS', 'ACC_CATEGORIES', 'PROXIMAS', 'STOCK_ADJUSTMENTS', 'SALES'];
+const CHAVES_LISTA = ['FILAMENTS', 'UNIFIED_ORDERS', 'PRINTS', 'CATEGORIES', 'BRANDS', 'ACC_CATEGORIES', 'PROXIMAS', 'STOCK_ADJUSTMENTS', 'SALES', 'EXTRAS_VENDA'];
 export const verificarDados = () => {
   CHAVES_LISTA.forEach(k => lerJSON(STORAGE_KEYS[k], null, Array.isArray));
   ['POPZU_SYNC', 'POPZU_CUSTOS', 'PRICE_SETTINGS']
@@ -388,6 +389,17 @@ const CATEGORIAS_EQUIPAMENTO = ['Impressora', 'Impressora (devolvida)'];
 // Custo de 1 unidade de cada acessório = soma dos preços ÷ soma das quantidades de todas as
 // compras recebidas com preço (o preço do item no pedido já inclui a parte do frete e do desconto).
 // Devolve [{ name, category, unitCost, quantity }] em ordem de nome.
+// Acessórios que o dono marcou como "Extra de venda" (gastos por peça: argola, saquinho...).
+// Guarda só os nomes; só eles aparecem na lista de extras do Orçamento.
+export const getExtrasVenda = () => getFromStorage(STORAGE_KEYS.EXTRAS_VENDA);
+
+export const setExtraVenda = (nome, marcado) => {
+  const n = String(nome || '').trim();
+  if (!n) return;
+  const outros = getExtrasVenda().filter(x => x !== n);
+  saveToStorage(STORAGE_KEYS.EXTRAS_VENDA, marcado ? [...outros, n] : outros);
+};
+
 export const getCustosAcessorios = () => {
   const totais = new Map();
   getUnifiedOrders().filter(o => !isOrderPending(o)).forEach(order => {
@@ -701,10 +713,11 @@ export const exportBackup = () => ({
   sales: getSales(),
   priceSettings: getPriceSettingsRaw(),
   popzuSync: getPopzuConfig(),
-  popzuCustos: getPopzuCustos()
+  popzuCustos: getPopzuCustos(),
+  extrasVenda: getExtrasVenda()
 });
 
-const CAMPOS_LISTA = ['filaments', 'unifiedOrders', 'prints', 'categories', 'brands', 'accCategories', 'stockAdjustments', 'proximas', 'sales'];
+const CAMPOS_LISTA = ['filaments', 'unifiedOrders', 'prints', 'categories', 'brands', 'accCategories', 'stockAdjustments', 'proximas', 'sales', 'extrasVenda'];
 const CAMPOS_OBJETO = ['priceSettings', 'popzuSync', 'popzuCustos', 'migracoes'];
 
 // Confere o arquivo inteiro antes de gravar qualquer coisa (para não importar pela metade)
@@ -737,6 +750,7 @@ export const importBackup = (backup) => {
   if (backup.proximas) saveToStorage(STORAGE_KEYS.PROXIMAS, backup.proximas);
   if (backup.sales) saveToStorage(STORAGE_KEYS.SALES, backup.sales);
   if (backup.popzuCustos) localStorage.setItem(STORAGE_KEYS.POPZU_CUSTOS, JSON.stringify(backup.popzuCustos));
+  if (backup.extrasVenda) saveToStorage(STORAGE_KEYS.EXTRAS_VENDA, backup.extrasVenda);
   if (backup.popzuSync) localStorage.setItem(STORAGE_KEYS.POPZU_SYNC, JSON.stringify(backup.popzuSync));
   if (backup.priceSettings) localStorage.setItem(STORAGE_KEYS.PRICE_SETTINGS, JSON.stringify(backup.priceSettings));
   // Backup de antes da migração: roda de novo sobre os dados importados (senão a mão de obra

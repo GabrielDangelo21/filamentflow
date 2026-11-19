@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getUnifiedOrders, getAccCategories, saveAccCategory, deleteAccCategory, saveAllAccCategories, isOrderPending } from '../services/storage';
+import { getUnifiedOrders, getAccCategories, saveAccCategory, deleteAccCategory, saveAllAccCategories, isOrderPending, getExtrasVenda, setExtraVenda } from '../services/storage';
 import Portal from '../components/Portal';
 
 const ListManagerModal = ({ title, items, onAdd, onDelete, onReorder, onClose }) => {
@@ -65,6 +65,14 @@ const Accessories = () => {
   const [categories, setCategories] = useState(getAccCategories);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState('');
+  // Nomes marcados como "Extra de venda" (aparecem nos extras por peça do Orçamento)
+  const [extrasVenda, setExtrasVenda] = useState(() => new Set(getExtrasVenda()));
+
+  const alternarExtra = (nome) => {
+    const n = String(nome || '').trim();
+    setExtraVenda(n, !extrasVenda.has(n));
+    setExtrasVenda(new Set(getExtrasVenda()));
+  };
 
   const handleAddCategory = (name) => {
     saveAccCategory(name);
@@ -188,6 +196,7 @@ const Accessories = () => {
         fontSize: '0.82rem', color: 'var(--text-muted)'
       }}>
         Para registrar ou editar compras de acessórios, use a página <strong style={{ color: 'var(--primary)' }}>Pedidos</strong>.
+        {' '}Marque como <strong style={{ color: 'var(--primary)' }}>Extra de venda</strong> o que vai em cada peça vendida (argola, saquinho…): só esses aparecem nos extras do Orçamento de venda.
       </div>
 
       {/* History table */}
@@ -202,12 +211,13 @@ const Accessories = () => {
               <th>Qtd</th>
               <th>Preço</th>
               <th>Loja</th>
+              <th>Extra de venda</th>
             </tr>
           </thead>
           <tbody>
             {filteredEntries.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                   {allAccEntries.length === 0
                     ? 'Nenhum acessório registrado. Crie um pedido na página Pedidos.'
                     : 'Nenhum acessório nesta categoria.'}
@@ -236,6 +246,29 @@ const Accessories = () => {
                   </td>
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                     {item.orderStore || '—'}
+                  </td>
+                  <td>
+                    {(() => {
+                      const marcado = extrasVenda.has(String(item.name || '').trim());
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => alternarExtra(item.name)}
+                          aria-pressed={marcado}
+                          title={marcado ? 'Tirar dos extras do Orçamento de venda' : 'Mostrar nos extras do Orçamento de venda'}
+                          style={{
+                            background: marcado ? 'rgba(0,240,255,0.14)' : 'transparent',
+                            color: marcado ? 'var(--primary)' : 'var(--text-muted)',
+                            border: `1px solid ${marcado ? 'rgba(0,240,255,0.4)' : 'rgba(255,255,255,0.15)'}`,
+                            borderRadius: '0.4rem', padding: '0.3rem 0.7rem', fontSize: '0.8rem',
+                            fontWeight: marcado ? 700 : 500, cursor: 'pointer', whiteSpace: 'nowrap',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          {marcado ? '✓ Extra de venda' : 'Extra de venda'}
+                        </button>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))
