@@ -402,8 +402,12 @@ h1 {
   box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.1);
 }
 
-/* Option tags inside select need different styling as they use OS native UI, but we can set bg */
-.form-select option {
+/* A lista que abre de um <select> é do sistema: sem isto ela vem com fundo claro e o texto
+   claro do app fica ilegível. Vale para todo select, com ou sem a classe .form-select. */
+select {
+  color-scheme: dark;
+}
+select option {
   background: var(--bg-color);
   color: var(--text-main);
 }
